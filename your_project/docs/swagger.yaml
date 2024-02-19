@@ -480,6 +480,98 @@ definitions:
         description: Lastname is the last name of the user.
         type: string
     type: object
+  contacts.ContactDetails:
+    description: ContactDetails represents detailed information about a specific contact.
+    properties:
+      created_at:
+        description: CreatedAt is the timestamp indicating when the contact was created.
+        type: string
+      email:
+        description: Contact's email address.
+        type: string
+      first_name:
+        description: Contact's first name.
+        type: string
+      full_name:
+        description: Contact's full name.
+        type: string
+      id:
+        description: Unique identifier for the contact.
+        type: string
+      last_name:
+        description: Contact's last name.
+        type: string
+      phone_number:
+        description: Contact's phone number.
+        type: string
+      tags:
+        description: Tags is a list of tag's UUID associated with the contact.
+        items:
+          type: string
+        type: array
+    type: object
+  contacts.ContactIn:
+    description: ContactIn represents the input structure for creating a new contact.
+    properties:
+      email:
+        description: Contact's email address.
+        type: string
+      first_name:
+        description: Contact's first name.
+        type: string
+      full_name:
+        description: Contact's full name.
+        type: string
+      last_name:
+        description: Contact's last name.
+        type: string
+      phone_number:
+        description: Contact's phone number.
+        type: string
+    type: object
+  contacts.ContactPaginator:
+    description: ContactPaginator represents the paginated list of contacts.
+    properties:
+      items:
+        description: Items is a slice containing individual contact details.
+        items:
+          $ref: '#/definitions/contacts.ContactTable'
+        type: array
+      limit:
+        description: Limit is the maximum number of items per page in the pagination.
+        type: integer
+      page:
+        description: Page is the current page number in the pagination.
+        type: integer
+      totalCount:
+        description: TotalCount is the total number of contacts in the entire list.
+        type: integer
+    type: object
+  contacts.ContactTable:
+    description: ContactTable represents a single contact entry in a table.
+    properties:
+      created_at:
+        description: CreatedAt is the timestamp indicating when the contact was created.
+        type: string
+      email:
+        description: Contact's email address.
+        type: string
+      first_name:
+        description: Contact's first name.
+        type: string
+      full_name:
+        description: Contact's full name.
+        type: string
+      id:
+        description: Unique identifier for the contact.
+        type: string
+      last_name:
+        description: Contact's last name.
+        type: string
+      phone_number:
+        description: Contact's phone number.
+        type: string
+    type: object
   domains.Contact:
     properties:
       createdAt:
@@ -500,7 +592,7 @@ definitions:
       lastname:
         description: The contact's last name
         type: string
-      mailinglist:
+      mailinglists:
         items:
           $ref: '#/definitions/domains.Mailinglist'
         type: array
@@ -793,6 +885,170 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+  /contacts:
+    get:
+      description: Get all contacts.
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/contacts.ContactPaginator'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get contacts
+      tags:
+      - Contacts
+    post:
+      parameters:
+      - description: Contact query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/contacts.ContactIn'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+  /contacts/{ID}:
+    delete:
+      parameters:
+      - description: Contact ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+    get:
+      description: Get one Contact.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/contacts.ContactDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get Contact
+      tags:
+      - Contacts
+    put:
+      parameters:
+      - description: ContactID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Contact query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/contacts.ContactIn'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
   /mailinglist:
     get:
       parameters:
@@ -855,6 +1111,34 @@ paths:
           schema:
             $ref: '#/definitions/ApiResponse'
   /mailinglist/{ID}:
+    delete:
+      parameters:
+      - description: Mailinglist ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
     get:
       parameters:
       - description: Mailinglist ID
@@ -867,6 +1151,40 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/MailinglistDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+    put:
+      parameters:
+      - description: Mailinglist ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Mailinglist query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CompanyIn'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
         "400":
           description: Invalid request
           schema:

@@ -3,6 +3,7 @@ package api
 import (
 	"labs/api/auth"
 	"labs/api/companies"
+	"labs/api/contacts"
 	"labs/api/mailinglists"
 	"labs/api/notifications"
 	"labs/api/roles"
@@ -31,7 +32,10 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Initialize notification routes
 		notifications.NotificationRouterInit(api, db)
+
 		// Initialize mailinglist routes
 		mailinglists.MailinglistRouterInit(api, db)
+		// Initialize contact routes
+		contacts.ContactRouterInit(api, db)
 	}
 }

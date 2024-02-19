@@ -1,6 +1,7 @@
 package mailinglists
 
 import (
+	"fmt"
 	"labs/constants"
 	"labs/domains"
 	"labs/utils"
@@ -20,7 +21,7 @@ import (
 // @Accept			json
 // @Produce			json
 
-// @Param			request			body			mailinglists.MailinglistIn	true	"Mailinglist query params"
+// @Param			request			body			MailinglistIn	true	"Mailinglist query params"
 // @Success			201				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses			"Invalid request"
 // @Failure			401				{object}		utils.ApiResponses			"Unauthorized"
@@ -39,6 +40,7 @@ func (db Database) CreateMailinglist(ctx *gin.Context) {
 		return
 	}
 
+	fmt.Println(session.CompanyID)
 	// Create a new mailinglist in the database
 	dbMailinglist := &domains.Mailinglist{
 		ID:              uuid.New(),
@@ -78,9 +80,7 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
 
-	log.Println("session")
 	log.Println(session)
-	log.Println("session")
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -158,7 +158,7 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 // ReadMailinglist 		Handles the retrieval of one Mailinglist.
 // @Summary        	Get Mailinglist
 // @Description    	Get one Mailinglist.
-// @Tags			Companies
+// @Tags			mailinglist
 // @Produce			json
 
 // @Param			ID   			path      	string		true		"Mailinglist ID"
@@ -170,9 +170,11 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 // @Router			/mailinglist/{ID}	[get]
 func (db Database) ReadMailinglist(ctx *gin.Context) {
 
-	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
 
+	log.Println(session)
+
+	fmt.Println("heeeeeeeeeeeeere", session.CompanyID, session.UserID)
 	// Parse and validate the mailinglist ID from the request parameter
 	objectID, err := uuid.Parse(ctx.Param("ID"))
 	if err != nil {
@@ -181,12 +183,12 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 		return
 	}
 
-	// Check if the employee belongs to the specified mailinglist
-	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// // Check if the employee belongs to the specified mailinglist
+	// if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Retrieve the mailinglist data by ID from the database
 	mailinglist, err := ReadByID(db.DB, domains.Mailinglist{}, objectID)
@@ -210,4 +212,120 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 
 	// Respond with success
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, details)
+}
+
+// UpdateMailinglist 	Handles the update of a mailinglist.
+// @Summary        	Update mailinglist
+// @Description    	Update mailinglist.
+// @Tags			mailinglists
+// @Accept			json
+// @Produce			json
+
+// @Param			ID   			path      		string						true	"Mailinglist ID"
+// @Param			request			body			MailinglistIn		true	"Mailinglist query params"
+// @Success			200				{object}		utils.ApiResponses
+// @Failure			400				{object}		utils.ApiResponses				"Invalid request"
+// @Failure			401				{object}		utils.ApiResponses				"Unauthorized"
+// @Failure			403				{object}		utils.ApiResponses				"Forbidden"
+// @Failure			500				{object}		utils.ApiResponses				"Internal Server Error"
+// @Router			/mailinglist/{ID}	[put]
+func (db Database) UpdateMailinglist(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the mailinglist ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified mailinglist
+	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Parse the incoming JSON request into a MailinglistIn struct
+	mailinglist := new(MailinglistIn)
+	if err := ctx.ShouldBindJSON(mailinglist); err != nil {
+		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the mailinglist with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Mailinglist{}, objectID); err != nil {
+		logrus.Error("Error checking if the mailinglist with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Update the company data in the database
+	dbMailinglist := &domains.Mailinglist{
+		Name:        mailinglist.Name,
+		Description: mailinglist.Description,
+	}
+	if err := domains.Update(db.DB, dbMailinglist, objectID); err != nil {
+		logrus.Error("Error updating company data in the database. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// DeleteMailinglist 	Handles the deletion of a mailinglist.
+// @Summary        	Delete mailinglist
+// @Description    	Delete one mailinglist.
+// @Tags			mailinglists
+// @Produce			json
+
+// @Param			ID   			path      		string		true			"Mailinglist ID"
+// @Success			200				{object}		utils.ApiResponses
+// @Failure			400				{object}		utils.ApiResponses		"Invalid request"
+// @Failure			401				{object}		utils.ApiResponses		"Unauthorized"
+// @Failure			403				{object}		utils.ApiResponses		"Forbidden"
+// @Failure			500				{object}		utils.ApiResponses		"Internal Server Error"
+// @Router			/mailinglist/{ID}	[delete]
+func (db Database) DeleteMailinglist(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the mailinglist ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified mailinglist
+	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the mailinglist with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Mailinglist{}, objectID); err != nil {
+		logrus.Error("Error checking if the mailinglist with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Delete the mailinglist data from the database
+	if err := domains.Delete(db.DB, &domains.Mailinglist{}, objectID); err != nil {
+		logrus.Error("Error deleting mailinglist data from the database. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
 }

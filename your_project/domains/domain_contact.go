@@ -48,8 +48,8 @@ type Contact struct {
 	PhoneNumber string    `gorm:"column:phone_number; not null; unique"`       // contact's email address (unique)
 	FullName    string    `gorm:"column:full_name"`                            //contact's full name
 
-	Mailinglist []Mailinglist `gorm:"many2many:mailing_list_contacts"`
-	Tags        []uuid.UUID   `gorm:"column:tags;type:uuid[]"` // List of tag's uuid associated with the contact
+	Mailinglists []Mailinglist `gorm:"many2many:mailing_list_contacts"`
+	Tags         []uuid.UUID   `gorm:"column:tags;type:uuid[]"` // List of tag's uuid associated with the contact
 
 	gorm.Model
 }

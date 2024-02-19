@@ -17,6 +17,7 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 	// Private
 	mailinglist := router.Group("/mailinglist")
 	{
+		mailinglist.POST("", baseInstance.CreateMailinglist)
 
 		// GET endpoint to retrieve all mailinglist
 		mailinglist.GET("", baseInstance.ReadMailinglists)
@@ -25,9 +26,9 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		mailinglist.GET("/:ID", baseInstance.ReadMailinglist)
 
 		// PUT endpoint to update details of a specific company
-		//mailinglist.PUT("/:ID", baseInstance.UpdateCompany)
+		mailinglist.PUT("/:ID", baseInstance.UpdateMailinglist)
 
 		// DELETE endpoint to delete a specific company
-		//mailinglist.DELETE("/:ID", baseInstance.DeleteCompany)
+		mailinglist.DELETE("/:ID", baseInstance.DeleteMailinglist)
 	}
 }
