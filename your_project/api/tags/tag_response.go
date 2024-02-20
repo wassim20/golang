@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// @Description TagPaginator represents the paginated list of tags.
-type TagPaginator struct {
+// @Description TagPagination represents the paginated list of tags.
+type TagPagination struct {
 	Items      []TagTable `json:"items"`      // Items is a slice containing individual tag details.
 	Page       uint       `json:"page"`       // Page is the current page number in the pagination.
 	Limit      uint       `json:"limit"`      // Limit is the maximum number of items per page in the pagination.

@@ -7,6 +7,7 @@ import (
 	"labs/api/mailinglists"
 	"labs/api/notifications"
 	"labs/api/roles"
+	"labs/api/tags"
 	"labs/api/users"
 
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,11 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Initialize mailinglist routes
 		mailinglists.MailinglistRouterInit(api, db)
+
 		// Initialize contact routes
 		contacts.ContactRouterInit(api, db)
+
+		// Initialize tag routes
+		tags.TagRouterInit(api, db)
 	}
 }

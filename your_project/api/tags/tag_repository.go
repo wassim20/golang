@@ -19,7 +19,20 @@ func NewTagRepository(db *gorm.DB) {
 	}
 }
 
+// ReadAllPagination retrieves a paginated list of tags based on company ID, limit, and offset.
 func ReadAllPagination(db *gorm.DB, model []domains.Tag, modelID uuid.UUID, limit, offset int) ([]domains.Tag, error) {
-	err := db.Where("id = ? ", modelID).Limit(limit).Offset(offset).Find(&model).Error
+	err := db.Where("company_id = ? ", modelID).Limit(limit).Offset(offset).Find(&model).Error
+	return model, err
+}
+
+// ReadByID retrieves a company by its unique identifier.
+func ReadByID(db *gorm.DB, model domains.Tag, id uuid.UUID) (domains.Tag, error) {
+	err := db.First(&model, id).Error
+	return model, err
+}
+
+// ReadAllPagination retrieves a paginated list of tags based on company ID.
+func ReadAllTags(db *gorm.DB, model []domains.Tag, modelID uuid.UUID) ([]domains.Tag, error) {
+	err := db.Where("company_id = ? ", modelID).Find(&model).Error
 	return model, err
 }

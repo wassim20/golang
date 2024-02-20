@@ -19,6 +19,53 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/Tags": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Tag query params",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/tags.TagIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/signin": {
             "post": {
                 "description": "Authenticate and log in a user.",
@@ -1641,6 +1688,196 @@ const docTemplate = `{
                 }
             }
         },
+        "/tags": {
+            "get": {
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tags.TagPagination"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tags/{ID}": {
+            "get": {
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag ID",
+                        "name": "ID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tags.TagDetails"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag ID",
+                        "name": "ID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tag query params",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/tags.TagIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag ID",
+                        "name": "ID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{companyID}": {
             "get": {
                 "security": [
@@ -2944,6 +3181,77 @@ const docTemplate = `{
                 "valid": {
                     "description": "Valid is true if Time is not NULL",
                     "type": "boolean"
+                }
+            }
+        },
+        "tags.TagDetails": {
+            "description": "TagDetails represents detailed information about a specific tag.",
+            "type": "object",
+            "properties": {
+                "company_id": {
+                    "description": "Tag's company",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt is the timestamp indicating when the tag was created.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique identifier for the tag.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Tag's  name.",
+                    "type": "string"
+                }
+            }
+        },
+        "tags.TagIn": {
+            "description": "TagIn represents the input structure for creating a new tag.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Tag's name.",
+                    "type": "string"
+                }
+            }
+        },
+        "tags.TagPagination": {
+            "description": "TagPagination represents the paginated list of tags.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "Items is a slice containing individual tag details.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tags.TagTable"
+                    }
+                },
+                "limit": {
+                    "description": "Limit is the maximum number of items per page in the pagination.",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "Page is the current page number in the pagination.",
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "description": "TotalCount is the total number of tags in the entire list.",
+                    "type": "integer"
+                }
+            }
+        },
+        "tags.TagTable": {
+            "description": "TagTable represents a single tag entry in a table.",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for the tag.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Tag's full name.",
+                    "type": "string"
                 }
             }
         }

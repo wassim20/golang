@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// CompanyRouterInit initializes the routes related to mailinglist.
+// MailinglistRouterInit initializes the routes related to mailinglist.
 func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 
 	// Initialize database instance
@@ -17,18 +17,19 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 	// Private
 	mailinglist := router.Group("/mailinglist")
 	{
+		//POST endpoint ro create a mailinglist
 		mailinglist.POST("", baseInstance.CreateMailinglist)
 
 		// GET endpoint to retrieve all mailinglist
 		mailinglist.GET("", baseInstance.ReadMailinglists)
 
-		// GET endpoint to retrieve details of a specific company
+		// GET endpoint to retrieve details of a specific mailinglist
 		mailinglist.GET("/:ID", baseInstance.ReadMailinglist)
 
-		// PUT endpoint to update details of a specific company
+		// PUT endpoint to update details of a specific mailinglist
 		mailinglist.PUT("/:ID", baseInstance.UpdateMailinglist)
 
-		// DELETE endpoint to delete a specific company
+		// DELETE endpoint to delete a specific mailinglist
 		mailinglist.DELETE("/:ID", baseInstance.DeleteMailinglist)
 	}
 }
