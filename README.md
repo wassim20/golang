@@ -5,4 +5,4 @@
 go get github.com/githubnemo/CompileDaemon
 
 +++++++++ use this to compile project automatically +++++++++
-CompileDaemon -command="./your_project"
+CompileDaemon -command="./labs"
