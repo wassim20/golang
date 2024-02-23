@@ -20,7 +20,7 @@ func NewMailinglistRepository(db *gorm.DB) {
 	}
 }
 
-// ReadAllPagination retrieves a paginated list of mailinglist based on mailinglist ID, limit, and offset.
+// ReadAllPagination retrieves a paginated list of mailinglist based on company ID, limit, and offset.
 func ReadAllPagination(db *gorm.DB, model []domains.Mailinglist, modelID uuid.UUID, limit, offset int) ([]domains.Mailinglist, error) {
 	err := db.Where("company_id = ? ", modelID).Limit(limit).Offset(offset).Find(&model).Error
 	return model, err
@@ -28,7 +28,7 @@ func ReadAllPagination(db *gorm.DB, model []domains.Mailinglist, modelID uuid.UU
 
 // ReadByID retrieves a mailinglist by its unique identifier.
 func ReadByID(db *gorm.DB, model domains.Mailinglist, id uuid.UUID) (domains.Mailinglist, error) {
-	err := db.First(&model, id).Error
+	err := db.First(&model, id).Preload("Contacts").Error
 	return model, err
 }
 

@@ -20,7 +20,6 @@ import (
 // @Tags			Companies
 // @Accept			json
 // @Produce			json
-
 // @Param			request			body			companies.CompanyIn	true	"Company query params"
 // @Success			201				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses			"Invalid request"
@@ -62,7 +61,6 @@ func (db Database) CreateCompany(ctx *gin.Context) {
 // @Description    	Get all companies.
 // @Tags			Companies
 // @Produce			json
-
 // @Param			page			query		int					false	"Page"
 // @Param			limit			query		int					false	"Limit"
 // @Success			200				{object}	companies.CompaniesPagination
@@ -156,7 +154,6 @@ func (db Database) ReadCompanies(ctx *gin.Context) {
 // @Description    	Get one company.
 // @Tags			Companies
 // @Produce			json
-
 // @Param			ID   			path      	string		true		"Company ID"
 // @Success			200				{object}	companies.CompaniesDetails
 // @Failure			400				{object}	utils.ApiResponses		"Invalid request"
@@ -211,7 +208,6 @@ func (db Database) ReadCompany(ctx *gin.Context) {
 // @Tags			Companies
 // @Accept			json
 // @Produce			json
-
 // @Param			ID   			path      		string						true	"Company ID"
 // @Param			request			body			companies.CompanyIn		true	"Company query params"
 // @Success			200				{object}		utils.ApiResponses
@@ -274,7 +270,6 @@ func (db Database) UpdateCompany(ctx *gin.Context) {
 // @Description    	Delete one company.
 // @Tags			Companies
 // @Produce			json
-
 // @Param			ID   			path      		string		true			"Company ID"
 // @Success			200				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses		"Invalid request"

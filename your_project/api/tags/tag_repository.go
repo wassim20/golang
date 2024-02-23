@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"errors"
 	"labs/domains"
 
 	"github.com/google/uuid"
@@ -31,8 +32,71 @@ func ReadByID(db *gorm.DB, model domains.Tag, id uuid.UUID) (domains.Tag, error)
 	return model, err
 }
 
-// ReadAllPagination retrieves a paginated list of tags based on company ID.
+// ReadAllPagination  list of tags based on company ID.
 func ReadAllTags(db *gorm.DB, model []domains.Tag, modelID uuid.UUID) ([]domains.Tag, error) {
 	err := db.Where("company_id = ? ", modelID).Find(&model).Error
 	return model, err
+}
+func AssignToMailinglist(db *gorm.DB, modelID uuid.UUID, mailinglistID uuid.UUID) error {
+
+	var tagCount int64
+	err := db.Model(&domains.Mailinglist{}).Where("id = ?", mailinglistID).Where("tags @> ARRAY[?]::uuid[]", modelID).Count(&tagCount).Error
+	if err != nil {
+		return err
+	}
+
+	if tagCount > 0 {
+		// Tag already exists, no need to append
+		logrus.Error("Tag already exists in the mailinglist")
+		return errors.New("tag already exists in this mailing list")
+	}
+
+	if err := db.Exec("UPDATE mailinglists SET tags = array_append(tags, ?) WHERE id = ?", modelID, mailinglistID); err != nil {
+		logrus.Error("An error occurred during updating mailinglist. Error: ", err)
+	}
+
+	return nil
+
+	// mailingList := domains.Mailinglist{}
+	// result := db.First(&mailingList, mailinglistID)
+	// if result.Error != nil {
+	// 	return result.Error
+	// }
+	// fmt.Println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh", mailingList.Tags)
+
+	// for _, v := range mailingList.Tags {
+	// 	if v == modelID {
+	// 		return errors.New("tag already exists in this mailing list")
+	// 	}
+	// }
+
+	// mailingList.Tags = append(mailingList.Tags, modelID)
+	// if err := db.Save(&mailingList).Error; err != nil {
+	// 	return err
+	// }
+
+	// return nil
+
+}
+
+func AssignToContact(db *gorm.DB, modelID uuid.UUID, ContactID uuid.UUID) error {
+
+	var tagCount int64
+	err := db.Model(&domains.Contact{}).Where("id = ?", ContactID).Where("tags @> ARRAY[?]::uuid[]", modelID).Count(&tagCount).Error
+	if err != nil {
+		return err
+	}
+
+	if tagCount > 0 {
+		// Tag already exists, no need to append
+		logrus.Error("Tag already exists in the contact")
+		return errors.New("tag already exists in this mailing list")
+	}
+
+	if err := db.Exec("UPDATE contacts SET tags = array_append(tags, ?) WHERE id = ?", modelID, ContactID); err != nil {
+		logrus.Error("An error occurred during updating contact. Error: ", err)
+	}
+
+	return nil
+
 }

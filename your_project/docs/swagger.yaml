@@ -592,48 +592,13 @@ definitions:
       lastname:
         description: The contact's last name
         type: string
-      mailinglists:
-        items:
-          $ref: '#/definitions/domains.Mailinglist'
-        type: array
+      mailinglistsID:
+        type: string
       phoneNumber:
         description: contact's email address (unique)
         type: string
       tags:
         description: List of tag's uuid associated with the contact
-        items:
-          type: string
-        type: array
-      updatedAt:
-        type: string
-    type: object
-  domains.Mailinglist:
-    properties:
-      companyID:
-        description: ID of the company to which the mailinglist belongs
-        type: string
-      contacts:
-        description: List of contacts associated with the
-        items:
-          $ref: '#/definitions/domains.Contact'
-        type: array
-      createdAt:
-        type: string
-      createdByUserID:
-        description: ID of the user who created the mailinglist
-        type: string
-      deletedAt:
-        $ref: '#/definitions/gorm.DeletedAt'
-      description:
-        description: The mailinglist's description
-        type: string
-      id:
-        type: integer
-      name:
-        description: The mailinglist's name
-        type: string
-      tags:
-        description: List of tag's uuid associated with the mailinglist
         items:
           type: string
         type: array
@@ -708,15 +673,57 @@ info:
   title: Project Name
   version: "0.1"
 paths:
-  /Tags:
-    post:
+  /:companyID/mailinglist/:mailinglistID/contacts:
+    get:
+      description: Get all contacts.
       parameters:
-      - description: Tag query params
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/contacts.ContactPaginator'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get contacts
+      tags:
+      - Contacts
+    post:
+      consumes:
+      - application/json
+      description: Create a new contact.
+      parameters:
+      - description: Contact query params
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/tags.TagIn'
+          $ref: '#/definitions/contacts.ContactIn'
+      produces:
+      - application/json
       responses:
         "201":
           description: Created
@@ -738,6 +745,563 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+      summary: Create contact
+      tags:
+      - Contacts
+  /:companyID/mailinglist/:mailinglistID/contacts/{ID}:
+    delete:
+      description: Delete one contact.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Delete contact
+      tags:
+      - Contacts
+    get:
+      description: Get one Contact.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/contacts.ContactDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get Contact
+      tags:
+      - Contacts
+    put:
+      consumes:
+      - application/json
+      description: Update contact.
+      parameters:
+      - description: ContactID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Contact query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/contacts.ContactIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Update contact
+      tags:
+      - Contacts
+  /{companyID}/Tags:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Tag.
+      parameters:
+      - description: Tag query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tags.TagIn'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Create Tag
+      tags:
+      - tags
+  /{companyID}/mailinglist:
+    get:
+      description: Get all mailinglists.
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MailinglistsPagination'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get mailinglists
+      tags:
+      - mailinglists
+    post:
+      consumes:
+      - application/json
+      description: Create a new Mailinglist.
+      parameters:
+      - description: Mailinglist query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CompanyIn'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Create Mailinglist
+      tags:
+      - mailinglists
+  /{companyID}/mailinglist/{ID}:
+    delete:
+      description: Delete one mailinglist.
+      parameters:
+      - description: Mailinglist ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Delete mailinglist
+      tags:
+      - mailinglists
+    get:
+      description: Get one Mailinglist.
+      parameters:
+      - description: Mailinglist ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MailinglistDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get Mailinglist
+      tags:
+      - mailinglists
+    put:
+      consumes:
+      - application/json
+      description: Update mailinglist.
+      parameters:
+      - description: Mailinglist ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Mailinglist query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CompanyIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Update mailinglist
+      tags:
+      - mailinglists
+  /{companyID}/tags:
+    get:
+      description: Get all tags.
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tags.TagPagination'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get tags
+      tags:
+      - tags
+  /{companyID}/tags/{ID}:
+    delete:
+      description: Delete one tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Delete tag
+      tags:
+      - tags
+    get:
+      description: Get one Tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tags.TagDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get Tag
+      tags:
+      - tags
+    put:
+      consumes:
+      - application/json
+      description: Update tag.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Tag query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tags.TagIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Update tag
+      tags:
+      - tags
+  /{companyID}/tags/{ID}/contact/{contactID}:
+    post:
+      description: Assaign one tag to a contact.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Assaign tag to a contact
+      tags:
+      - tags
+  /{companyID}/tags/{ID}/mailinglist/{mailinglistID}:
+    post:
+      description: Assaign one tag to a mailinglist.
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Assaign tag to a mailinglist
+      tags:
+      - tags
   /auth/signin:
     post:
       consumes:
@@ -816,6 +1380,7 @@ paths:
       - Authentification
   /companies:
     get:
+      description: Get all companies.
       parameters:
       - description: Page
         in: query
@@ -825,6 +1390,8 @@ paths:
         in: query
         name: limit
         type: integer
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -846,7 +1413,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+      summary: Get companies
+      tags:
+      - Companies
     post:
+      consumes:
+      - application/json
+      description: Create a new company.
       parameters:
       - description: Company query params
         in: body
@@ -854,6 +1427,8 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/CompanyIn'
+      produces:
+      - application/json
       responses:
         "201":
           description: Created
@@ -875,14 +1450,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+      summary: Create company
+      tags:
+      - Companies
   /companies/{ID}:
     delete:
+      description: Delete one company.
       parameters:
       - description: Company ID
         in: path
         name: ID
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -904,13 +1485,19 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+      summary: Delete company
+      tags:
+      - Companies
     get:
+      description: Get one company.
       parameters:
       - description: Company ID
         in: path
         name: ID
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -932,7 +1519,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
+      summary: Get company
+      tags:
+      - Companies
     put:
+      consumes:
+      - application/json
+      description: Update company.
       parameters:
       - description: Company ID
         in: path
@@ -945,46 +1538,13 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/CompanyIn'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-  /contacts:
-    get:
-      description: Get all contacts.
-      parameters:
-      - description: Page
-        in: query
-        name: page
-        type: integer
-      - description: Limit
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/contacts.ContactPaginator'
+            $ref: '#/definitions/ApiResponse'
         "400":
           description: Invalid request
           schema:
@@ -1001,287 +1561,9 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ApiResponse'
-      summary: Get contacts
+      summary: Update company
       tags:
-      - Contacts
-    post:
-      parameters:
-      - description: Contact query params
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/contacts.ContactIn'
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-  /contacts/{ID}:
-    delete:
-      parameters:
-      - description: Contact ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    get:
-      description: Get one Contact.
-      parameters:
-      - description: Contact ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/contacts.ContactDetails'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-      summary: Get Contact
-      tags:
-      - Contacts
-    put:
-      parameters:
-      - description: ContactID
-        in: path
-        name: ID
-        required: true
-        type: string
-      - description: Contact query params
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/contacts.ContactIn'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-  /mailinglist:
-    get:
-      parameters:
-      - description: Page
-        in: query
-        name: page
-        type: integer
-      - description: Limit
-        in: query
-        name: limit
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/MailinglistsPagination'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    post:
-      parameters:
-      - description: Mailinglist query params
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/CompanyIn'
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-  /mailinglist/{ID}:
-    delete:
-      parameters:
-      - description: Mailinglist ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    get:
-      parameters:
-      - description: Mailinglist ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/MailinglistDetails'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    put:
-      parameters:
-      - description: Mailinglist ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      - description: Mailinglist query params
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/CompanyIn'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
+      - Companies
   /notifications/{userID}:
     get:
       description: Get all notifications.
@@ -1789,129 +2071,6 @@ paths:
       summary: Get list of  roles
       tags:
       - Roles
-  /tags:
-    get:
-      parameters:
-      - description: Page
-        in: query
-        name: page
-        type: integer
-      - description: Limit
-        in: query
-        name: limit
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/tags.TagPagination'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-  /tags/{ID}:
-    delete:
-      parameters:
-      - description: Tag ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    get:
-      parameters:
-      - description: Tag ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/tags.TagDetails'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
-    put:
-      parameters:
-      - description: Tag ID
-        in: path
-        name: ID
-        required: true
-        type: string
-      - description: Tag query params
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/tags.TagIn'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ApiResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ApiResponse'
   /users/{companyID}:
     get:
       description: Get all users.

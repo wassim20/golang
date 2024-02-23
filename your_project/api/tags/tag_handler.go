@@ -15,31 +15,36 @@ import (
 // CreateTag 	Handles the creation of a new Tag.
 // @Summary        	Create Tag
 // @Description    	Create a new Tag.
-// @Tags			Tags
+// @Tags			tags
 // @Accept			json
 // @Produce			json
-
 // @Param			request			body			TagIn	true	"Tag query params"
 // @Success			201				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses			"Invalid request"
 // @Failure			401				{object}		utils.ApiResponses			"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses			"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses			"Internal Server Error"
-// @Router			/Tags		[post]
+// @Router			/{companyID}/Tags		[post]
 func (db Database) CreateTag(ctx *gin.Context) {
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
 
-	// Parse the incoming JSON request into a TagIn struct
-	Tag := new(TagIn)
-	if err := ctx.ShouldBindJSON(Tag); err != nil {
-		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
 	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, session.CompanyID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Parse the incoming JSON request into a TagIn struct
+	Tag := new(TagIn)
+	if err := ctx.ShouldBindJSON(Tag); err != nil {
+		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
@@ -48,7 +53,7 @@ func (db Database) CreateTag(ctx *gin.Context) {
 	dbTag := &domains.Tag{
 		ID:        uuid.New(),
 		Name:      Tag.Name,
-		CompanyID: session.CompanyID,
+		CompanyID: companyID,
 	}
 
 	if err := domains.Create(db.DB, dbTag); err != nil {
@@ -66,7 +71,6 @@ func (db Database) CreateTag(ctx *gin.Context) {
 // @Description    	Get all tags.
 // @Tags			tags
 // @Produce			json
-
 // @Param			page			query		int					false	"Page"
 // @Param			limit			query		int					false	"Limit"
 // @Success			200				{object}	TagPagination
@@ -74,11 +78,23 @@ func (db Database) CreateTag(ctx *gin.Context) {
 // @Failure			401				{object}	utils.ApiResponses			"Unauthorized"
 // @Failure			403				{object}	utils.ApiResponses			"Forbidden"
 // @Failure			500				{object}	utils.ApiResponses			"Internal Server Error"
-// @Router			/tags		[get]
+// @Router			/{companyID}/tags		[get]
 func (db Database) ReadTagslist(ctx *gin.Context) {
 
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -152,19 +168,18 @@ func (db Database) ReadTagslist(ctx *gin.Context) {
 // ReadTag 		Handles the retrieval of one Tag.
 // @Summary        	Get Tag
 // @Description    	Get one Tag.
-// @Tags			Tag
+// @Tags			tags
 // @Produce			json
-
 // @Param			ID   			path      	string		true		"Tag ID"
 // @Success			200				{object}	TagDetails
 // @Failure			400				{object}	utils.ApiResponses		"Invalid request"
 // @Failure			401				{object}	utils.ApiResponses		"Unauthorized"
 // @Failure			403				{object}	utils.ApiResponses		"Forbidden"
 // @Failure			500				{object}	utils.ApiResponses		"Internal Server Error"
-// @Router			/tags/{ID}	[get]
+// @Router			/{companyID}/tags/{ID}	[get]
 func (db Database) ReadTag(ctx *gin.Context) {
 
-	//session := utils.ExtractJWTValues(ctx)
+	session := utils.ExtractJWTValues(ctx)
 
 	// Parse and validate the tag ID from the request parameter
 	objectID, err := uuid.Parse(ctx.Param("ID"))
@@ -173,13 +188,19 @@ func (db Database) ReadTag(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
+	companyID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
-	// // Check if the employee belongs to the specified mailinglist
-	// if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
-	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-	// 	return
-	// }
+	// Check if the employee belongs to the specified mailinglist
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Retrieve the tag data by ID from the database
 	tag, err := ReadByID(db.DB, domains.Tag{}, objectID)
@@ -207,7 +228,6 @@ func (db Database) ReadTag(ctx *gin.Context) {
 // @Tags			tags
 // @Accept			json
 // @Produce			json
-
 // @Param			ID   			path      		string						true	"Tag ID"
 // @Param			request			body			TagIn		true	"Tag query params"
 // @Success			200				{object}		utils.ApiResponses
@@ -215,7 +235,7 @@ func (db Database) ReadTag(ctx *gin.Context) {
 // @Failure			401				{object}		utils.ApiResponses				"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses				"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses				"Internal Server Error"
-// @Router			/tags/{ID}	[put]
+// @Router			/{companyID}/tags/{ID}	[put]
 func (db Database) UpdateTag(ctx *gin.Context) {
 
 	// Extract JWT values from the context
@@ -228,9 +248,15 @@ func (db Database) UpdateTag(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Check if the employee belongs to the specified Company
-	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
@@ -270,14 +296,13 @@ func (db Database) UpdateTag(ctx *gin.Context) {
 // @Description    	Delete one tag.
 // @Tags			tags
 // @Produce			json
-
 // @Param			ID   			path      		string		true			"Tag ID"
 // @Success			200				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses		"Invalid request"
 // @Failure			401				{object}		utils.ApiResponses		"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses		"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses		"Internal Server Error"
-// @Router			/tags/{ID}	[delete]
+// @Router			/{companyID}/tags/{ID}	[delete]
 func (db Database) DeleteTag(ctx *gin.Context) {
 
 	// Extract JWT values from the context
@@ -290,9 +315,15 @@ func (db Database) DeleteTag(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
@@ -308,6 +339,144 @@ func (db Database) DeleteTag(ctx *gin.Context) {
 	// Delete the tag data from the database
 	if err := domains.Delete(db.DB, &domains.Tag{}, objectID); err != nil {
 		logrus.Error("Error deleting tag data from the database. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// AssignTagToMailinglist 	Assign aTag To a Mailinglist
+// @Summary        	Assaign tag to a mailinglist
+// @Description    	Assaign one tag to a mailinglist.
+// @Tags			tags
+// @Produce			json
+// @Param			ID   			path      		string		true			"Tag ID"
+// @Success			200				{object}		utils.ApiResponses
+// @Failure			400				{object}		utils.ApiResponses		"Invalid request"
+// @Failure			401				{object}		utils.ApiResponses		"Unauthorized"
+// @Failure			403				{object}		utils.ApiResponses		"Forbidden"
+// @Failure			500				{object}		utils.ApiResponses		"Internal Server Error"
+// @Router			/{companyID}/tags/{ID}/mailinglist/{mailinglistID}	[POST]
+func (db Database) AssignTagToMailinglist(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the tag ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Parse and validate the mailinglist ID from the request parameter
+	mailinglistID, err := uuid.Parse(ctx.Param("mailinglistID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the tag with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Tag{}, objectID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+	// Check if the mailinglist with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Mailinglist{}, mailinglistID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// assign the tag data to the mailinglist
+	if err := AssignToMailinglist(db.DB, objectID, mailinglistID); err != nil {
+		logrus.Error("Error assigning a tag. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, "exists already in the mailinglist")
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// AssignTagToContact 	Assign aTag To a Contact
+// @Summary        	Assaign tag to a contact
+// @Description    	Assaign one tag to a contact.
+// @Tags			tags
+// @Produce			json
+// @Param			ID   			path      		string		true			"Tag ID"
+// @Success			200				{object}		utils.ApiResponses
+// @Failure			400				{object}		utils.ApiResponses		"Invalid request"
+// @Failure			401				{object}		utils.ApiResponses		"Unauthorized"
+// @Failure			403				{object}		utils.ApiResponses		"Forbidden"
+// @Failure			500				{object}		utils.ApiResponses		"Internal Server Error"
+// @Router			/{companyID}/tags/{ID}/contact/{contactID}	[POST]
+func (db Database) AssignTagToContact(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the tag ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Parse and validate the mailinglist ID from the request parameter
+	contactID, err := uuid.Parse(ctx.Param("contactID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the tag with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Tag{}, objectID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+	// Check if the mailinglist with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Contact{}, contactID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// assign the tag data to the mailinglist
+	if err := AssignToContact(db.DB, objectID, contactID); err != nil {
+		logrus.Error("Error assigning a tag. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 		return
 	}

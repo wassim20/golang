@@ -15,7 +15,7 @@ func ContactRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 	NewContactRepository(db)
 
 	// Private
-	contacts := router.Group("/contacts")
+	contacts := router.Group("/:mailinglistID/contacts")
 	{
 
 		// GET endpoint to retrieve all contacts
@@ -32,5 +32,7 @@ func ContactRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 
 		// DELETE endpoint to delete a specific company
 		contacts.DELETE("/:ID", baseInstance.DeleteContact)
+
 	}
+
 }

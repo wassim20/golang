@@ -1,6 +1,8 @@
 package mailinglists
 
 import (
+	"labs/api/contacts"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -15,7 +17,7 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 	NewMailinglistRepository(db)
 
 	// Private
-	mailinglist := router.Group("/mailinglist")
+	mailinglist := router.Group("/:companyID/mailinglist")
 	{
 		//POST endpoint ro create a mailinglist
 		mailinglist.POST("", baseInstance.CreateMailinglist)
@@ -24,12 +26,16 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		mailinglist.GET("", baseInstance.ReadMailinglists)
 
 		// GET endpoint to retrieve details of a specific mailinglist
-		mailinglist.GET("/:ID", baseInstance.ReadMailinglist)
+		mailinglist.GET("/:mailinglistID", baseInstance.ReadMailinglist)
 
 		// PUT endpoint to update details of a specific mailinglist
-		mailinglist.PUT("/:ID", baseInstance.UpdateMailinglist)
+		mailinglist.PUT("/:mailinglistID", baseInstance.UpdateMailinglist)
 
 		// DELETE endpoint to delete a specific mailinglist
-		mailinglist.DELETE("/:ID", baseInstance.DeleteMailinglist)
+		mailinglist.DELETE("/:mailinglistID", baseInstance.DeleteMailinglist)
+
+		contacts.ContactRouterInit(mailinglist, db)
+
 	}
+
 }

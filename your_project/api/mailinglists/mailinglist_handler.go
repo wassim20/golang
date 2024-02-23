@@ -17,20 +17,27 @@ import (
 // CreateMailinglist 	Handles the creation of a new Mailinglist.
 // @Summary        	Create Mailinglist
 // @Description    	Create a new Mailinglist.
-// @Tags			Mailinglists
+// @Tags			mailinglists
 // @Accept			json
 // @Produce			json
-
 // @Param			request			body			MailinglistIn	true	"Mailinglist query params"
 // @Success			201				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses			"Invalid request"
 // @Failure			401				{object}		utils.ApiResponses			"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses			"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses			"Internal Server Error"
-// @Router			/mailinglist		[post]
+// @Router			/{companyID}/mailinglist		[post]
 func (db Database) CreateMailinglist(ctx *gin.Context) {
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	fmt.Println("hereeeeeeeeeeeeeeeeeeeee", session.UserID, session.CompanyID)
 
 	// Parse the incoming JSON request into a MailinglistIn struct
 	mailinglist := new(MailinglistIn)
@@ -40,13 +47,13 @@ func (db Database) CreateMailinglist(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println(session.CompanyID)
+	fmt.Println(session.CompanyID, companyID)
 	// Create a new mailinglist in the database
 	dbMailinglist := &domains.Mailinglist{
 		ID:              uuid.New(),
 		Name:            mailinglist.Name,
 		Description:     mailinglist.Description,
-		CompanyID:       session.CompanyID,
+		CompanyID:       companyID,
 		CreatedByUserID: session.UserID,
 		// set current time as creation time
 	}
@@ -66,7 +73,6 @@ func (db Database) CreateMailinglist(ctx *gin.Context) {
 // @Description    	Get all mailinglists.
 // @Tags			mailinglists
 // @Produce			json
-
 // @Param			page			query		int					false	"Page"
 // @Param			limit			query		int					false	"Limit"
 // @Success			200				{object}	MailinglistsPagination
@@ -74,13 +80,20 @@ func (db Database) CreateMailinglist(ctx *gin.Context) {
 // @Failure			401				{object}	utils.ApiResponses			"Unauthorized"
 // @Failure			403				{object}	utils.ApiResponses			"Forbidden"
 // @Failure			500				{object}	utils.ApiResponses			"Internal Server Error"
-// @Router			/mailinglist		[get]
+// @Router			/{companyID}/mailinglist		[get]
 func (db Database) ReadMailinglists(ctx *gin.Context) {
 
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
-	log.Println(session)
+	log.Println(session, companyID)
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -158,37 +171,43 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 // ReadMailinglist 		Handles the retrieval of one Mailinglist.
 // @Summary        	Get Mailinglist
 // @Description    	Get one Mailinglist.
-// @Tags			mailinglist
+// @Tags			mailinglists
 // @Produce			json
-
 // @Param			ID   			path      	string		true		"Mailinglist ID"
 // @Success			200				{object}	MailinglistDetails
 // @Failure			400				{object}	utils.ApiResponses		"Invalid request"
 // @Failure			401				{object}	utils.ApiResponses		"Unauthorized"
 // @Failure			403				{object}	utils.ApiResponses		"Forbidden"
 // @Failure			500				{object}	utils.ApiResponses		"Internal Server Error"
-// @Router			/mailinglist/{ID}	[get]
+// @Router			/{companyID}/mailinglist/{mailinglistID}	[get]
 func (db Database) ReadMailinglist(ctx *gin.Context) {
 
 	session := utils.ExtractJWTValues(ctx)
-
-	log.Println(session)
-
-	fmt.Println("heeeeeeeeeeeeere", session.CompanyID, session.UserID)
-	// Parse and validate the mailinglist ID from the request parameter
-	objectID, err := uuid.Parse(ctx.Param("ID"))
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
 
-	// // Check if the employee belongs to the specified mailinglist
-	// if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
-	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-	// 	return
-	// }
+	log.Println(session)
+
+	fmt.Println("heeeeeeeeeeeeere", session.CompanyID, companyID)
+	// Parse and validate the mailinglist ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("mailinglistID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified mailinglist
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Retrieve the mailinglist data by ID from the database
 	mailinglist, err := ReadByID(db.DB, domains.Mailinglist{}, objectID)
@@ -220,7 +239,6 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 // @Tags			mailinglists
 // @Accept			json
 // @Produce			json
-
 // @Param			ID   			path      		string						true	"Mailinglist ID"
 // @Param			request			body			MailinglistIn		true	"Mailinglist query params"
 // @Success			200				{object}		utils.ApiResponses
@@ -228,14 +246,21 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 // @Failure			401				{object}		utils.ApiResponses				"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses				"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses				"Internal Server Error"
-// @Router			/mailinglist/{ID}	[put]
+// @Router			/{companyID}/mailinglist/{mailinglistID}	[put]
 func (db Database) UpdateMailinglist(ctx *gin.Context) {
 
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Parse and validate the mailinglist ID from the request parameter
-	objectID, err := uuid.Parse(ctx.Param("ID"))
+	objectID, err := uuid.Parse(ctx.Param("mailinglistID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -243,7 +268,7 @@ func (db Database) UpdateMailinglist(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified mailinglist
-	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
@@ -284,21 +309,28 @@ func (db Database) UpdateMailinglist(ctx *gin.Context) {
 // @Description    	Delete one mailinglist.
 // @Tags			mailinglists
 // @Produce			json
-
 // @Param			ID   			path      		string		true			"Mailinglist ID"
 // @Success			200				{object}		utils.ApiResponses
 // @Failure			400				{object}		utils.ApiResponses		"Invalid request"
 // @Failure			401				{object}		utils.ApiResponses		"Unauthorized"
 // @Failure			403				{object}		utils.ApiResponses		"Forbidden"
 // @Failure			500				{object}		utils.ApiResponses		"Internal Server Error"
-// @Router			/mailinglist/{ID}	[delete]
+// @Router			/{companyID}/mailinglist/{mailinglistID}	[delete]
 func (db Database) DeleteMailinglist(ctx *gin.Context) {
 
 	// Extract JWT values from the context
 	session := utils.ExtractJWTValues(ctx)
 
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
 	// Parse and validate the mailinglist ID from the request parameter
-	objectID, err := uuid.Parse(ctx.Param("ID"))
+	objectID, err := uuid.Parse(ctx.Param("mailinglistID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -306,7 +338,7 @@ func (db Database) DeleteMailinglist(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified mailinglist
-	if err := domains.CheckEmployeeBelonging(db.DB, objectID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return

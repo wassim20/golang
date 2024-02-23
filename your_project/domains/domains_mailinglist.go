@@ -35,18 +35,20 @@
 package domains
 
 import (
+	"labs/constants"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Mailinglist struct {
-	ID              uuid.UUID   `gorm:"column:id; primaryKey; type:uuid; not null;"`     // Unique identifier for the mailinglist
-	Name            string      `gorm:"column:name; not null;"`                          // The mailinglist's name
-	Description     string      `gorm:"column:description;"`                             // The mailinglist's description
-	CompanyID       uuid.UUID   `gorm:"column:company_id; type:uuid; not null;"`         // ID of the company to which the mailinglist belongs
-	Contacts        []Contact   `gorm:"many2many:mailing_list_contacts"`                 // List of contacts associated with the
-	Tags            []uuid.UUID `gorm:"column:tags;type:uuid[]"`                         // List of tag's uuid associated with the mailinglist
-	CreatedByUserID uuid.UUID   `gorm:"column:created_by_user_id; type:uuid; not null;"` // ID of the user who created the mailinglist
+	ID              uuid.UUID           `gorm:"column:id; primaryKey; type:uuid; not null;"`                                            // Unique identifier for the mailinglist
+	Name            string              `gorm:"column:name; not null;"`                                                                 // The mailinglist's name
+	Description     string              `gorm:"column:description;"`                                                                    // The mailinglist's description
+	CompanyID       uuid.UUID           `gorm:"column:company_id; type:uuid; not null;"`                                                // ID of the company to which the mailinglist belongs
+	Contacts        []Contact           `gorm:"foreignKey:mailinglist_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE"` // List of contacts associated with the
+	Tags            constants.UUIDArray `gorm:"column:tags;type:uuid[]"`                                                                // List of tag's uuid associated with the mailinglist
+	CreatedByUserID uuid.UUID           `gorm:"column:created_by_user_id; type:uuid; not null;"`                                        // ID of the user who created the mailinglist
 	gorm.Model
 }
 

@@ -15,7 +15,7 @@ func TagRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 	NewTagRepository(db)
 
 	// Private
-	tag := router.Group("/tags")
+	tag := router.Group("/:companyID/tags")
 	{
 		// POST endpoint to create a tag
 		tag.POST("", baseInstance.CreateTag)
@@ -31,5 +31,11 @@ func TagRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 
 		// DELETE endpoint to delete a specific tag
 		tag.DELETE("/:ID", baseInstance.DeleteTag)
+
+		// Assign tags to mailinglist
+		tag.POST("/:ID/mailinglist/:mailinglistID", baseInstance.AssignTagToMailinglist)
+
+		//Assign tags to contact
+		tag.POST("/:ID/contact/:contactID", baseInstance.AssignTagToContact)
 	}
 }

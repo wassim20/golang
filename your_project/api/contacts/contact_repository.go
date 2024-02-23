@@ -27,45 +27,15 @@ func ReadAllPagination(db *gorm.DB, model []domains.Contact, modelID uuid.UUID, 
 }
 
 // ReadByID retrieves a contact by its unique identifier.
-func ReadContactByID(db *gorm.DB, model domains.Contact, id uuid.UUID) (domains.Contact, error) {
-	err := db.First(&model, id).Error
+func ReadContactByID(db *gorm.DB, model domains.Contact, id uuid.UUID, mailinglistID uuid.UUID) (domains.Contact, error) {
+	err := db.Where("mailinglist_id= ? ", mailinglistID).Preload("Tags").First(&model, id).Error
 	return model, err
 }
 
-// ReadAllContacts retrieves all contacts associated with a specific mailinglist ID.
-func ReadAllContactsForMailingList(db *gorm.DB, mailingListID uuid.UUID) ([]domains.Contact, error) {
-	var mailingList domains.Mailinglist
-	var mailingListContacts []domains.Contact
+// read all contacts for a given mailing list
+func ReadAllContactsForMailingList(db *gorm.DB, model []domains.Contact, mailinglistID uuid.UUID, limit, offset int) ([]domains.Contact, error) {
 
-	// Find the mailing list by its ID
-	if err := db.First(&mailingList, mailingListID).Error; err != nil {
-		return nil, err
-	}
+	err := db.Where("mailinglist_id = ? ", mailinglistID).Limit(limit).Offset(offset).Find(&model).Error
 
-	// Retrieve all contacts associated with the mailing list
-	if err := db.Model(&mailingList).Association("Contacts").Find(&mailingListContacts); err != nil {
-		return nil, err
-	}
-
-	return mailingListContacts, nil
-}
-
-func ReadAllContactsForAllMailingLists(db *gorm.DB, model []domains.Contact, CompanyID uuid.UUID, limit, offset int) ([]domains.Contact, error) {
-	var mailingLists []domains.Mailinglist
-	if err := db.Where("company_id = ?", CompanyID).Find(&mailingLists).Error; err != nil {
-		return nil, err
-	}
-
-	// Iterate over each mailing list to retrieve its contacts
-	for _, mailingList := range mailingLists {
-		var mailingListContacts []domains.Contact
-		if err := db.Model(&mailingList).Association("Contacts").Find(&mailingListContacts); err != nil {
-			return nil, err
-		}
-
-		// Append mailing list contacts to the contacts slice
-		model = append(model, mailingListContacts...)
-	}
-
-	return model, nil
+	return model, err
 }
