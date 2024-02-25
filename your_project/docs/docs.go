@@ -2114,7 +2114,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{companyID}/mailinglist/{ID}": {
+        "/{companyID}/mailinglist/{mailinglistID}": {
             "get": {
                 "description": "Get one Mailinglist.",
                 "produces": [
@@ -3412,6 +3412,10 @@ const docTemplate = `{
             "description": "TagDetails represents detailed information about a specific tag.",
             "type": "object",
             "properties": {
+                "color": {
+                    "description": "Tag's color.",
+                    "type": "string"
+                },
                 "company_id": {
                     "description": "Tag's company",
                     "type": "string"
@@ -3434,6 +3438,10 @@ const docTemplate = `{
             "description": "TagIn represents the input structure for creating a new tag.",
             "type": "object",
             "properties": {
+                "color": {
+                    "description": "Tag's color.",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Tag's name.",
                     "type": "string"
@@ -3469,6 +3477,10 @@ const docTemplate = `{
             "description": "TagTable represents a single tag entry in a table.",
             "type": "object",
             "properties": {
+                "color": {
+                    "description": "Tag's color.",
+                    "type": "string"
+                },
                 "id": {
                     "description": "Unique identifier for the tag.",
                     "type": "string"

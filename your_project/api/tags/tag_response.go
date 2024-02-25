@@ -16,19 +16,22 @@ type TagPagination struct {
 
 // @Description TagIn represents the input structure for creating a new tag.
 type TagIn struct {
-	Name string `json:"name"` // Tag's name.
+	Name  string `json:"name"  validate:"required"` // Tag's name.
+	Color string `json:"color"`                     // Tag's color.
 }
 
 // @Description TagDetails represents detailed information about a specific tag.
 type TagDetails struct {
 	ID        uuid.UUID `json:"id"`         // Unique identifier for the tag.
 	Name      string    `json:"name"`       // Tag's  name.
+	Color     string    `json:"color"`      // Tag's color.
 	CompanyID uuid.UUID `json:"company_id"` // Tag's company
 	CreatedAt time.Time `json:"created_at"` // CreatedAt is the timestamp indicating when the tag was created.
 }
 
 // @Description TagTable represents a single tag entry in a table.
 type TagTable struct {
-	ID   uuid.UUID `json:"id"`   // Unique identifier for the tag.
-	Name string    `json:"name"` // Tag's full name.
+	ID    uuid.UUID `json:"id"`    // Unique identifier for the tag.
+	Name  string    `json:"name"`  // Tag's full name.
+	Color string    `json:"color"` // Tag's color.
 }

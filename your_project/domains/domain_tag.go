@@ -36,8 +36,9 @@ import (
 )
 
 type Tag struct {
-	ID        uuid.UUID `gorm:"column:id; primaryKey; type:uuid; not null;"` // Unique identifier for the notification
-	Name      string    `gorm:"column:type; not null"`                       // Type of the notification
+	ID        uuid.UUID `gorm:"column:id; primaryKey; type:uuid; not null;"`      // Unique identifier for the notification
+	Name      string    `gorm:"column:type; not null"`                            // Type of the notification
+	Color     string    `json:"color" validate:"required,regex^#[0-9a-fA-F]{6}$"` // Add validation tag for color
 	CompanyID uuid.UUID `gorm:"column:company_id; type:uuid; not null;"`
 	gorm.Model
 }

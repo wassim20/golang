@@ -2,7 +2,9 @@ package tags
 
 import (
 	"errors"
+	"labs/constants"
 	"labs/domains"
+	"regexp"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -97,6 +99,18 @@ func AssignToContact(db *gorm.DB, modelID uuid.UUID, ContactID uuid.UUID) error 
 		logrus.Error("An error occurred during updating contact. Error: ", err)
 	}
 
+	return nil
+
+}
+func Validate_color(tag *TagIn) error {
+	re, err := regexp.Compile(constants.COLOR_REGEX)
+	if err != nil {
+		logrus.Error("Invalide format of color # +6 . Error: ", err.Error())
+		return err
+	}
+	if !re.MatchString(tag.Color) {
+		return errors.New("invalid color format") // Specific error for validation failure
+	}
 	return nil
 
 }

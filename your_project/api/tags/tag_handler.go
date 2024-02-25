@@ -45,8 +45,15 @@ func (db Database) CreateTag(ctx *gin.Context) {
 	Tag := new(TagIn)
 	if err := ctx.ShouldBindJSON(Tag); err != nil {
 		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, err.Error())
 		return
+	}
+
+	// **New: Validate the TagIn struct using your function**
+	if err := Validate_color(Tag); err != nil {
+		logrus.Error("Error validating tag data: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, err.Error())
+		return // Stop execution immediately
 	}
 
 	// Create a new Tag in the database

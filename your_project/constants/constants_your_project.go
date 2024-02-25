@@ -12,6 +12,10 @@ import (
 
 type UUIDArray []uuid.UUID
 
+const (
+	COLOR_REGEX = `^#[0-9a-fA-F]{6}$`
+)
+
 func (u *UUIDArray) Scan(src interface{}) error {
 	var str string
 
