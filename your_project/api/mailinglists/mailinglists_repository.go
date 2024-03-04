@@ -28,7 +28,7 @@ func ReadAllPagination(db *gorm.DB, model []domains.Mailinglist, modelID uuid.UU
 
 // ReadByID retrieves a mailinglist by its unique identifier.
 func ReadByID(db *gorm.DB, model domains.Mailinglist, id uuid.UUID) (domains.Mailinglist, error) {
-	err := db.First(&model, id).Preload("Contacts").Error
+	err := db.Preload("Contacts").First(&model, id).Error
 	return model, err
 }
 

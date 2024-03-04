@@ -37,6 +37,7 @@ package domains
 
 import (
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -48,8 +49,8 @@ type Contact struct {
 	PhoneNumber string    `gorm:"column:phone_number; not null; unique"`       // contact's email address (unique)
 	FullName    string    `gorm:"column:full_name"`                            //contact's full name
 
-	MailinglistsID uuid.UUID   `gorm:"column:mailinglist_id; type:uuid; not null;"`
-	Tags           []uuid.UUID `gorm:"column:tags;type:uuid[]"` // List of tag's uuid associated with the contact
+	MailinglistsID uuid.UUID      `gorm:"column:mailinglist_id; type:uuid; not null;"`
+	Tags           pq.StringArray `gorm:"column:tags;type:varchar(255)[]"` // List of tag's uuid associated with the contact
 
 	gorm.Model
 }

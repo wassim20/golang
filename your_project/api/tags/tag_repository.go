@@ -42,7 +42,12 @@ func ReadAllTags(db *gorm.DB, model []domains.Tag, modelID uuid.UUID) ([]domains
 func AssignToMailinglist(db *gorm.DB, modelID uuid.UUID, mailinglistID uuid.UUID) error {
 
 	var tagCount int64
-	err := db.Model(&domains.Mailinglist{}).Where("id = ?", mailinglistID).Where("tags @> ARRAY[?]::uuid[]", modelID).Count(&tagCount).Error
+	modelIDString := modelID.String()
+	// Check if the tag already exists in the mailinglist
+	err := db.Model(&domains.Mailinglist{}).
+		Where("id = ?", mailinglistID).
+		Where("tags @> ARRAY[?]::varchar[]", modelIDString).
+		Count(&tagCount).Error
 	if err != nil {
 		return err
 	}
@@ -53,38 +58,25 @@ func AssignToMailinglist(db *gorm.DB, modelID uuid.UUID, mailinglistID uuid.UUID
 		return errors.New("tag already exists in this mailing list")
 	}
 
-	if err := db.Exec("UPDATE mailinglists SET tags = array_append(tags, ?) WHERE id = ?", modelID, mailinglistID); err != nil {
+	// Append the new tag to the mailinglist
+	if err := db.Exec("UPDATE mailinglists SET tags = array_append(tags, ?) WHERE id = ?", modelIDString, mailinglistID).Error; err != nil {
 		logrus.Error("An error occurred during updating mailinglist. Error: ", err)
+		return err
 	}
 
 	return nil
-
-	// mailingList := domains.Mailinglist{}
-	// result := db.First(&mailingList, mailinglistID)
-	// if result.Error != nil {
-	// 	return result.Error
-	// }
-	// fmt.Println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh", mailingList.Tags)
-
-	// for _, v := range mailingList.Tags {
-	// 	if v == modelID {
-	// 		return errors.New("tag already exists in this mailing list")
-	// 	}
-	// }
-
-	// mailingList.Tags = append(mailingList.Tags, modelID)
-	// if err := db.Save(&mailingList).Error; err != nil {
-	// 	return err
-	// }
-
-	// return nil
 
 }
 
 func AssignToContact(db *gorm.DB, modelID uuid.UUID, ContactID uuid.UUID) error {
 
 	var tagCount int64
-	err := db.Model(&domains.Contact{}).Where("id = ?", ContactID).Where("tags @> ARRAY[?]::uuid[]", modelID).Count(&tagCount).Error
+	modelIDString := modelID.String()
+	// Check if the tag already exists in the contact
+	err := db.Model(&domains.Contact{}).
+		Where("id = ?", ContactID).
+		Where("tags @> ARRAY[?]::varchar[]", modelIDString).
+		Count(&tagCount).Error
 	if err != nil {
 		return err
 	}
@@ -95,8 +87,10 @@ func AssignToContact(db *gorm.DB, modelID uuid.UUID, ContactID uuid.UUID) error 
 		return errors.New("tag already exists in this mailing list")
 	}
 
-	if err := db.Exec("UPDATE contacts SET tags = array_append(tags, ?) WHERE id = ?", modelID, ContactID); err != nil {
+	// Append the new tag to the contact
+	if err := db.Exec("UPDATE contacts SET tags = array_append(tags, ?) WHERE id = ?", modelIDString, ContactID).Error; err != nil {
 		logrus.Error("An error occurred during updating contact. Error: ", err)
+		return err
 	}
 
 	return nil
@@ -113,4 +107,29 @@ func Validate_color(tag *TagIn) error {
 	}
 	return nil
 
+}
+
+func RemoveFromMailinglist(db *gorm.DB, modelID uuid.UUID, mailinglistID uuid.UUID) error {
+
+	modelIDString := modelID.String()
+
+	// Update the mailinglist to remove the tag
+	if err := db.Exec("UPDATE mailinglists SET tags = array_remove(tags, ?) WHERE id = ?", modelIDString, mailinglistID).Error; err != nil {
+		logrus.Error("An error occurred during updating mailinglist. Error: ", err)
+		return err
+	}
+
+	return nil
+}
+func RemoveFromContact(db *gorm.DB, modelID uuid.UUID, contactID uuid.UUID) error {
+
+	modelIDString := modelID.String()
+
+	// Update the contact to remove the tag
+	if err := db.Exec("UPDATE contacts SET tags = array_remove(tags, ?) WHERE id = ?", modelIDString, contactID).Error; err != nil {
+		logrus.Error("An error occurred during updating contact. Error: ", err)
+		return err
+	}
+
+	return nil
 }

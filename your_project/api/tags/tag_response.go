@@ -16,8 +16,8 @@ type TagPagination struct {
 
 // @Description TagIn represents the input structure for creating a new tag.
 type TagIn struct {
-	Name  string `json:"name"  validate:"required"` // Tag's name.
-	Color string `json:"color"`                     // Tag's color.
+	Name  string `json:"name"`  // Tag's name.
+	Color string `json:"color"` // Tag's color.
 }
 
 // @Description TagDetails represents detailed information about a specific tag.

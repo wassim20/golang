@@ -157,7 +157,8 @@ func (db Database) ReadContacts(ctx *gin.Context) {
 	offset := (page - 1) * limit
 
 	// Retrieve all contact data from the database
-	contacts, err := ReadAllContactsForMailingList(db.DB, []domains.Contact{}, session.CompanyID, limit, offset)
+
+	contacts, err := ReadAllContactsForMailingList(db.DB, mailinglistID, limit, offset)
 	if err != nil {
 		logrus.Error("Error occurred while finding all contact data. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())

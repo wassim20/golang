@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"fmt"
 	"labs/constants"
 	"labs/domains"
 	"labs/utils"
@@ -56,13 +57,16 @@ func (db Database) CreateTag(ctx *gin.Context) {
 		return // Stop execution immediately
 	}
 
+	fmt.Println("Tag: ", Tag)
 	// Create a new Tag in the database
 	dbTag := &domains.Tag{
 		ID:        uuid.New(),
 		Name:      Tag.Name,
+		Color:     Tag.Color,
 		CompanyID: companyID,
 	}
 
+	fmt.Println("dbTag: ", dbTag)
 	if err := domains.Create(db.DB, dbTag); err != nil {
 		logrus.Error("Error saving data to the database. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
@@ -159,8 +163,9 @@ func (db Database) ReadTagslist(ctx *gin.Context) {
 	for _, tag := range tags {
 
 		listTags = append(listTags, TagTable{
-			ID:   tag.ID,
-			Name: tag.Name,
+			ID:    tag.ID,
+			Name:  tag.Name,
+			Color: tag.Color,
 		})
 	}
 	response.Items = listTags
@@ -221,6 +226,7 @@ func (db Database) ReadTag(ctx *gin.Context) {
 	details := TagDetails{
 		ID:        tag.ID,
 		Name:      tag.Name,
+		Color:     tag.Color,
 		CompanyID: tag.CompanyID,
 		CreatedAt: tag.CreatedAt,
 	}
@@ -485,6 +491,111 @@ func (db Database) AssignTagToContact(ctx *gin.Context) {
 	if err := AssignToContact(db.DB, objectID, contactID); err != nil {
 		logrus.Error("Error assigning a tag. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+func (db Database) RemoveTagFromMailinglist(ctx *gin.Context) {
+
+	session := utils.ExtractJWTValues(ctx)
+	// Parse and validate the mailinglist ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	mailinglistID, err := uuid.Parse(ctx.Param("mailinglistID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the tag with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Tag{}, objectID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Check if the mailinglist with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Mailinglist{}, mailinglistID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Remove the tag from the mailinglist
+	if err := RemoveFromMailinglist(db.DB, objectID, mailinglistID); err != nil {
+		logrus.Error("Error removing tag from mailinglist. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, "error removing tag")
+		return
+	}
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+func (db Database) RemoveTagFromContact(ctx *gin.Context) {
+	session := utils.ExtractJWTValues(ctx)
+	// Parse and validate the mailinglist ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	contactID, err := uuid.Parse(ctx.Param("contactID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Check if the tag with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Tag{}, objectID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+	// Check if the contact with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Contact{}, contactID); err != nil {
+		logrus.Error("Error checking if the tag with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+	// Remove the tag from the contact
+	if err := RemoveFromContact(db.DB, objectID, contactID); err != nil {
+		logrus.Error("Error removing tag from contact. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, "error removing tag")
 		return
 	}
 

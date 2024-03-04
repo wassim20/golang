@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // @Description ContactPaginator represents the paginated list of contacts.
@@ -25,14 +26,14 @@ type ContactIn struct {
 
 // @Description ContactDetails represents detailed information about a specific contact.
 type ContactDetails struct {
-	ID          uuid.UUID   `json:"id"`           // Unique identifier for the contact.
-	Email       string      `json:"email"`        // Contact's email address.
-	Firstname   string      `json:"first_name"`   // Contact's first name.
-	Lastname    string      `json:"last_name"`    // Contact's last name.
-	PhoneNumber string      `json:"phone_number"` // Contact's phone number.
-	FullName    string      `json:"full_name"`    // Contact's full name.
-	Tags        []uuid.UUID `json:"tags"`         // Tags is a list of tag's UUID associated with the contact.
-	CreatedAt   time.Time   `json:"created_at"`   // CreatedAt is the timestamp indicating when the contact was created.
+	ID          uuid.UUID      `json:"id"`           // Unique identifier for the contact.
+	Email       string         `json:"email"`        // Contact's email address.
+	Firstname   string         `json:"first_name"`   // Contact's first name.
+	Lastname    string         `json:"last_name"`    // Contact's last name.
+	PhoneNumber string         `json:"phone_number"` // Contact's phone number.
+	FullName    string         `json:"full_name"`    // Contact's full name.
+	Tags        pq.StringArray `json:"tags"`         // Tags is a list of tag's UUID associated with the contact.
+	CreatedAt   time.Time      `json:"created_at"`   // CreatedAt is the timestamp indicating when the contact was created.
 }
 
 // @Description ContactTable represents a single contact entry in a table.

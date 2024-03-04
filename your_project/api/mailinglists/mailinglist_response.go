@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // @Description	MailinglistsPagination represents the paginated list of mailinglists.
@@ -29,7 +30,7 @@ type MailinglistDetails struct {
 	Description     string            `json:"description"`     // Description is the description of the mailinglist.
 	CompanyID       uuid.UUID         `json:"company_id"`      // CompanyID is the ID of the company to which the mailinglist belongs.
 	Contacts        []domains.Contact `json:"contacts"`        // Contacts is a list of contacts associated with the mailinglist.
-	Tags            []uuid.UUID       `json:"tags"`            // Tags is a list of tag's UUID associated with the mailinglist.
+	Tags            pq.StringArray    `json:"tags"`            // Tags is a list of tag's UUID associated with the mailinglist.
 	CreatedByUserID uuid.UUID         `json:"created_by_user"` // CreatedByUserID is the ID of the user who created the mailinglist.
 	CreatedAt       time.Time         `json:"created_at"`      // CreatedAt is the timestamp indicating when the mailinglist entry was created.
 } //@name MailinglistDetails

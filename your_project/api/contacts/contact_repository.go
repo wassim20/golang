@@ -28,14 +28,13 @@ func ReadAllPagination(db *gorm.DB, model []domains.Contact, modelID uuid.UUID, 
 
 // ReadByID retrieves a contact by its unique identifier.
 func ReadContactByID(db *gorm.DB, model domains.Contact, id uuid.UUID, mailinglistID uuid.UUID) (domains.Contact, error) {
-	err := db.Where("mailinglist_id= ? ", mailinglistID).Preload("Tags").First(&model, id).Error
+	err := db.Where("mailinglist_id= ? ", mailinglistID).First(&model, id).Error
 	return model, err
 }
 
 // read all contacts for a given mailing list
-func ReadAllContactsForMailingList(db *gorm.DB, model []domains.Contact, mailinglistID uuid.UUID, limit, offset int) ([]domains.Contact, error) {
-
-	err := db.Where("mailinglist_id = ? ", mailinglistID).Limit(limit).Offset(offset).Find(&model).Error
-
-	return model, err
+func ReadAllContactsForMailingList(db *gorm.DB, mailinglistID uuid.UUID, limit, offset int) ([]domains.Contact, error) {
+	var contacts []domains.Contact
+	err := db.Where("mailinglist_id = ? ", mailinglistID).Limit(limit).Offset(offset).Find(&contacts).Error
+	return contacts, err
 }

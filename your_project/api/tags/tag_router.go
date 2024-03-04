@@ -36,6 +36,12 @@ func TagRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		tag.POST("/:ID/mailinglist/:mailinglistID", baseInstance.AssignTagToMailinglist)
 
 		//Assign tags to contact
-		tag.POST("/:ID/contact/:contactID", baseInstance.AssignTagToContact)
+		tag.POST("/:ID/contacts/:contactID", baseInstance.AssignTagToContact)
+
+		//Delete tags from mailinglist
+		tag.DELETE("/:ID/mailinglist/:mailinglistID", baseInstance.RemoveTagFromMailinglist)
+
+		//Delete tags from contact
+		tag.DELETE("/:ID/contacts/:contactID", baseInstance.RemoveTagFromContact)
 	}
 }

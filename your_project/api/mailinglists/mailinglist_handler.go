@@ -191,9 +191,6 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 		return
 	}
 
-	log.Println(session)
-
-	fmt.Println("heeeeeeeeeeeeere", session.CompanyID, companyID)
 	// Parse and validate the mailinglist ID from the request parameter
 	objectID, err := uuid.Parse(ctx.Param("mailinglistID"))
 	if err != nil {
@@ -216,6 +213,7 @@ func (db Database) ReadMailinglist(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.DATA_NOT_FOUND, utils.Null())
 		return
 	}
+	fmt.Println(mailinglist.Contacts)
 
 	// Generate a mailinglist structure as a response
 	details := MailinglistDetails{
