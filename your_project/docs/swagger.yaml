@@ -7,6 +7,159 @@ definitions:
       responseKey:
         type: string
     type: object
+  CampaignIn:
+    description: CampaignIn represents the input structure for creating a new campaign.
+    properties:
+      deliveryAt:
+        description: DeliveryAt is the delivery time of the campaign (nullable).
+        type: string
+      fromEmail:
+        description: FromEmail is the from email address of the campaign.
+        type: string
+      fromName:
+        description: FromName is the from name of the campaign.
+        type: string
+      html:
+        description: HTML is the HTML content of the campaign.
+        type: string
+      mailingListID:
+        description: MailingListID is the ID of the mailing list associated with the
+          campaign.
+        type: string
+      name:
+        description: Name is the name of the campaign.
+        type: string
+      subject:
+        description: Subject is the subject of the campaign.
+        type: string
+      type:
+        description: Type is the type of the campaign.
+        type: string
+    required:
+    - fromEmail
+    - fromName
+    - html
+    - name
+    - subject
+    - type
+    type: object
+  CampaignsDetails:
+    description: CampaignsDetails represents detailed information about a specific
+      campaign.
+    properties:
+      customOrder:
+        description: CustomOrder is the custom order for sorting.
+        type: integer
+      deliveryAt:
+        description: DeliveryAt is the delivery time of the campaign.
+        type: string
+      fromEmail:
+        description: FromEmail is the from email address of the campaign.
+        type: string
+      fromName:
+        description: FromName is the from name of the campaign.
+        type: string
+      html:
+        description: HTML is the HTML content of the campaign.
+        type: string
+      id:
+        description: ID is the unique identifier for the campaign.
+        type: string
+      name:
+        description: Name is the name of the campaign.
+        type: string
+      plain:
+        description: Plain is the plain text content of the campaign.
+        type: string
+      replyTo:
+        description: ReplyTo is the reply-to email address of the campaign.
+        type: string
+      resend:
+        description: Resend indicates whether the campaign allows resend.
+        type: boolean
+      runAt:
+        description: RunAt is the scheduled run time of the campaign.
+        type: string
+      signDKIM:
+        description: SignDKIM indicates whether the campaign is signed with DKIM.
+        type: boolean
+      status:
+        description: Status is the status of the campaign.
+        type: string
+      subject:
+        description: Subject is the subject of the campaign.
+        type: string
+      trackClick:
+        description: TrackClick indicates whether clicks are tracked for the campaign.
+        type: boolean
+      trackOpen:
+        description: TrackOpen indicates whether opens are tracked for the campaign.
+        type: boolean
+    type: object
+  CampaignsPagination:
+    description: CampaignsPagination represents the paginated list of campaigns.
+    properties:
+      items:
+        description: Items is a slice containing individual campaign details.
+        items:
+          $ref: '#/definitions/CampaignsTable'
+        type: array
+      limit:
+        description: Limit is the maximum number of items per page in the pagination.
+        type: integer
+      page:
+        description: Page is the current page number in the pagination.
+        type: integer
+      totalCount:
+        description: TotalCount is the total number of campaigns in the entire list.
+        type: integer
+    type: object
+  CampaignsTable:
+    description: CampaignsTable represents a single campaign entry in a table.
+    properties:
+      customOrder:
+        description: CustomOrder is the custom order for sorting.
+        type: integer
+      deliveryAt:
+        description: DeliveryAt is the delivery time of the campaign.
+        type: string
+      fromEmail:
+        description: FromEmail is the from email address of the campaign.
+        type: string
+      fromName:
+        description: FromName is the from name of the campaign.
+        type: string
+      id:
+        description: ID is the unique identifier for the campaign.
+        type: string
+      name:
+        description: Name is the name of the campaign.
+        type: string
+      replyTo:
+        description: ReplyTo is the reply-to email address of the campaign.
+        type: string
+      resend:
+        description: Resend indicates whether the campaign allows resend.
+        type: boolean
+      runAt:
+        description: RunAt is the scheduled run time of the campaign.
+        type: string
+      signDKIM:
+        description: SignDKIM indicates whether the campaign is signed with DKIM.
+        type: boolean
+      status:
+        description: Status is the status of the campaign.
+        type: string
+      subject:
+        description: Subject is the subject of the campaign.
+        type: string
+      trackClick:
+        description: TrackClick indicates whether clicks are tracked for the campaign.
+        type: boolean
+      trackOpen:
+        description: TrackOpen indicates whether opens are tracked for the campaign.
+        type: boolean
+    type: object
   CompaniesDetails:
     description: CompaniesDetails represents detailed information about a specific
       company.
@@ -682,6 +835,208 @@ info:
   title: Project Name
   version: "0.1"
 paths:
+  /:companyID/:mailinglistID/campaigns:
+    get:
+      description: Retrieves a paginated list of all campaigns.
+      parameters:
+      - description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of campaigns
+          schema:
+            $ref: '#/definitions/CampaignsPagination'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get All Campaigns
+      tags:
+      - Campaigns
+  /:companyID/campaigns/:ID:
+    delete:
+      description: Deletes a specific campaign.
+      parameters:
+      - description: Campaign ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Campaign deleted successfully
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Delete Campaign
+      tags:
+      - Campaigns
+    get:
+      description: Retrieves a specific campaign by its ID.
+      parameters:
+      - description: Campaign ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Campaign details
+          schema:
+            $ref: '#/definitions/CampaignsDetails'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Get Campaign
+      tags:
+      - Campaigns
+    put:
+      consumes:
+      - application/json
+      description: Updates a specific campaign.
+      parameters:
+      - description: Campaign ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campaign update data
+        in: body
+        name: campaign
+        required: true
+        schema:
+          $ref: '#/definitions/CampaignIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Campaign updated successfully
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Update Campaign
+      tags:
+      - Campaigns
+  /:companyID/campaigns/:mailinglistID:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new campaign.
+      parameters:
+      - description: Campaign data
+        in: body
+        name: campaign
+        required: true
+        schema:
+          $ref: '#/definitions/CampaignIn'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Campaign created successfully
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ApiResponse'
+      summary: Create Campaign
+      tags:
+      - Campaigns
   /:companyID/mailinglist/:mailinglistID/contacts:
     get:
       description: Get all contacts.

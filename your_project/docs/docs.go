@@ -19,6 +19,309 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/:companyID/:mailinglistID/campaigns": {
+            "get": {
+                "description": "Retrieves a paginated list of all campaigns.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get All Campaigns",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of campaigns",
+                        "schema": {
+                            "$ref": "#/definitions/CampaignsPagination"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/:companyID/campaigns/:ID": {
+            "get": {
+                "description": "Retrieves a specific campaign by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get Campaign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Campaign ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Campaign details",
+                        "schema": {
+                            "$ref": "#/definitions/CampaignsDetails"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates a specific campaign.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Update Campaign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Campaign ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campaign update data",
+                        "name": "campaign",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CampaignIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Campaign updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a specific campaign.",
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Delete Campaign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Campaign ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Campaign deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/:companyID/campaigns/:mailinglistID": {
+            "post": {
+                "description": "Creates a new campaign.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Create Campaign",
+                "parameters": [
+                    {
+                        "description": "Campaign data",
+                        "name": "campaign",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CampaignIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Campaign created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/:companyID/mailinglist/:mailinglistID/contacts": {
             "get": {
                 "description": "Get all contacts.",
@@ -2621,6 +2924,209 @@ const docTemplate = `{
                 "data": {},
                 "responseKey": {
                     "type": "string"
+                }
+            }
+        },
+        "CampaignIn": {
+            "description": "CampaignIn represents the input structure for creating a new campaign.",
+            "type": "object",
+            "required": [
+                "fromEmail",
+                "fromName",
+                "html",
+                "name",
+                "subject",
+                "type"
+            ],
+            "properties": {
+                "deliveryAt": {
+                    "description": "DeliveryAt is the delivery time of the campaign (nullable).",
+                    "type": "string"
+                },
+                "fromEmail": {
+                    "description": "FromEmail is the from email address of the campaign.",
+                    "type": "string"
+                },
+                "fromName": {
+                    "description": "FromName is the from name of the campaign.",
+                    "type": "string"
+                },
+                "html": {
+                    "description": "HTML is the HTML content of the campaign.",
+                    "type": "string"
+                },
+                "mailingListID": {
+                    "description": "MailingListID is the ID of the mailing list associated with the campaign.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the name of the campaign.",
+                    "type": "string"
+                },
+                "subject": {
+                    "description": "Subject is the subject of the campaign.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type is the type of the campaign.",
+                    "type": "string"
+                }
+            }
+        },
+        "CampaignsDetails": {
+            "description": "CampaignsDetails represents detailed information about a specific campaign.",
+            "type": "object",
+            "properties": {
+                "customOrder": {
+                    "description": "CustomOrder is the custom order for sorting.",
+                    "type": "integer"
+                },
+                "deliveryAt": {
+                    "description": "DeliveryAt is the delivery time of the campaign.",
+                    "type": "string"
+                },
+                "fromEmail": {
+                    "description": "FromEmail is the from email address of the campaign.",
+                    "type": "string"
+                },
+                "fromName": {
+                    "description": "FromName is the from name of the campaign.",
+                    "type": "string"
+                },
+                "html": {
+                    "description": "HTML is the HTML content of the campaign.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier for the campaign.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the name of the campaign.",
+                    "type": "string"
+                },
+                "plain": {
+                    "description": "Plain is the plain text content of the campaign.",
+                    "type": "string"
+                },
+                "replyTo": {
+                    "description": "ReplyTo is the reply-to email address of the campaign.",
+                    "type": "string"
+                },
+                "resend": {
+                    "description": "Resend indicates whether the campaign allows resend.",
+                    "type": "boolean"
+                },
+                "runAt": {
+                    "description": "RunAt is the scheduled run time of the campaign.",
+                    "type": "string"
+                },
+                "signDKIM": {
+                    "description": "SignDKIM indicates whether the campaign is signed with DKIM.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "Status is the status of the campaign.",
+                    "type": "string"
+                },
+                "subject": {
+                    "description": "Subject is the subject of the campaign.",
+                    "type": "string"
+                },
+                "trackClick": {
+                    "description": "TrackClick indicates whether clicks are tracked for the campaign.",
+                    "type": "boolean"
+                },
+                "trackOpen": {
+                    "description": "TrackOpen indicates whether opens are tracked for the campaign.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "CampaignsPagination": {
+            "description": "CampaignsPagination represents the paginated list of campaigns.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "Items is a slice containing individual campaign details.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CampaignsTable"
+                    }
+                },
+                "limit": {
+                    "description": "Limit is the maximum number of items per page in the pagination.",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "Page is the current page number in the pagination.",
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "description": "TotalCount is the total number of campaigns in the entire list.",
+                    "type": "integer"
+                }
+            }
+        },
+        "CampaignsTable": {
+            "description": "CampaignsTable represents a single campaign entry in a table.",
+            "type": "object",
+            "properties": {
+                "customOrder": {
+                    "description": "CustomOrder is the custom order for sorting.",
+                    "type": "integer"
+                },
+                "deliveryAt": {
+                    "description": "DeliveryAt is the delivery time of the campaign.",
+                    "type": "string"
+                },
+                "fromEmail": {
+                    "description": "FromEmail is the from email address of the campaign.",
+                    "type": "string"
+                },
+                "fromName": {
+                    "description": "FromName is the from name of the campaign.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier for the campaign.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the name of the campaign.",
+                    "type": "string"
+                },
+                "replyTo": {
+                    "description": "ReplyTo is the reply-to email address of the campaign.",
+                    "type": "string"
+                },
+                "resend": {
+                    "description": "Resend indicates whether the campaign allows resend.",
+                    "type": "boolean"
+                },
+                "runAt": {
+                    "description": "RunAt is the scheduled run time of the campaign.",
+                    "type": "string"
+                },
+                "signDKIM": {
+                    "description": "SignDKIM indicates whether the campaign is signed with DKIM.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "Status is the status of the campaign.",
+                    "type": "string"
+                },
+                "subject": {
+                    "description": "Subject is the subject of the campaign.",
+                    "type": "string"
+                },
+                "trackClick": {
+                    "description": "TrackClick indicates whether clicks are tracked for the campaign.",
+                    "type": "boolean"
+                },
+                "trackOpen": {
+                    "description": "TrackOpen indicates whether opens are tracked for the campaign.",
+                    "type": "boolean"
                 }
             }
         },

@@ -2,6 +2,7 @@ package api
 
 import (
 	"labs/api/auth"
+	"labs/api/campaign"
 	"labs/api/companies"
 	"labs/api/mailinglists"
 	"labs/api/notifications"
@@ -41,5 +42,7 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Initialize tag routes
 		tags.TagRouterInit(api, db)
+
+		campaign.CampaignRouterInit(api, db)
 	}
 }

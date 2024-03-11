@@ -46,6 +46,7 @@ type Mailinglist struct {
 	Description     string         `gorm:"column:description;"`                                                                    // The mailinglist's description
 	CompanyID       uuid.UUID      `gorm:"column:company_id; type:uuid; not null;"`                                                // ID of the company to which the mailinglist belongs
 	Contacts        []Contact      `gorm:"foreignKey:mailinglist_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE"` // List of contacts associated with the mailinglist
+	Campaigns       []Campaign     `gorm:"foreignKey:mailinglist_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE"` // List of campaigns associated with the mailinglist
 	Tags            pq.StringArray `gorm:"column:tags;type:varchar(255)[]"`                                                        // List of tag's uuid associated with the mailinglist
 	CreatedByUserID uuid.UUID      `gorm:"column:created_by_user_id; type:uuid; not null;"`                                        // ID of the user who created the mailinglist
 	gorm.Model
