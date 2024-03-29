@@ -2,7 +2,9 @@ package main
 
 import (
 	"labs/api"
+	"labs/api/backgroundjobs"
 	"labs/config"
+
 	"labs/utils"
 
 	"github.com/joho/godotenv"
@@ -12,6 +14,7 @@ import (
 func init() {
 	godotenv.Load()
 	config.InitLog()
+
 }
 
 // Main is the entry point of the application.
@@ -46,6 +49,10 @@ func main() {
 	// Parse command line flags, allowing the creation of a root user
 	config.Flags(database)
 
+	// Initialize background jobs
+	backgroundjobs.InitBackgroundJob()
+
 	// Run the web server on the specified port
 	router.Run(":" + port)
+
 }

@@ -21,7 +21,7 @@ type MailinglistIn struct {
 	Name        string `json:"name"`        // Name is the name of the mailinglist.
 	Description string `json:"description"` // Description is the description of the mailinglist.
 
-} //@name CompanyIn
+} //@name MailinglistIn
 
 // @Description	MailinglistDetails represents detailed information about a specific mailinglist.
 type MailinglistDetails struct {

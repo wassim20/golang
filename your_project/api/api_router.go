@@ -8,6 +8,7 @@ import (
 	"labs/api/notifications"
 	"labs/api/roles"
 	"labs/api/tags"
+	"labs/api/trackinglog"
 	"labs/api/users"
 
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,11 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 		// Initialize tag routes
 		tags.TagRouterInit(api, db)
 
+		// Initialize campaign routes
 		campaign.CampaignRouterInit(api, db)
+
+		// Initialize trackinglog routes
+		trackinglog.TrackingLogRouterInit(api, db)
+
 	}
 }

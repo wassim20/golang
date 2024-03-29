@@ -30,6 +30,9 @@ func CampaignRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		// PUT endpoint to update details of a specific campaign
 		campaigns.PUT("/:ID", baseInstance.UpdateCampaign)
 
+		//POST endpoint to start a campaign
+		campaigns.POST("/start/:ID", baseInstance.StartCampaign)
+
 		// DELETE endpoint to delete a specific campaign
 		campaigns.DELETE("/:ID", baseInstance.DeleteCampaign)
 	}

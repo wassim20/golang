@@ -61,7 +61,7 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 	fmt.Println("de", campaign.DeliveryAt)
 
 	// Create a new campaign in the database
-	dbCampaign := domains.Campaign{
+	dbCampaign := &domains.Campaign{
 		ID:              uuid.New(),
 		CreatedByUserID: session.UserID,
 		MailingListID:   mailinglistID,
@@ -73,11 +73,6 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 		FromName:        campaign.FromName,
 		DeliveryAt:      campaign.DeliveryAt,
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Panic recovered:", r)
-		}
-	}()
 
 	if err := domains.Create(db.DB, dbCampaign); err != nil {
 		logrus.Error("Error saving data to the database. Error: ", err.Error())
@@ -391,6 +386,60 @@ func (db Database) DeleteCampaign(ctx *gin.Context) {
 	}
 
 	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+
+}
+
+// @Summary      Start Campaign
+// @Description  Starts a specific campaign.
+// @Tags         Campaigns
+// @Param        id       path      string     true  "Campaign ID" format(uuid)
+// @Success      204      {object}  utils.ApiResponses  "Campaign started successfully"
+// @Failure      400      {object}  utils.ApiResponses  "Invalid request"
+// @Failure      401      {object}  utils.ApiResponses  "Unauthorized"
+// @Failure      403      {object}  utils.ApiResponses  "Forbidden"
+// @Failure      404      {object}  utils.ApiResponses  "Campaign not found"
+// @Failure      500      {object}  utils.ApiResponses  "Internal Server Error"
+// @Router       /:companyID/campaigns/start/:ID [delete]
+func (db Database) StartCampaign(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Parse and validate the campaign ID from the request parameter
+	campaignID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Check if the employee belongs to the specified campaign
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	// Check if the campaign with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Campaign{}, campaignID); err != nil {
+		logrus.Error("Error checking if the mailinglist with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	go func() {
+		if err := SendCampaignEmailJob(db.DB, campaignID); err != nil {
+			// Handle error (e.g., log or notify admins)
+			logrus.Error("Error sending campaign emails:", err.Error())
+		}
+	}()
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
 
 }
