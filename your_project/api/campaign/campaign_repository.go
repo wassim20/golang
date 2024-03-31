@@ -3,6 +3,7 @@ package campaign
 import (
 	"fmt"
 	"labs/domains"
+	"regexp"
 	"strings"
 	"time"
 
@@ -90,11 +91,34 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 		}
 
 		if campaign.TrackClick {
+			// Create a unique click ID for each link
 			trackingLog.ClickTrackingID = uuid.New()
-			openClickTrackingURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/open/" + trackingLog.ClickTrackingID.String()
-			body += fmt.Sprintf(`<a href="%s">Click here</a>`, openClickTrackingURL)
 
+			openClickTrackingURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/click/" + trackingLog.ClickTrackingID.String()
+
+			re := regexp.MustCompile(`(?i)<(a|button)[^>]*href=["'](?P<href>[^"']*)["'][^>]*>(?P<content>.*?)</(a|button)>`) // Case-insensitive match
+			modifiedBody := re.ReplaceAllStringFunc(body, func(s string) string {
+				matches := re.FindStringSubmatch(s)
+				href := matches[re.SubexpIndex("href")]
+				content := matches[re.SubexpIndex("content")]
+
+				finalURL := href
+				if href == "" {
+					finalURL = "#"
+				}
+
+				// Append the tracking parameter to the original URL
+				trackingURL := fmt.Sprintf(`%s?click=%s&email=%s`, finalURL, openClickTrackingURL, contact.Email)
+
+				// Return the modified link
+				return fmt.Sprintf(`<%s href="%s"%s>%s</%s>`, matches[1], trackingURL, matches[2:], content, matches[4])
+			})
+			body = modifiedBody
+
+		} else {
+			body = campaign.HTML
 		}
+
 		if err := domains.Create(db, trackingLog); err != nil {
 			fmt.Println("***********************************************************", err)
 			logrus.Error("Error saving data to the database. Error: ", err.Error())
@@ -121,8 +145,8 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 	}
 
 	return nil
-}
 
+}
 func chooseContentType(html, plain string) string {
 	if html != "" {
 		return "text/html"
