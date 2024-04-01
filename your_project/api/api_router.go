@@ -4,6 +4,8 @@ import (
 	"labs/api/auth"
 	"labs/api/campaign"
 	"labs/api/companies"
+	"labs/api/country"
+	"labs/api/language"
 	"labs/api/mailinglists"
 	"labs/api/notifications"
 	"labs/api/roles"
@@ -49,6 +51,12 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Initialize trackinglog routes
 		trackinglog.TrackingLogRouterInit(api, db)
+
+		// Initialize language routes
+		language.LanguageRouterInit(api, db)
+
+		// Inistialize country routes
+		country.CountryRouterInit(api, db)
 
 	}
 }
