@@ -47,6 +47,7 @@ type Companies struct {
 	Team            []Users       `gorm:"foreignKey:company_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"` // List of users associated with the company
 	Tags            []Tag         `gorm:"foreignKey:company_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"` // List of Tags associated with the company
 	Mailinglists    []Mailinglist `gorm:"foreignKey:company_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"` // List of mailinglists associated with the company
+	Servers         []Server      `gorm:"foreignKey:company_id; references:id; constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"` // List of servers associated with the company
 	CreatedByUserID uuid.UUID     `gorm:"column:created_by_user_id; type:uuid; not null;"`                                     // ID of the user who created the company
 	gorm.Model
 }

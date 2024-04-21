@@ -9,6 +9,7 @@ import (
 	"labs/api/mailinglists"
 	"labs/api/notifications"
 	"labs/api/roles"
+	"labs/api/server"
 	"labs/api/tags"
 	"labs/api/trackinglog"
 	"labs/api/users"
@@ -57,6 +58,9 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Inistialize country routes
 		country.CountryRouterInit(api, db)
+
+		// Initialize email server routes
+		server.ServerRouterInit(api, db)
 
 	}
 }
