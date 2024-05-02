@@ -21,7 +21,7 @@ This project is a mail marketing application that allows users to create campaig
 
 1. Clone the repository.
 2. Install Golang 1.19 and PostgreSQL.
-3. Configure the port and password in the `.env` file and create the database with the name of your choosing.
+3. Configure the port and password in the `.env` file located in the root directory and create the database with the name of your choosing.
 4. Install packages:
     ```bash
     go mod download
@@ -44,13 +44,16 @@ This project is a mail marketing application that allows users to create campaig
 
 ## Usage
 
-1. Access the application at [http://localhost:4200](http://localhost:4200).
-2. Log in with root:
+1. Run the application:
     ```bash
     go run main.go -root
     ```
-   Or create an account to start using the application.
-3. Create campaigns, set up automations, and track analytics.
+2. Access the application at [http://localhost:4200](http://localhost:4200).
+3. Log in with the root account or create a new account to start using the application:
+   ```bash
+    go run main.go -root
+    ```
+4. Create campaigns, set up automations, and track analytics.
 
 ## License
 
