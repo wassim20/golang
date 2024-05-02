@@ -23,15 +23,15 @@ This project is a mail marketing application that allows users to create campaig
 1. Clone the repository.
 2. Install Golang 1.19 and PostgreSQL.
 3. Database will migrate autoomatically just configure the port and password in (`.env`) file and create the database with the name of ur choosing.
-4. Install packages(`go mod download`) build and run the backend (`CompileDaemon -command="./labs"`).
+4. Install packages ex Git :```go mod download``` build and run the backend ex Git :```CompileDaemon -command="./labs"```
 5. Install Angular CLI.
-6. Navigate to the frontend directory and run `npm install` followed by `ng serve -o`.
+6. Navigate to the frontend directory and run ex Git :```npm install``` followed by ex Git :```ng serve -o```.
 
 
 ## Usage
 
-1. Access the application at `http://localhost:4200`.
-2. Log in with root (`go run main.go -root`) or create an account to start using the application.
+1. Access the application at [http://localhost:4200].
+2. Log in with root ex Git :```go run main.go -root``` or create an account to start using the application.
 3. Create campaigns, set up automations, and track analytics.
 
 ## License
