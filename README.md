@@ -44,11 +44,12 @@ This project is a mail marketing application that allows users to create campaig
 
 ## Usage
 
-1. Access the application at [http://localhost:4200](http://localhost:4200).
-2. Log in with root:
+1.Log in with root:
     ```bash
     go run main.go -root
     ```
+2. Access the application at [http://localhost:4200](http://localhost:4200).
+
    Or create an account to start using the application.
 3. Create campaigns, set up automations, and track analytics.
 
