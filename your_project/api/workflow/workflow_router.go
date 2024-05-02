@@ -34,6 +34,9 @@ func WorkflowRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		// DELETE endpoint to delete a specific workflow
 		workflow.DELETE("/:workflowID", baseInstance.DeleteWorkflow)
 
+		// POST endpoint to start a workflow
+		workflow.POST("/:workflowID/start", baseInstance.StartWorkflow)
+
 		action.ActionRouterInit(workflow, db)
 
 	}

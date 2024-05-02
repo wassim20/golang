@@ -45,17 +45,49 @@ func ReadByID(db *gorm.DB, model domains.Workflow, id uuid.UUID) (domains.Workfl
 func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 
 	var wg sync.WaitGroup
+	var x int = 2
 	actions, err := getActions(db, workflow.ID)
 	if err != nil {
 		return err
 	}
+	result := make(chan bool)
 
-	for _, action := range actions {
-
+	for i := 0; i < len(actions); i++ {
+		action := actions[i]
+		wg.Add(1)
+		index := i
 		go func(action domains.Action) {
 			defer wg.Done()
 			switch action.Type {
 			case "email":
+				//checking previous action status and parentID
+
+				if x == 1 {
+					x = x + 1
+					return
+				}
+				if action.ParentID == actions[index-1].ID && index > 1 && actions[index-1].Status == "condition" {
+					var checking map[string]interface{}
+					x = x - 1
+					if err := json.Unmarshal([]byte(action.Data), &checking); err != nil {
+						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
+						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+						return
+					}
+					// parse the data to con string
+					if _, ok := checking["route"]; !ok {
+						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
+						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+						return
+					}
+					con := checking["route"].(bool)
+
+					if con != <-result {
+						return
+
+					}
+				}
+
 				var emailData map[string]interface{}
 				if err := json.Unmarshal([]byte(action.Data), &emailData); err != nil {
 					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
@@ -100,6 +132,25 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 				}
 
 			case "wait":
+				if x == 1 {
+					x = x + 1
+					return
+				}
+				if action.ParentID == actions[index-1].ID && index > 1 && actions[index-1].Status == "condition" {
+					var checking map[string]interface{}
+					x = x - 1
+					if err := json.Unmarshal([]byte(actions[index-1].Data), &checking); err != nil {
+						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
+						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+						return
+					}
+					// parse the data to con string
+					con := checking["route"].(bool)
+					if con != <-result {
+						return
+
+					}
+				}
 				var waitData map[string]interface{}
 				if err := json.Unmarshal([]byte(action.Data), &waitData); err != nil {
 					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
@@ -145,7 +196,7 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 					return
 				}
-				if err := Condition(db, workflow.ID, conditionData, action.ID, ctx); err != nil {
+				if err := Condition(db, workflow.ID, conditionData, action.ID, ctx, result); err != nil {
 					logrus.Errorf("Error condition action: %v", err)
 					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 				}
@@ -155,6 +206,7 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 		}(action)
 
 	}
+	wg.Wait()
 
 	return nil
 }
@@ -396,7 +448,7 @@ func Wait(db *gorm.DB, workflowID uuid.UUID, waitData map[string]interface{}, ac
 
 	return nil
 }
-func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]interface{}, actionID uuid.UUID, ctx *gin.Context) error {
+func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]interface{}, actionID uuid.UUID, ctx *gin.Context, result chan bool) error {
 	// 1. Extract Condition Details from Data
 
 	criteria, ok := conditionData["criteria"].(string)
@@ -408,15 +460,18 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 		// 2. Extract Campaign ID from Data
 		campaignID, ok := conditionData["campaignID"].(string)
 		if !ok {
+			logrus.Error("missing required field 'campaignID' in condition data")
 			return fmt.Errorf("missing required field 'campaignID' in condition data")
 		}
 		// 3. Extract Duration from Data
 		durationString, ok := conditionData["duration"].(string)
 		if !ok {
+			logrus.Error("missing required field 'duration' in condition data")
 			return fmt.Errorf("missing required field 'duration' in condition data")
 		}
 		duration, err := time.ParseDuration(durationString)
 		if err != nil {
+			logrus.Error("invalid duration format:")
 			return fmt.Errorf("invalid duration format: %v", err)
 		}
 		// make a go routine here
@@ -442,13 +497,15 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 						if log.Status == "clicked" {
 							// pass the log.recipient_email to the next action
 							//pass the log.recipient_email to the next action
-							gonext(log.RecipientEmail)
+
+							result <- true
 
 						}
 					}
 				case <-timer.C:
 					// Duration has elapsed, stop the checking
-					gofalse()
+
+					result <- false
 					return
 				case <-ctx.Done():
 					// Context canceled before the duration is reached
@@ -462,15 +519,18 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 	case "click":
 		campaignID, ok := conditionData["campaignID"].(string)
 		if !ok {
+			logrus.Error("missing required field 'campaignID' in condition data")
 			return fmt.Errorf("missing required field 'campaignID' in condition data")
 		}
 		// 3. Extract Duration from Data
 		durationString, ok := conditionData["duration"].(string)
 		if !ok {
+			logrus.Error("missing required field 'duration' in condition data")
 			return fmt.Errorf("missing required field 'duration' in condition data")
 		}
 		duration, err := time.ParseDuration(durationString)
 		if err != nil {
+			logrus.Error("invalid duration format:")
 			return fmt.Errorf("invalid duration format: %v", err)
 		}
 		go func() {
@@ -494,13 +554,15 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 					for _, log := range trackingLogs {
 						if log.ClickCount > 0 {
 							// pass the log.recipient_email to the next action
-							gonext(log.RecipientEmail)
+
+							result <- true
 
 						}
 					}
 				case <-timer.C:
 					// Duration has elapsed, stop the checking
-					gofalse()
+
+					result <- false
 					return
 				case <-ctx.Done():
 					// Context canceled before the duration is reached
@@ -515,15 +577,4 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 	}
 
 	return nil
-}
-
-func gonext(email string) {
-	//get the next action
-	//get the next action
-	//get the next action
-}
-func gofalse() {
-	//get the next action
-	//get the next action
-	//get the next action
 }
