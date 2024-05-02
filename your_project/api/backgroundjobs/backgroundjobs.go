@@ -168,6 +168,7 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 
 				if err := domains.Create(db, trackingLog); err != nil {
 					logrus.Errorf("error saving tracking log for contact %s: %w", contact.Email, err)
+
 					// Handle the error (e.g., retry saving the log, log the error for debugging)
 				}
 				fmt.Println("Sending from server ", server.Name)

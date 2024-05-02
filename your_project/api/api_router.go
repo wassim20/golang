@@ -13,6 +13,7 @@ import (
 	"labs/api/tags"
 	"labs/api/trackinglog"
 	"labs/api/users"
+	"labs/api/workflow"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -61,6 +62,9 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		// Initialize email server routes
 		server.ServerRouterInit(api, db)
+
+		// Initialize workflow routes
+		workflow.WorkflowRouterInit(api, db)
 
 	}
 }
