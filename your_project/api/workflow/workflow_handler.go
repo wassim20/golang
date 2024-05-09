@@ -416,6 +416,7 @@ func (db Database) StartWorkflow(ctx *gin.Context) {
 		return
 	}
 
+	//get workflow
 	workflow := domains.Workflow{}
 	err = db.DB.Transaction(func(db *gorm.DB) error {
 		// Check if the workflow with the specified ID exists
@@ -437,19 +438,39 @@ func (db Database) StartWorkflow(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
-
-	// Check if the workflow with the specified ID exists
-	if err := domains.CheckByID(db.DB, &domains.Workflow{}, objectID); err != nil {
-		logrus.Error("Error checking if the workflow with the specified ID exists. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+	//get contacts from mailinglist
+	contacts := []domains.Contact{}
+	err = db.DB.Transaction(func(db *gorm.DB) error {
+		// Check if the mailinglist with the specified ID exists
+		if err := domains.CheckByID(db, &domains.Mailinglist{}, workflow.MailinglistID); err != nil {
+			logrus.Error("Error checking if the mailinglist with the specified ID exists. Error: ", err.Error())
+			utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+			return err
+		}
+		// retrieve the contacts
+		err := db.Where("mailinglist_id = ?", workflow.MailinglistID).Find(&contacts).Error
+		if err != nil {
+			logrus.Error("Error retrieving contacts data from the database. Error: ", err.Error())
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return
 	}
 
-	// Start the workflow
-	if err := Start(db.DB, workflow, ctx); err != nil {
-		logrus.Error("Error starting workflow. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-		return
+	for _, contact := range contacts {
+
+		// Start the workflow smilutaneously for all contacts
+		go func(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context, contact domains.Contact) {
+			if err := Start(db, workflow, ctx, contact); err != nil {
+				logrus.Error("Error starting workflow. Error: ", err.Error())
+				utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+				return
+			}
+		}(db.DB, workflow, ctx, contact)
+
 	}
 
 	// Respond with success

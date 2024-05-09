@@ -7,6 +7,7 @@ import (
 	"labs/domains"
 	"labs/utils"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -42,7 +43,7 @@ func ReadByID(db *gorm.DB, model domains.Workflow, id uuid.UUID) (domains.Workfl
 	return model, err
 }
 
-func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
+func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context, contact domains.Contact) error {
 
 	var wg sync.WaitGroup
 	var x int = 2
@@ -52,16 +53,18 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 	}
 	result := make(chan bool)
 
+	//iterate through the actions
 	for i := 0; i < len(actions); i++ {
 		action := actions[i]
 		wg.Add(1)
 		index := i
+		// make a go routine here for each action
 		go func(action domains.Action) {
 			defer wg.Done()
+			//switch through the action type and perform what is needed
 			switch action.Type {
 			case "email":
 				//checking previous action status and parentID
-
 				if x == 1 {
 					x = x + 1
 					return
@@ -125,7 +128,7 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 					return
 				}
-				if err := SendEmail(db, workflow.ID, emailData, action.ID); err != nil {
+				if err := SendEmail(db, workflow, emailData, action.ID, contact.Email); err != nil {
 					logrus.Errorf("Error sending email action: %v", err)
 					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 
@@ -210,50 +213,8 @@ func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context) error {
 
 	return nil
 }
-func getActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
-	var actions []domains.Action
-	if err := db.Where("workflow_id = ?", workflowID).Find(&actions).Error; err != nil {
-		return nil, err
-	}
 
-	// Build a map of actions by their ID
-	actionMap := make(map[uuid.UUID]*domains.Action)
-	for i := range actions {
-		actionMap[actions[i].ID] = &actions[i]
-	}
-
-	// Build a map of actions by their ParentID
-	parentMap := make(map[uuid.UUID][]*domains.Action)
-	for _, action := range actions {
-		if action.ParentID != uuid.Nil {
-			parentMap[action.ParentID] = append(parentMap[action.ParentID], actionMap[action.ID])
-
-		}
-	}
-
-	// Perform topological sort if actions form a DAG
-	var orderedActions []domains.Action
-	visited := make(map[uuid.UUID]bool)
-	var visit func(uuid.UUID)
-	visit = func(id uuid.UUID) {
-		if visited[id] {
-			return
-		}
-		visited[id] = true
-		for _, child := range parentMap[id] {
-			visit(child.ID)
-		}
-		orderedActions = append(orderedActions, *actionMap[id])
-	}
-
-	for id := range actionMap {
-		visit(id)
-	}
-
-	return orderedActions, nil
-}
-
-func SendEmail(db *gorm.DB, workflowID uuid.UUID, emailData map[string]interface{}, actionID uuid.UUID) error {
+func SendEmail(db *gorm.DB, workflow domains.Workflow, emailData map[string]interface{}, actionID uuid.UUID, email string) error {
 	// 1. Extract Email Details from Data
 	subject, ok := emailData["subject"].(string)
 	if !ok {
@@ -282,23 +243,10 @@ func SendEmail(db *gorm.DB, workflowID uuid.UUID, emailData map[string]interface
 	if !ok {
 		return fmt.Errorf("missing required field 'reply-to' in email data")
 	}
-	// get the workflow
-	workflow := domains.Workflow{}
-	err := db.First(&workflow, workflowID).Error
-	if err != nil {
-		return err
-	}
-
-	mailinglist := &domains.Mailinglist{}
-	err = db.Preload("Contacts").First(&mailinglist, workflow.MailinglistID).Error
-	if err != nil {
-		logrus.Errorf("can't read mailinglist from database: %v", err)
-		return err
-	}
 
 	// Fetch available servers for sending emails
 	servers := []domains.Server{}
-	err = db.Where("company_id = ?", mailinglist.CompanyID).Find(&servers).Error
+	err := db.Where("company_id = ?", workflow.CompanyID).Find(&servers).Error
 	if err != nil {
 		logrus.Errorf("Error fetching servers for company: %v", err)
 		return err
@@ -308,51 +256,74 @@ func SendEmail(db *gorm.DB, workflowID uuid.UUID, emailData map[string]interface
 		logrus.Error("No servers available for sending emails")
 		return fmt.Errorf("no servers available for sending emails") // Or return an error if desired
 	}
-	emailsPerServer := len(mailinglist.Contacts) / len(servers)
-	remainingContacts := len(mailinglist.Contacts) % len(servers) // Handle leftover contacts
+	server := servers[0]
 
 	var wg sync.WaitGroup
 	wg.Add(len(servers))
 
-	for i, server := range servers {
-		start := i * emailsPerServer
-		end := (i + 1) * emailsPerServer
-		if i == len(servers)-1 {
-			end += remainingContacts // Assign leftovers to last server
-		}
-		go func(server domains.Server, start int, end int) {
-			defer wg.Done()
-			for j := start; j < end; j++ {
-				contact := mailinglist.Contacts[j]
-				msg := gomail.NewMessage()
-				msg.SetHeader("From", from)
-				msg.SetHeader("Subject", subject)
-				msg.SetHeader("Reply-To", replyTo)
-				msg.SetHeader("To", contact.Email) // Use contact email from MailingList
-				var body string
-				if htmlBody != "" {
-					body = htmlBody
-					body = strings.Replace(body, "[Recipient Name]", contact.Firstname, -1)
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", from)
+	msg.SetHeader("To", email)
+	msg.SetHeader("Subject", subject)
+	msg.SetBody("text/html", htmlBody)
+	msg.SetHeader("Reply-To", replyTo)
 
-				}
+	//create tracking log
+	trackingLog := &domains.TrackingLog{
+		ID:             uuid.New(),
+		CompanyID:      workflow.CompanyID,
+		CampaignID:     uuid.Nil,
+		ActionID:       actionID,
+		RecipientEmail: email,
+		Status:         "pending",
+	}
+	// Add tracking pixel to the email body if tracking is enabled
+	if trackOpen {
+		trackingLog.OpenTrackingID = uuid.New()
+		openTrackingPixelURL := "http://localhost:8080/api/" + workflow.CompanyID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
+		// Append the tracking pixel <img> tag within the HTML body
+		htmlBody = strings.Replace(htmlBody, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
+	}
+	if trackClick {
+		trackingLog.ClickTrackingID = uuid.New()
 
-				//add the tracking here ***************IMPORTANT***************
-				if trackClick && trackOpen {
-					//add the tracking here
-				} else {
-					body = htmlBody
-				}
-				//create tracking log domains.Create(db, trackingLog);
-				msg.SetBody("text/html", body)
-				d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
-				if err := d.DialAndSend(msg); err != nil {
-					logrus.Error("Error sending email to", contact.Email, ":", err.Error())
-				}
+		openClickTrackingURL := "http://localhost:8080/api/" + workflow.CompanyID.String() + "/logs/click/" + trackingLog.ClickTrackingID.String()
 
+		re := regexp.MustCompile(`(?i)<(a|button)[^>]*href=["'](?P<href>[^"']*)["'][^>]*>(?P<content>.*?)</(a|button)>`) // Case-insensitive match
+		htmlBody = re.ReplaceAllStringFunc(htmlBody, func(s string) string {
+			matches := re.FindStringSubmatch(s)
+			href := matches[re.SubexpIndex("href")]
+			content := matches[re.SubexpIndex("content")]
+
+			finalURL := href
+			if href == "" {
+				finalURL = "#"
 			}
 
-		}(server, start, end)
+			// Append the tracking parameter to the original URL
+			trackingURL := fmt.Sprintf(`%s?click=%s&email=%s`, finalURL, openClickTrackingURL, email)
+
+			// Return the modified link
+			return fmt.Sprintf(`<%s href="%s"%s>%s</%s>`, matches[1], trackingURL, matches[2:], content, matches[4])
+		})
+
 	}
+	if err := domains.Create(db, trackingLog); err != nil {
+		logrus.Errorf("error saving tracking log for contact %s: %v", email, err)
+
+		// Handle the error (e.g., retry saving the log, log the error for debugging)
+	}
+
+	// Send the email using the first available server
+	go func() {
+		defer wg.Done()
+		d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
+		if err := d.DialAndSend(msg); err != nil {
+			logrus.Errorf("Error sending email: %v", err)
+			logrus.Error("Error sending email to", email, ":", err.Error())
+		}
+	}()
+	// Wait for all emails to be sent
 
 	wg.Wait()
 	//update the action status
@@ -457,11 +428,11 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 	}
 	switch criteria {
 	case "read":
-		// 2. Extract Campaign ID from Data
-		campaignID, ok := conditionData["campaignID"].(string)
+		// 2. Extract action ID from Data
+		actionID, ok := conditionData["actionID"].(string)
 		if !ok {
-			logrus.Error("missing required field 'campaignID' in condition data")
-			return fmt.Errorf("missing required field 'campaignID' in condition data")
+			logrus.Error("missing required field 'actionID' in condition data")
+			return fmt.Errorf("missing required field 'actionID' in condition data")
 		}
 		// 3. Extract Duration from Data
 		durationString, ok := conditionData["duration"].(string)
@@ -487,7 +458,7 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 				case <-ticker.C:
 					//get set of trackinglogs based on campaign id
 					trackingLogs := []domains.TrackingLog{}
-					err := db.Where("campaign_id = ?", campaignID).Find(&trackingLogs).Error
+					err := db.Where("action_id = ?", actionID).Find(&trackingLogs).Error
 					if err != nil {
 						logrus.Errorf("can't read trackinglogs from database: %v", err)
 						return
@@ -496,7 +467,7 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 					for _, log := range trackingLogs {
 						if log.Status == "clicked" {
 							// pass the log.recipient_email to the next action
-							//pass the log.recipient_email to the next action
+							// no need to pass it we have it in all the functions
 
 							result <- true
 
@@ -517,10 +488,10 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 
 		}()
 	case "click":
-		campaignID, ok := conditionData["campaignID"].(string)
+		actionID, ok := conditionData["actionID"].(string)
 		if !ok {
-			logrus.Error("missing required field 'campaignID' in condition data")
-			return fmt.Errorf("missing required field 'campaignID' in condition data")
+			logrus.Error("missing required field 'actionID' in condition data")
+			return fmt.Errorf("missing required field 'actionID' in condition data")
 		}
 		// 3. Extract Duration from Data
 		durationString, ok := conditionData["duration"].(string)
@@ -545,7 +516,7 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 				case <-ticker.C:
 					//get set of trackinglogs based on campaign id
 					trackingLogs := []domains.TrackingLog{}
-					err := db.Where("campaign_id = ?", campaignID).Find(&trackingLogs).Error
+					err := db.Where("action_id = ?", actionID).Find(&trackingLogs).Error
 					if err != nil {
 						logrus.Errorf("can't read trackinglogs from database: %v", err)
 						return
@@ -577,4 +548,46 @@ func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]inter
 	}
 
 	return nil
+}
+func getActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
+	var actions []domains.Action
+	if err := db.Where("workflow_id = ?", workflowID).Find(&actions).Error; err != nil {
+		return nil, err
+	}
+
+	// Build a map of actions by their ID
+	actionMap := make(map[uuid.UUID]*domains.Action)
+	for i := range actions {
+		actionMap[actions[i].ID] = &actions[i]
+	}
+
+	// Build a map of actions by their ParentID
+	parentMap := make(map[uuid.UUID][]*domains.Action)
+	for _, action := range actions {
+		if action.ParentID != uuid.Nil {
+			parentMap[action.ParentID] = append(parentMap[action.ParentID], actionMap[action.ID])
+
+		}
+	}
+
+	// Perform topological sort if actions form a DAG
+	var orderedActions []domains.Action
+	visited := make(map[uuid.UUID]bool)
+	var visit func(uuid.UUID)
+	visit = func(id uuid.UUID) {
+		if visited[id] {
+			return
+		}
+		visited[id] = true
+		for _, child := range parentMap[id] {
+			visit(child.ID)
+		}
+		orderedActions = append(orderedActions, *actionMap[id])
+	}
+
+	for id := range actionMap {
+		visit(id)
+	}
+
+	return orderedActions, nil
 }

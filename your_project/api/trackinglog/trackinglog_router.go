@@ -40,4 +40,14 @@ func TrackingLogRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		//POST endpoint to update trackinglog when link is clicked
 		trackinglogs.POST("/click/:trackingID/:email", baseInstance.handleClickRequest)
 	}
+
+	trackinglogsworkflow := router.Group("/:companyID/logs")
+	{
+		// POST endpoint to handle the opening of an email
+		trackinglogsworkflow.POST("/open/:trackingID", baseInstance.handleOpenRequestWorflow)
+
+		// POST endpoint to handle the clicking of a link
+		trackinglogsworkflow.POST("/click/:trackingID", baseInstance.handleClickRequestWorflow)
+
+	}
 }

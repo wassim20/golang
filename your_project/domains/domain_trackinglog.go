@@ -43,6 +43,7 @@ type TrackingLog struct {
 	ID              uuid.UUID  `gorm:"column:id; primaryKey; type:uuid; not null;"`
 	CompanyID       uuid.UUID  `gorm:"column:company_id; type:uuid; not null;"`
 	CampaignID      uuid.UUID  `gorm:"column:campaign_id; type:uuid; not null;"`
+	ActionID        uuid.UUID  `gorm:"column:action_id; type:uuid; not null;"`
 	Status          string     `gorm:"column:status; not null"`
 	Error           string     `gorm:"nullable"`
 	RecipientEmail  string     `gorm:"column:recipient_email; "`      // Email address of the recipient

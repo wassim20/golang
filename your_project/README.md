@@ -50,7 +50,11 @@ This project is a mail marketing application that allows users to create campaig
     ```
 2. Access the application at [http://localhost:4200](http://localhost:4200).
 
-3. Create campaigns, set up automations, and track analytics.
+3. Log in with the root account or create a new account to start using the application:
+   ```bash
+    go run main.go -root
+    ```
+4. Create campaigns, set up automations, and track analytics.
 
 ## License
 

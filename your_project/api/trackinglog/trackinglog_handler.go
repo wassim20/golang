@@ -483,9 +483,99 @@ func (db Database) handleClickRequest(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	recipientEmail := ctx.Param("email")
-	if recipientEmail == "" {
-		logrus.Error("Recipient email is required")
+
+	// Update the tracking log with the click information
+	trackingLog := &domains.TrackingLog{}
+	if err := db.DB.First(trackingLog, "click_tracking_id = ?", trackingID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Tracking ID not found, handle error (e.g., log or return appropriate status code)
+			logrus.Errorf("Click tracking ID '%s' not found", trackingID)
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		logrus.Errorf("Error fetching tracking log for click tracking ID '%s': %v", trackingID, err)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// Update the tracking log with click information
+	clickedAt := time.Now()
+	trackingLog.Status = "clicked"
+	trackingLog.ClickedAt = &clickedAt
+	trackingLog.ClickCount++
+
+	if err := db.DB.Save(trackingLog).Error; err != nil {
+		logrus.Errorf("Error updating tracking log: %v", err)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// Respond to the request (optional)
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// handleOpenRequestWorflow handles the clicking of an email and updates tracking log.
+// @Summary      updates tracking log on email open
+// @Description  updates a tracking log by ID when email open.
+// @Tags         TrackingLogs
+// @Produce      json
+// @Param        id path string true "Tracking log ID"
+// @Success      204     "Tracking log updated successfully"
+// @Failure      400     {object} utils.ApiResponses "Invalid request"
+// @Failure      401     {object} utils.ApiResponses "Unauthorized"
+// @Failure      403     {object} utils.ApiResponses "Forbidden"
+// @Failure      404     {object} utils.ApiResponses "Tracking log not found"
+// @Failure      500     {object} utils.ApiResponses "Internal Server Error"
+// @Router       /{companyID}/logs/open/{trackingID} [update]
+// handle read request comming from workflow "http://localhost:8080/api/" + workflow.CompanyID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
+func (db Database) handleOpenRequestWorflow(ctx *gin.Context) {
+	trackingID := ctx.Param("trackingID")
+
+	var trackingLog domains.TrackingLog
+	err := db.DB.First(&trackingLog, "open_tracking_id = ?", trackingID).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Tracking ID not found, handle error (e.g., log or return appropriate status code)
+			logrus.Errorf("Open tracking ID '%s' not found", trackingID)
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		logrus.Errorf("Error fetching tracking log for open tracking ID '%s': %v", trackingID, err)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// Update tracking log status (optional)
+	trackingLog.Status = "opened"     // Update status if needed
+	trackingLog.OpenedAt = time.Now() // Update opened_at timestamp if needed
+	// Increment click count if needed
+
+	if err := db.DB.Save(&trackingLog).Error; err != nil {
+		logrus.Errorf("Error updating tracking log status for open tracking ID '%s': %v", trackingID, err)
+		// Handle error (consider logging or retrying update)
+	}
+
+	// Respond to the request (optional)
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// handleClickRequestWorflow handles the clicking of an email and updates tracking log.
+// @Summary      updates tracking log on email click
+// @Description  updates a tracking log by ID when email click.
+// @Tags         TrackingLogs
+// @Produce      json
+// @Param        id path string true "Tracking log ID"
+// @Success      204     "Tracking log updated successfully"
+// @Failure      400     {object} utils.ApiResponses "Invalid request"
+// @Failure      401     {object} utils.ApiResponses "Unauthorized"
+// @Failure      403     {object} utils.ApiResponses "Forbidden"
+// @Failure      404     {object} utils.ApiResponses "Tracking log not found"
+// @Failure      500     {object} utils.ApiResponses "Internal Server Error"
+// @Router       /{companyID}/logs/click/{trackingID} [update]
+func (db Database) handleClickRequestWorflow(ctx *gin.Context) {
+	trackingID := ctx.Param("trackingID")
+	if trackingID == "" {
+		logrus.Error("Tracking ID is required")
 		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -509,7 +599,6 @@ func (db Database) handleClickRequest(ctx *gin.Context) {
 	trackingLog.Status = "clicked"
 	trackingLog.ClickedAt = &clickedAt
 	trackingLog.ClickCount++
-	trackingLog.RecipientEmail = recipientEmail
 
 	if err := db.DB.Save(trackingLog).Error; err != nil {
 		logrus.Errorf("Error updating tracking log: %v", err)
