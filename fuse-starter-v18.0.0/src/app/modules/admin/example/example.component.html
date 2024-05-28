@@ -1,0 +1,32 @@
+<div class="flex flex-col flex-auto min-w-0">
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+
+        <!-- CONTENT GOES HERE -->
+        
+
+            <div>
+                <button mat-raised-button color="accent" (click)="exportHtml()" style="left: 90%;"> Export HTML</button>
+                <email-editor #emailEditor
+                              minHeight="85vh"
+                              [options]="{
+                                projectId: 1,
+                                appearance: {
+                                  theme: theme
+                                }
+                              }"
+                              (onLoad)="onEditorLoad()">
+                </email-editor>
+                
+                
+                
+              </div>
+              
+            
+       
+
+
+    </div>
+
+</div>
