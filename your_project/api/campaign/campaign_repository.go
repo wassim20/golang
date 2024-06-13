@@ -84,10 +84,10 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 		}
 
 		if campaign.TrackOpen {
-			trackingLog.OpenTrackingID = uuid.New()
-			openTrackingPixelURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
-			// Append the tracking pixel <img> tag within the HTML body
-			body = strings.Replace(body, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
+			// 	trackingLog.OpenTrackingID = uuid.New()
+			// 	openTrackingPixelURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
+			// 	// Append the tracking pixel <img> tag within the HTML body
+			// 	body = strings.Replace(body, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
 		}
 
 		if campaign.TrackClick {
@@ -129,7 +129,6 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 		// 3.3 Optional: Add Attachments (if applicable)
 		// ... (code for adding attachments based on campaign data) ...
 
-		fmt.Println("****************************", body, "*****************")
 		// 3.4 Send the Email
 		d := gomail.NewDialer("smtp.gmail.com", 587, "wassimgx15@gmail.com", "zadh nbng mbdo tsbd")
 		if err := d.DialAndSend(msg); err != nil {

@@ -1,13 +1,16 @@
 package backgroundjobs
 
 import (
+	"bytes"
 	"fmt"
 	"labs/config"
 	"labs/domains"
-	"regexp"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/html"
 
 	"github.com/google/uuid"
 	"github.com/robfig/cron"
@@ -118,7 +121,6 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				if campaign.HTML != "" {
 					body = campaign.HTML
 					body = strings.Replace(body, "[Recipient Name]", contact.Firstname, -1)
-
 				} else {
 					body = campaign.Plain
 				}
@@ -140,26 +142,71 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				if campaign.TrackClick {
 					// Create a unique click ID for each link
 					trackingLog.ClickTrackingID = uuid.New()
-
 					openClickTrackingURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/click/" + trackingLog.ClickTrackingID.String()
 
-					re := regexp.MustCompile(`(?i)<(a|button)[^>]*href=["'](?P<href>[^"']*)["'][^>]*>(?P<content>.*?)</(a|button)>`) // Case-insensitive match
-					modifiedBody := re.ReplaceAllStringFunc(body, func(s string) string {
-						matches := re.FindStringSubmatch(s)
-						href := matches[re.SubexpIndex("href")]
-						content := matches[re.SubexpIndex("content")]
+					// Case-insensitive match
 
-						finalURL := href
-						if href == "" {
-							finalURL = "#"
+					// re := regexp.MustCompile(`(?i)<a\s+[^>]*href=("([^"]*)")[^>]*>(.*?)</a>`)
+					// modifiedBody := re.ReplaceAllStringFunc(body, func(s string) string {
+					// 	matches := re.FindStringSubmatch(s)
+					// 	if len(matches) > 0 {
+					// 		originalURL := matches[2]
+					// 		trackingURL := fmt.Sprintf("%s?redirect=%s", openClickTrackingURL, url.QueryEscape(originalURL))
+					// 		return fmt.Sprintf(`<a href="%s">%s</a>`, trackingURL, matches[3])
+					// 	}
+					// 	return s
+					// })
+					// body = modifiedBody
+
+					//// METHOD 2 STABLE
+					// doc, _ := html.Parse(strings.NewReader(body))
+
+					// var f func(*html.Node)
+					// f = func(n *html.Node) {
+					// 	if n.Type == html.ElementNode && n.Data == "a" {
+					// 		for i, a := range n.Attr {
+					// 			if a.Key == "href" {
+					// 				originalURL := a.Val
+					// 				trackingURL := fmt.Sprintf("%s?redirect=%s", openClickTrackingURL, url.QueryEscape(originalURL))
+					// 				n.Attr[i].Val = trackingURL
+					// 			}
+					// 		}
+					// 	}
+					// 	for c := n.FirstChild; c != nil; c = c.NextSibling {
+					// 		f(c)
+					// 	}
+					// }
+					// f(doc)
+
+					// var buf bytes.Buffer
+					// html.Render(&buf, doc)
+					// modifiedBody := buf.String()
+
+					// body = modifiedBody
+
+					doc, _ := html.Parse(strings.NewReader(body))
+
+					var f func(*html.Node)
+					f = func(n *html.Node) {
+						if n.Type == html.ElementNode && n.Data == "a" {
+							for i, a := range n.Attr {
+								if a.Key == "href" {
+									originalURL := a.Val
+									trackingURL := fmt.Sprintf("%s?redirect=%s", openClickTrackingURL, url.QueryEscape(originalURL))
+									n.Attr[i].Val = trackingURL
+								}
+							}
 						}
+						for c := n.FirstChild; c != nil; c = c.NextSibling {
+							f(c)
+						}
+					}
+					f(doc)
 
-						// Append the tracking parameter to the original URL
-						trackingURL := fmt.Sprintf(`%s?click=%s&email=%s`, finalURL, openClickTrackingURL, contact.Email)
+					var buf bytes.Buffer
+					html.Render(&buf, doc)
+					modifiedBody := buf.String()
 
-						// Return the modified link
-						return fmt.Sprintf(`<%s href="%s"%s>%s</%s>`, matches[1], trackingURL, matches[2:], content, matches[4])
-					})
 					body = modifiedBody
 
 				} else {
@@ -168,17 +215,16 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 
 				if err := domains.Create(db, trackingLog); err != nil {
 					logrus.Errorf("error saving tracking log for contact %s: %w", contact.Email, err)
-
 					// Handle the error (e.g., retry saving the log, log the error for debugging)
 				}
 				fmt.Println("Sending from server ", server.Name)
-				msg.SetBody(chooseContentType(campaign.HTML, campaign.Plain), body)
+				msg.SetBody("text/html", body)
 				//d := gomail.NewDialer("smtp.gmail.com", 587, "wassimgx15@gmail.com", "zadh nbng mbdo tsbd")
 				d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
 				if err := d.DialAndSend(msg); err != nil {
 					logrus.Error("Error sending email to", contact.Email, ":", err.Error())
-
 				}
+				fmt.Println("/////////////////////////////////////////////////////////" + body)
 			}
 		}(server, start, end)
 	}
@@ -192,8 +238,8 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 	}
 
 	return nil
-
 }
+
 func chooseContentType(html, plain string) string {
 	if html != "" {
 		return "text/html"
