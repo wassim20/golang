@@ -134,9 +134,15 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				}
 				if campaign.TrackOpen {
 					trackingLog.OpenTrackingID = uuid.New()
-					openTrackingPixelURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
+					//openTrackingPixelURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
+
+					//2nd approach
+
+					openTrackingPixelURL := fmt.Sprintf("http://localhost:8080/api/track/pixel.png?trackingID=%s", trackingLog.OpenTrackingID.String())
+
 					// Append the tracking pixel <img> tag within the HTML body
 					body = strings.Replace(body, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
+
 				}
 
 				if campaign.TrackClick {
@@ -220,9 +226,11 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				fmt.Println("Sending from server ", server.Name)
 				msg.SetBody("text/html", body)
 				//d := gomail.NewDialer("smtp.gmail.com", 587, "wassimgx15@gmail.com", "zadh nbng mbdo tsbd")
-				d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
+				//d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
+				d := gomail.NewDialer("sandbox.smtp.mailtrap.io", 2525, "969018208d53bf", "4da6491a9da571")
 				if err := d.DialAndSend(msg); err != nil {
 					logrus.Error("Error sending email to", contact.Email, ":", err.Error())
+					return
 				}
 				fmt.Println("/////////////////////////////////////////////////////////" + body)
 			}

@@ -240,7 +240,7 @@ func (db Database) ReadCampaign(ctx *gin.Context) {
 		return
 	}
 
-	detailedCampaign := CampaignsDetails{
+	detailedCampaign := &CampaignsDetails{
 		ID:          campaign.ID,
 		Name:        campaign.Name,
 		Subject:     campaign.Subject,
@@ -313,7 +313,7 @@ func (db Database) UpdateCampaign(ctx *gin.Context) {
 		return
 	}
 
-	dbCampaign := domains.Campaign{
+	dbCampaign := &domains.Campaign{
 		ID:              campaignID,
 		CreatedByUserID: session.UserID,
 		Type:            campaignUpdate.Type,

@@ -34,9 +34,6 @@ func TrackingLogRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		// DELETE endpoint to delete a specific company
 		trackinglogs.DELETE("/:ID", baseInstance.DeleteTrackingLog)
 
-		//POST endpoint to update trackinglog when email is opened
-		trackinglogs.POST("/open/:trackingID", baseInstance.handleOpenRequest)
-
 		//POST endpoint to update trackinglog when link is clicked
 		trackinglogs.POST("/click/:trackingID/:email", baseInstance.handleClickRequest)
 	}
@@ -50,4 +47,9 @@ func TrackingLogRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		trackinglogsworkflow.POST("/click/:trackingID", baseInstance.handleClickRequestWorflow)
 
 	}
+	trackingpixel := router.Group("/track")
+	{
+		trackingpixel.GET("/pixel.png", baseInstance.handleOpenRequest)
+	}
+
 }

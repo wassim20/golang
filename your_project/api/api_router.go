@@ -66,5 +66,7 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 		// Initialize workflow routes
 		workflow.WorkflowRouterInit(api, db)
 
+		api.Static("static", "./static")
+
 	}
 }

@@ -433,7 +433,12 @@ func (db Database) DeleteTrackingLog(ctx *gin.Context) {
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
 // @Router       /{companyID}/{camapignID}/logs/open/{trackingID} [delete]
 func (db Database) handleOpenRequest(ctx *gin.Context) {
-	trackingID := ctx.Param("trackingID")
+	trackingID := ctx.Query("trackingID")
+	if trackingID == "" {
+		logrus.Error("Missing trackingID in query parameters")
+		ctx.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	var trackingLog domains.TrackingLog
 	err := db.DB.First(&trackingLog, "open_tracking_id = ?", trackingID).Error
