@@ -30,6 +30,8 @@ func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 		api.GET("/click", trackClickGin)
 
+		//test Done
+
 	}
 
 }
