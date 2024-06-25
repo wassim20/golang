@@ -1,13 +1,14 @@
 import { Component, ViewEncapsulation, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { EmailEditorComponent,EmailEditorService,UnlayerOptions,EmailEditorModule  } from '@trippete/angular-email-editor';
+import { EmailEditorComponent,UnlayerOptions,EmailEditorModule  } from '@trippete/angular-email-editor';
 import {MatButtonModule} from '@angular/material/button';
-
+import { CommonModule } from '@angular/common';
 
 @Component({
     selector     : 'example',
     standalone   : true,
-    imports     : [EmailEditorModule,MatButtonModule],
+    imports     : [EmailEditorModule,MatButtonModule,CommonModule],
     templateUrl  : './example.component.html',
+    styleUrls : ['./example.component.css'],
     encapsulation: ViewEncapsulation.None,
 })
 export class ExampleComponent

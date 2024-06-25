@@ -1,0 +1,46 @@
+<div class="body">
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <p>Trigger:</p>
+        {{formData.message}}
+  
+        
+        <div *ngFor="let action of actions; let i = index">
+          <mat-card appearance="outlined">
+            <mat-card-content>
+              <p>{{ action.type }}</p>
+              <mat-form-field *ngIf="action.type === 'Send Email'">
+                <mat-label>Subject</mat-label>
+                <input matInput type="text" [(ngModel)]="action.email.subject">
+              </mat-form-field>
+              <mat-form-field *ngIf="action.type === 'Send Email'">
+                <mat-label>Body</mat-label>
+                <textarea matInput [(ngModel)]="action.email.body"></textarea>
+              </mat-form-field>
+              <mat-form-field *ngIf="action.type === 'Wait'">
+                <mat-label>Wait for</mat-label>
+                <input matInput type="number" [(ngModel)]="action.wait.duration">
+                <mat-select [(ngModel)]="action.wait.unit">
+                  <mat-option value="minutes">Minutes</mat-option>
+                  <mat-option value="hours">Hours</mat-option>
+                  <mat-option value="days">Days</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field *ngIf="action.type === 'Condition'">
+                <mat-label>Condition</mat-label>
+                <mat-select [(ngModel)]="action.condition.type">
+                  <mat-option value="Open Previous Email">Open Previous Email</mat-option>
+                  <!-- Add more condition types as needed -->
+                </mat-select>
+              </mat-form-field>
+              <button mat-icon-button (click)="removeAction(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </mat-card-content>
+          </mat-card>
+        </div>
+  
+        <button mat-raised-button (click)="addAction()">Add Action</button>
+      </mat-card-content>
+    </mat-card>
+  </div>

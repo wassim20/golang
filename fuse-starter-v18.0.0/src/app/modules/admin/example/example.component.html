@@ -1,32 +1,27 @@
 <div class="flex flex-col flex-auto min-w-0">
-
-    <!-- Main -->
-    <div class="flex-auto p-6 sm:p-10">
-
-        <!-- CONTENT GOES HERE -->
-        
-
-            <div>
-                <button mat-raised-button color="accent" (click)="exportHtml()" style="left: 90%;"> Export HTML</button>
-                <email-editor #emailEditor
-                              minHeight="85vh"
-                              [options]="{
-                                projectId: 1,
-                                appearance: {
-                                  theme: theme
+  <!-- Main -->
+  <div class="flex-auto p-6 sm:p-10">
+      <!-- CONTENT GOES HERE -->     
+      <div>
+          <button mat-raised-button color="accent" (click)="exportHtml()" style="left: 90%;"> Export HTML</button>
+          <div class="email-editor-wrapper" [ngStyle]="{'widht':'400px' ,'padding-left': '30px','height':'85vh'}">
+              <email-editor #emailEditor
+                            
+                            [options]="{
+                              projectId: 1,
+                              appearance: {
+                                theme: theme,
+                                panels:{
+                                  tools:{
+                                    dock: 'left'
+                                  }
                                 }
-                              }"
-                              (onLoad)="onEditorLoad()">
-                </email-editor>
-                
-                
-                
-              </div>
-              
-            
-       
-
-
-    </div>
-
+                                
+                              }
+                            }"
+                            (onLoad)="onEditorLoad()">
+              </email-editor>
+          </div>
+      </div>
+  </div>
 </div>

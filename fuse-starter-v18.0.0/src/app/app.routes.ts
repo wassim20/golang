@@ -76,7 +76,7 @@ export const appRoutes: Route[] = [
         },
         children: [
             {path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes')},
-            
+           
         ]
         
 
@@ -90,7 +90,7 @@ export const appRoutes: Route[] = [
             initialData: initialDataResolver
         },
         children:[
-            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation/automation.routes')},
+            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
         ]
     }
 

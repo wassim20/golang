@@ -1,0 +1,29 @@
+.trigger-cards {
+    display: flex;
+    flex-wrap: wrap; /* Allow cards to wrap on small screens */
+    margin: 1rem; /* Add some margin */
+    margin: 0.5rem; /* Margin between cards */
+    cursor: pointer; /* Indicate clickable cards */
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1); /* Add a shadow */
+    transition: all 0.3s; /* Add a smooth transition on hover */
+    width: 100%; /* Set the width of the cards */
+    background-color: #fff; /* White background */
+  }
+  
+  .trigger-card{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 1rem;
+    padding: 1rem;
+
+  }
+
+  .mat-form-field {
+    min-width: 200px; /* Adjust as needed */
+  }
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Adjust the gap as needed */
+}
