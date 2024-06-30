@@ -15,6 +15,10 @@ type CampaignIn struct {
 	FromEmail  string    `json:"fromEmail" binding:"required"` // FromEmail is the from email address of the campaign.
 	FromName   string    `json:"fromName" binding:"required"`  // FromName is the from name of the campaign.
 	DeliveryAt time.Time `json:"deliveryAt,omitempty"`         // DeliveryAt is the delivery time of the campaign (nullable).
+	TrackOpen  bool      `json:"trackOpen"`                    // TrackOpen indicates whether opens are tracked for the campaign.
+	TrackClick bool      `json:"trackClick"`                   // TrackClick indicates whether clicks are tracked for the campaign.
+	ReplyTo    string    `json:"replyTo"`                      // ReplyTo is the reply-to email address of the campaign.
+
 } //@name CampaignIn
 
 // @Description CampaignsPagination represents the paginated list of campaigns.

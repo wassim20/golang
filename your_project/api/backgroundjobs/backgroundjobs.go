@@ -138,7 +138,7 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 
 					//2nd approach
 
-					openTrackingPixelURL := fmt.Sprintf("http://localhost:8080/api/track/pixel.png?trackingID=%s", trackingLog.OpenTrackingID.String())
+					openTrackingPixelURL := fmt.Sprintf("https://apitest385.cbot.tn/api/static/pixel.png?trackingID=%s", trackingLog.OpenTrackingID.String())
 
 					// Append the tracking pixel <img> tag within the HTML body
 					body = strings.Replace(body, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
@@ -148,7 +148,7 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				if campaign.TrackClick {
 					// Create a unique click ID for each link
 					trackingLog.ClickTrackingID = uuid.New()
-					openClickTrackingURL := "http://localhost:8080/api/" + mailinglist.CompanyID.String() + "/" + campaignID.String() + "/logs/click/" + trackingLog.ClickTrackingID.String()
+					openClickTrackingURL := fmt.Sprintf("https://apitest385.cbot.tn/api/click?trackingID=%s", trackingLog.ClickTrackingID.String())
 
 					// Case-insensitive match
 

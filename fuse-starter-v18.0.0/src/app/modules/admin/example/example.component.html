@@ -2,7 +2,7 @@
   <!-- Main -->
   <div class="flex-auto p-6 sm:p-10">
       <!-- CONTENT GOES HERE -->     
-      <div>
+      <!-- <div >
           <button mat-raised-button color="accent" (click)="exportHtml()" style="left: 90%;"> Export HTML</button>
           <div class="email-editor-wrapper" [ngStyle]="{'widht':'400px' ,'padding-left': '30px','height':'85vh'}">
               <email-editor #emailEditor
@@ -23,5 +23,142 @@
               </email-editor>
           </div>
       </div>
+ -->
+
+
+      <mat-stepper #stepper
+      
+      class="example-stepper"
+      [orientation]="(stepperOrientation | async)!"
+      >
+      <mat-step [stepControl]="firstFormGroup" label="Fill out your mailinglist" errorMessage="mailinglist is required.">
+        <form [formGroup]="firstFormGroup">
+          <mat-select formControlName="mailingList" placeholder="Choose mailing list" required>
+           
+            <mat-option *ngFor="let i of MailingList" [value]="i.id">{{i.name}}</mat-option>
+            
+          </mat-select>
+          <div>
+            <button mat-button matStepperNext>Next</button>
+          </div>
+        </form>
+      </mat-step>
+      <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="fill the campaign please">
+        <form [formGroup]="campaignForm">
+          <!-- <mat-form-field>
+            <input matInput formControlName="name" placeholder="Campaign Name" required>
+          </mat-form-field> -->
+          <div class="input-group">
+            <input class="input" type="text" formControlName="name"  id="Campaign Name" required>
+            <label class="label" for = "Campaign Name">Campaign Name</label>
+            <mat-error *ngIf="campaignForm.controls['name'].touched && campaignForm.controls['name'].invalid">
+              Please enter a valid name 
+            </mat-error>
+          </div>
+          <mat-select formControlName="type" placeholder="Choose a type" required>
+            <label>Type</label>
+            <mat-option value="html">HTML</mat-option>
+            <mat-option value="text">Text</mat-option>
+            
+          </mat-select>
+          <mat-error *ngIf="campaignForm.controls['type'].touched && campaignForm.controls['type'].invalid">
+            Please select a type 
+          </mat-error>
+          <!-- Subject -->
+          <div class="input-group">
+          <input class="input" type="text" formControlName="subject" id="Subject" required>
+          <label class="label" for="Subject">Subject</label>
+          <mat-error *ngIf="campaignForm.controls['subject'].touched && campaignForm.controls['subject'].invalid">
+            verify the subject 
+          </mat-error>
+          </div>
+          <!-- From name -->
+          <div class="input-group">
+            <input class="input" type="text" formControlName="fromName" id="FromName" required>
+            <label class="label" for="FromName">From Name</label>
+            <mat-error *ngIf="campaignForm.controls['fromName'].touched && campaignForm.controls['fromName'].invalid">
+              Please enter a from name. 
+            </mat-error>
+          </div>
+          
+          <div class="input-group">
+            <input class="input" type="email" formControlName="fromEmail" id="FromEmail" required>
+            <label class="label" for="FromEmail">From Email</label>
+            <mat-error *ngIf="campaignForm.controls['fromEmail'].touched && campaignForm.controls['fromEmail'].invalid">
+              Please enter a from email address. 
+            </mat-error>
+          </div>
+          <div class="input-group">
+          
+            <input class="input" matInput formControlName="replyTo" id="replyTo" type="email" required>
+            <label class="label" for = "replyTo">Reply To</label>
+            <mat-error *ngIf="campaignForm.controls['replyTo'].touched && campaignForm.controls['replyTo'].invalid">
+              Please enter a valid email address.
+            </mat-error>
+          
+          </div>
+          <!-- Other fields as per your form group definition -->
+      
+          <div>
+            <button mat-button matStepperPrevious>Back</button>
+            <button mat-button matStepperNext>Next</button>
+          </div>
+        </form>
+      </mat-step>
+      <mat-step [stepControl]="campaignForm" label="Additional Campaign Details" errorMessage="just a bit more">
+        <form [formGroup]="campaignForm">
+          
+          
+          
+          <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
+          <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
+          <mat-checkbox formControlName="resend">Resend</mat-checkbox>
+        
+          <mat-form-field>
+            <mat-label>Run At</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="runAt">
+            <mat-hint>MM/DD/YYYY</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Delivery At</mat-label>
+            <input matInput [matDatepicker]="deliveryPicker" formControlName="deliveryAt">
+            <mat-datepicker-toggle matIconSuffix [for]="deliveryPicker"></mat-datepicker-toggle>
+            <mat-datepicker #deliveryPicker></mat-datepicker>
+          </mat-form-field>
+      
+          <div>
+            <button mat-button matStepperPrevious>Back</button>
+            <button mat-button matStepperNext>Next</button>
+          </div>
+        </form>
+      </mat-step>
+      <mat-step>
+        <ng-template matStepLabel>Done</ng-template>
+        <p>You are now done.</p>
+        <div>
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button (click)="stepper.reset()">Reset</button>
+          <button mat-button (click)="onSubmit()">Submit</button>
+        </div>
+      </mat-step>
+      
+
+
+    </mat-stepper>
+
+
+
+
+
+
+
+
+
+
+
+
   </div>
 </div>
+

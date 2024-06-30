@@ -15,6 +15,7 @@ import (
 	"labs/api/users"
 	"labs/api/workflow"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -22,6 +23,11 @@ import (
 // RoutesApiInit initializes the API routes for various modules.
 func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
+	// CORS middleware configuration
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:4200"} // Replace with your Angular app's URL
+	config.AllowHeaders = []string{"Authorization"}
+	router.Use(cors.New(config))
 	api := router.Group("/api")
 	{
 		// Initialize authentication routes

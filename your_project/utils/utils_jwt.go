@@ -205,8 +205,6 @@ func ExtractJWTValues(ctx *gin.Context) domains.UserSessionJWT {
 		session.UserID = userID
 		session.CompanyID = companyID
 
-		fmt.Println("theeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeestuff", session.UserID, session.CompanyID)
-
 		// Extract roles as []interface{} and convert each to RolesSessionJWT
 		rolesClaim, ok := claims["roles"].([]interface{})
 		if !ok {

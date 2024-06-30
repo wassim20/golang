@@ -42,9 +42,9 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	fmt.Println("CompanyID", session.CompanyID, "pathID", companyID)
+	fmt.Println("user/////////////////", session.UserID)
 	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, companyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
@@ -58,8 +58,6 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println("de", campaign.DeliveryAt)
-
 	// Create a new campaign in the database
 	dbCampaign := &domains.Campaign{
 		ID:              uuid.New(),
@@ -72,6 +70,9 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 		FromEmail:       campaign.FromEmail,
 		FromName:        campaign.FromName,
 		DeliveryAt:      campaign.DeliveryAt,
+		TrackOpen:       campaign.TrackOpen,
+		TrackClick:      campaign.TrackClick,
+		ReplyTo:         campaign.ReplyTo,
 	}
 
 	if err := domains.Create(db.DB, dbCampaign); err != nil {

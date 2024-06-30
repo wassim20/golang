@@ -93,7 +93,7 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 		return
 	}
 
-	log.Println(session, companyID)
+	log.Println("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", session.CompanyID)
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -130,7 +130,7 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 	offset := (page - 1) * limit
 
 	// Retrieve all company data from the database
-	mailinglists, err := ReadAllPagination(db.DB, []domains.Mailinglist{}, session.CompanyID, limit, offset)
+	mailinglists, err := ReadAllPagination(db.DB, []domains.Mailinglist{}, companyID, limit, offset)
 	if err != nil {
 		logrus.Error("Error occurred while finding all company data. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
@@ -138,7 +138,7 @@ func (db Database) ReadMailinglists(ctx *gin.Context) {
 	}
 
 	// Retriece total count
-	count, err := domains.ReadTotalCount(db.DB, &domains.Mailinglist{}, "id", session.CompanyID)
+	count, err := domains.ReadTotalCount(db.DB, &domains.Mailinglist{}, "id", companyID)
 	if err != nil {
 		logrus.Error("Error occurred while finding total count. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
