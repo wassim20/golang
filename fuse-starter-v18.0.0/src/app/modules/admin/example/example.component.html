@@ -2,7 +2,7 @@
   <!-- Main -->
   <div class="flex-auto p-6 sm:p-10">
       <!-- CONTENT GOES HERE -->     
-      <!-- <div >
+      <div *ngIf="campaigncreated">
           <button mat-raised-button color="accent" (click)="exportHtml()" style="left: 90%;"> Export HTML</button>
           <div class="email-editor-wrapper" [ngStyle]="{'widht':'400px' ,'padding-left': '30px','height':'85vh'}">
               <email-editor #emailEditor
@@ -23,24 +23,27 @@
               </email-editor>
           </div>
       </div>
- -->
+
 
 
       <mat-stepper #stepper
-      
+      *ngIf="!campaigncreated"
       class="example-stepper"
       [orientation]="(stepperOrientation | async)!"
       >
       <mat-step [stepControl]="firstFormGroup" label="Fill out your mailinglist" errorMessage="mailinglist is required.">
         <form [formGroup]="firstFormGroup">
+          <mat-form-field>
           <mat-select formControlName="mailingList" placeholder="Choose mailing list" required>
-           
+            
             <mat-option *ngFor="let i of MailingList" [value]="i.id">{{i.name}}</mat-option>
             
           </mat-select>
+        </mat-form-field>
           <div>
             <button mat-button matStepperNext>Next</button>
           </div>
+          
         </form>
       </mat-step>
       <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="fill the campaign please">
@@ -106,31 +109,44 @@
         </form>
       </mat-step>
       <mat-step [stepControl]="campaignForm" label="Additional Campaign Details" errorMessage="just a bit more">
-        <form [formGroup]="campaignForm">
-          
-          
-          
+        <form [formGroup]="additionalCampaignForm">
           <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
           <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
           <mat-checkbox formControlName="resend">Resend</mat-checkbox>
-        
+    
           <mat-form-field>
-            <mat-label>Run At</mat-label>
-            <input matInput [matDatepicker]="picker" formControlName="runAt">
+            <input matInput [ngxMatDatetimePicker]="picker" placeholder="Choose a date" formControlName="runAt" id="runAt">
             <mat-hint>MM/DD/YYYY</mat-hint>
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
+            <ngx-mat-datepicker-toggle matSuffix [for]="picker"></ngx-mat-datepicker-toggle>
+            <ngx-mat-datetime-picker #picker 
+                                     [stepHour]="1" 
+                                     [stepMinute]="1"
+                                     [showHours]="true" 
+                                     [showMinutes]="true"
+                                     ></ngx-mat-datetime-picker>
+            <mat-error *ngIf="additionalCampaignForm.get('runAt').touched && additionalCampaignForm.get('runAt').invalid">
+              Please enter a valid date and time.
+            </mat-error>
           </mat-form-field>
+    
           <mat-form-field>
-            <mat-label>Delivery At</mat-label>
-            <input matInput [matDatepicker]="deliveryPicker" formControlName="deliveryAt">
-            <mat-datepicker-toggle matIconSuffix [for]="deliveryPicker"></mat-datepicker-toggle>
-            <mat-datepicker #deliveryPicker></mat-datepicker>
+            <input matInput [ngxMatDatetimePicker]="deliveryPicker" placeholder="Delivery At" formControlName="deliveryAt" id="deliveryAt">
+            <mat-hint>MM/DD/YYYY</mat-hint>
+            <ngx-mat-datepicker-toggle matSuffix [for]="deliveryPicker"></ngx-mat-datepicker-toggle>
+            <ngx-mat-datetime-picker #deliveryPicker 
+                                     [stepHour]="1" 
+                                     [stepMinute]="1"
+                                     [showHours]="true" 
+                                     [showMinutes]="true"
+                                     ></ngx-mat-datetime-picker>
+            <mat-error *ngIf="additionalCampaignForm.get('deliveryAt').touched && additionalCampaignForm.get('deliveryAt').invalid">
+              Please enter a valid delivery date and time.
+            </mat-error>
           </mat-form-field>
-      
+    
           <div>
             <button mat-button matStepperPrevious>Back</button>
-            <button mat-button matStepperNext>Next</button>
+            <button mat-button  matStepperNext>Next</button>
           </div>
         </form>
       </mat-step>

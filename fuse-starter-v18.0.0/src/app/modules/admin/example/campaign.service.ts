@@ -8,19 +8,21 @@ import { throwError } from 'rxjs';
   providedIn: 'root'
 })
 export class CampaignService {
+
+  
  private companyID ="b27ee77c-9043-4000-b7e0-f1a920da2c2f" ;
  private baseUrl = 'http://localhost:8080/api';
- private jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjoiYjI3ZWU3N2MtOTA0My00MDAwLWI3ZTAtZjFhOTIwZGEyYzJmIiwiZXhwIjoxNzE5NzA0NzUzLCJpYXQiOjE3MTk1MzE5NTMsInJvbGVzIjpbeyJpZCI6ImMyNmQ0MGE2LTc0MzMtNDg1MC1hYmUyLWIwMzIxYzNkNDA3ZiIsIm5hbWUiOiJNYW5hZ2VyIiwiY29tcGFueV9pZCI6ImIyN2VlNzdjLTkwNDMtNDAwMC1iN2UwLWYxYTkyMGRhMmMyZiJ9XSwidXNlcl9pZCI6IjgzODJlYzZkLTI1OWUtNDQxMy04NjIyLWFiYTFlZWM3MzdlOSJ9.um7HBxK3MH70rIS43ZZ_9ALRxvD5d7Dw8qc3vYg5e-Q'
+                    
+ private jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjoiYjI3ZWU3N2MtOTA0My00MDAwLWI3ZTAtZjFhOTIwZGEyYzJmIiwiZXhwIjoxNzE5OTY2MDE4LCJpYXQiOjE3MTk3OTMyMTgsInJvbGVzIjpbeyJpZCI6ImMyNmQ0MGE2LTc0MzMtNDg1MC1hYmUyLWIwMzIxYzNkNDA3ZiIsIm5hbWUiOiJNYW5hZ2VyIiwiY29tcGFueV9pZCI6ImIyN2VlNzdjLTkwNDMtNDAwMC1iN2UwLWYxYTkyMGRhMmMyZiJ9XSwidXNlcl9pZCI6IjgzODJlYzZkLTI1OWUtNDQxMy04NjIyLWFiYTFlZWM3MzdlOSJ9.VJn51F28ekCyBpKnwMH-9olqj-FtTp715aBg5LGi2O4'
  constructor(private http: HttpClient) { }
   //api/:companyID/campaigns
   private getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      'Authorization': `Bearer ${this.jwtToken}`
-    });
+    let headers = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.jwtToken}`)
+      .set('Content-Type', 'application/json');
+    return headers;
   }
   getMailingLists(companyID: string, page: number = 1, limit: number = 10): Observable<any> {
-    
-    
     return this.http.get<any>(`${this.baseUrl}/${companyID}/mailinglist`, {
       headers: this.getHeaders(),
       params: {
@@ -29,12 +31,20 @@ export class CampaignService {
       }
     });
   }
-
+  getCampaigns( page: number = 1, limit: number = 10): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/campaigns`, {
+      headers: this.getHeaders(),
+      params: {
+        page: page.toString(),
+        limit: limit.toString()
+      }
+    });
+  }
   createCampaign(companyID: string, campaign: any): Observable<any> {
-    console.log('Sending campaign:', campaign);
-    campaign.html = "<h1>Test</h1>";  
+    campaign.html = "<h1>Test</h1>";
+    const headers = this.getHeaders();
     return this.http.post<any>(`${this.baseUrl}/${companyID}/campaigns/${campaign.mailingListId}`, campaign, {
-      headers: this.getHeaders()
+      headers: headers
     }).pipe(
       catchError(error => {
         console.error('Error creating campaign:', error);
@@ -54,4 +64,18 @@ export class CampaignService {
   getFromEmails(): Observable<any[]> {
     return this.http.get<any[]>('/api/fromEmails');
   }
+
+  getCampaignByID(companyID: string, campaignID: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  updateCampaign(companyID: string, campaignID: string, campaign: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, campaign, {
+      headers: this.getHeaders()
+    });
+  }
+
+ 
 }

@@ -81,3 +81,50 @@ position: relative;
   color: var(--primary);
   border-radius: 20px;
 }
+.ngx-mat-timepicker {
+  .mat-mdc-form-field-flex {
+      padding: 0 !important;
+  }
+  
+}
+/* Customizes the background color of Material Design raised buttons that are not disabled */
+.mat-mdc-raised-button:not(:disabled) {
+  background-color: #4f46e5 !important; /* Dark purple color for better visibility */
+}
+
+.mat-mdc-raised-button:not(:disabled):hover {
+  background-color: #3730a3 !important; /* Slightly darker shade for hover effect */
+}
+
+/* Adjusts the position of the close button in the date picker for better visibility */
+.mat-datepicker-content .mat-datepicker-close-button {
+  position: relative !important;
+  top: 100% !important;
+  left: 77% !important;
+  margin-top: 8px !important;
+}/* Hide the button's label text */
+.mat-datepicker-close-button .mdc-button__label {
+  display: none;
+}
+
+/* Add a tick icon using ::before pseudo-element */
+.mat-datepicker-close-button::before {
+  content: "\2714"; /* Unicode character for tick mark */
+  font-size: 24px; /* Adjust size as needed */
+  color: #ffffff; /* Tick mark color, assuming white is desired */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Ensure the button itself is properly styled to accommodate the icon */
+.mat-datepicker-close-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px; /* Adjust width as needed */
+  height: 40px; /* Adjust height as needed */
+  border-radius: 50%; /* Circular shape */
+  background-color: #4f46e5; /* Background color, adjust as needed */
+}

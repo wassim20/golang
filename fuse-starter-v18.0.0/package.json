@@ -13,6 +13,7 @@
         "test": "ng test"
     },
     "dependencies": {
+        "@angular-material-components/datetime-picker": "^16.0.1",
         "@angular/animations": "16.0.3",
         "@angular/cdk": "16.0.2",
         "@angular/common": "16.0.3",
@@ -25,6 +26,8 @@
         "@angular/platform-browser-dynamic": "16.0.3",
         "@angular/router": "16.0.3",
         "@ngneat/transloco": "4.2.7",
+        "@ngxmc/datetime-picker": "^18.1.0",
+        "@syncfusion/ej2-angular-calendars": "^26.1.40",
         "@trippete/angular-email-editor": "^3.0.0",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",

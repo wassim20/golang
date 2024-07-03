@@ -76,6 +76,8 @@ export const appRoutes: Route[] = [
         },
         children: [
             {path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes')},
+            {path:'campaignlist', loadChildren: () => import('app/modules/admin/example/campaign-list/campaign-list.routes')},
+            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
            
         ]
         
@@ -90,7 +92,19 @@ export const appRoutes: Route[] = [
             initialData: initialDataResolver
         },
         children:[
-            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
+            
+        ]
+    },
+    {
+        path:'',
+        canActivate: [AuthGuard],
+        canActivateChild: [AuthGuard],
+        component: LayoutComponent,
+        resolve: {
+            initialData: initialDataResolver
+        },
+        children:[
+            {path:'campaignlist', loadChildren: () => import('app/modules/admin/example/campaign-list/campaign-list.routes')},
         ]
     }
 

@@ -15,7 +15,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
         type: 'basic',
         icon: 'mat_solid:auto_awesome_motion',
         link: '/automation'
-     }
+     },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
     {
