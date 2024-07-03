@@ -1,7 +1,6 @@
 package campaign
 
 import (
-	"fmt"
 	"labs/constants"
 	"labs/domains"
 	"labs/utils"
@@ -29,26 +28,28 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 
 	// Extract JWT values from the context (assuming JWT middleware is used)
 	session := utils.ExtractJWTValues(ctx)
-
-	companyID, err := uuid.Parse(ctx.Param("companyID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	//after  testing backend make sure this is uncommented
+	// companyID, err := uuid.Parse(ctx.Param("companyID"))
+	// if err != nil {
+	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 	mailinglistID, err := uuid.Parse(ctx.Param("mailinglistID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	fmt.Println("user/////////////////", session.UserID)
+
+	//after  testing backend make sure this is uncommented
+
 	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, companyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, companyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Parse the incoming JSON request into a CampaignIn struct
 	campaign := new(CampaignIn)
@@ -82,7 +83,7 @@ func (db Database) CreateCampaign(ctx *gin.Context) {
 	}
 
 	// Respond with success
-	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, utils.Null())
+	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, dbCampaign)
 }
 
 // @Summary      Get All Campaigns
@@ -108,18 +109,13 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	mailinglistID, err := uuid.Parse(ctx.Param("mailinglistID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
-	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+
+	// // Check if the employee belongs to the specified company
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -147,7 +143,7 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 	offset := (page - 1) * limit
 
 	// Retrieve all campaign data from the database based on user's company
-	campaigns, err := ReadAllPaginationFromMailinglist(db.DB, []domains.Campaign{}, mailinglistID, limit, offset)
+	campaigns, err := ReadAllPaginationFromCompany(db.DB, []domains.Campaign{}, companyID, limit, offset)
 	if err != nil {
 		logrus.Error("Error occurred while finding all campaign data. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
@@ -164,14 +160,15 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 
 	// Generate a campaign response structure
 	response := CampaignsPagination{} // Consider renaming to CampaignsPagination
-	listCampaigns := []CampaignsTable{}
+	listCampaigns := []CampaignsDetails{}
 
 	// Convert retrieved campaigns to response format
 	for _, campaign := range campaigns {
-		listCampaigns = append(listCampaigns, CampaignsTable{
+		listCampaigns = append(listCampaigns, CampaignsDetails{
 			ID:          campaign.ID,
 			Name:        campaign.Name,
 			Subject:     campaign.Subject,
+			HTML:        campaign.HTML,
 			FromEmail:   campaign.FromEmail,
 			FromName:    campaign.FromName,
 			ReplyTo:     campaign.ReplyTo,
@@ -209,7 +206,7 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 func (db Database) ReadCampaign(ctx *gin.Context) {
 
 	// Extract JWT values from the context (assuming JWT middleware is used)
-	session := utils.ExtractJWTValues(ctx)
+	//session := utils.ExtractJWTValues(ctx)
 
 	// Parse and validate the company ID from the request parameter
 	objectID, err := uuid.Parse(ctx.Param("ID"))
@@ -218,21 +215,21 @@ func (db Database) ReadCampaign(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
+	//uncomment all this after test
+	// companyID, err := uuid.Parse(ctx.Param("companyID"))
+	// if err != nil {
+	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
-	companyID, err := uuid.Parse(ctx.Param("companyID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
-
-	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
-
+	// // Check if the employee belongs to the specified company
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
+	//end uncomment all this after test
 	// Retrieve the campaign data by ID from the database
 	campaign, err := ReadByID(db.DB, domains.Campaign{}, objectID)
 	if err != nil {
@@ -287,19 +284,19 @@ func (db Database) UpdateCampaign(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	companyID, err := uuid.Parse(ctx.Param("companyID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// companyID, err := uuid.Parse(ctx.Param("companyID"))
+	// if err != nil {
+	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
-	// Check if the employee belongs to the specified company
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// // Check if the employee belongs to the specified company
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	campaignUpdate := new(CampaignIn)
 	if err := ctx.ShouldBindJSON(campaignUpdate); err != nil {

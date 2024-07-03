@@ -25,9 +25,12 @@ func NewCampaignRepository(db *gorm.DB) {
 	}
 }
 
-// ReadAllPagination retrieves a paginated list of campaigns based on mailinglist_ID, limit, and offset.
-func ReadAllPaginationFromMailinglist(db *gorm.DB, model []domains.Campaign, modelID uuid.UUID, limit, offset int) ([]domains.Campaign, error) {
-	err := db.Where("mailinglist_id = ? ", modelID).Limit(limit).Offset(offset).Find(&model).Error
+// ReadAllPaginationFromCompany retrieves a paginated list of campaigns that belong to a specific company.
+func ReadAllPaginationFromCompany(db *gorm.DB, model []domains.Campaign, companyID uuid.UUID, limit, offset int) ([]domains.Campaign, error) {
+	err := db.Joins("JOIN mailinglists ON mailinglists.id = campaigns.mailinglist_id").
+		Where("mailinglists.company_id = ?", companyID).
+		Limit(limit).Offset(offset).
+		Find(&model).Error
 	return model, err
 }
 

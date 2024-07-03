@@ -21,12 +21,17 @@ type CampaignIn struct {
 
 } //@name CampaignIn
 
+// @Descrition CampaignUpdate represents the input structure for updating an existing campaign.
+type CampaignUpdate struct {
+	HTML string `json:"html"` // HTML is the HTML content of the campaign.
+}
+
 // @Description CampaignsPagination represents the paginated list of campaigns.
 type CampaignsPagination struct {
-	Items      []CampaignsTable `json:"items"`      // Items is a slice containing individual campaign details.
-	Page       uint             `json:"page"`       // Page is the current page number in the pagination.
-	Limit      uint             `json:"limit"`      // Limit is the maximum number of items per page in the pagination.
-	TotalCount uint             `json:"totalCount"` // TotalCount is the total number of campaigns in the entire list.
+	Items      []CampaignsDetails `json:"items"`      // Items is a slice containing individual campaign details.
+	Page       uint               `json:"page"`       // Page is the current page number in the pagination.
+	Limit      uint               `json:"limit"`      // Limit is the maximum number of items per page in the pagination.
+	TotalCount uint               `json:"totalCount"` // TotalCount is the total number of campaigns in the entire list.
 } //@name CampaignsPagination
 
 // @Description CampaignsTable represents a single campaign entry in a table.
