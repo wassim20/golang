@@ -76,7 +76,7 @@ export class ExampleComponent implements OnInit
 
    public dateControl = new FormControl(new Date(2021,9,4,5,6,7));
   ngOnInit(): void {
-     this.companyID = 'b27ee77c-9043-4000-b7e0-f1a920da2c2f'; // Use dynamic companyID as needed
+     this.companyID = 'afa35ff6-4de5-4806-9a21-e0c2453d2834'; // Use dynamic companyID as needed
 
     this.firstFormGroup = this.fb.group({
       mailingList: [null, Validators.required],
@@ -107,6 +107,8 @@ export class ExampleComponent implements OnInit
           console.error('Invalid response structure:', data);
           // Handle unexpected response structure if needed
         }
+        console.log(data);
+        
       },
       error: (error) => {
         console.error('Error fetching mailing lists:', error);

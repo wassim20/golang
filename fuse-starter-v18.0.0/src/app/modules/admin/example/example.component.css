@@ -1,9 +1,5 @@
-.email-editor-wrapper {
-    display: flex;
-    justify-content: center;
-   
-    box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
-}
+/* styles.css or component-specific CSS file */
+
 .example-stepper {
   background-color: #f2f2f2;
   padding: 20px;
@@ -48,14 +44,24 @@
   color: white;
 }
 
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between each input group */
+  padding: 20px;
+}
+
 .input-group {
 font-size: 0.75rem;
+width: 200px;
 position: relative;
+margin-bottom: 20px;
 --primary: #2196f3;
 }
 .input {
   all: unset;
   color: #000000;
+  
   padding: 1rem;
   border: 1px solid #9e9e9e;
   border-radius: 10px;
@@ -74,6 +80,7 @@ position: relative;
   border: 1px solid var(--primary);
 }
 
+
 .input:is(:focus, :valid) ~ label {
   transform: translateY(-120%) scale(0.7);
   background-color: #d4d4d4;
@@ -81,12 +88,22 @@ position: relative;
   color: var(--primary);
   border-radius: 20px;
 }
-.ngx-mat-timepicker {
-  .mat-mdc-form-field-flex {
+
+form {
+  max-width: 100%; /* Adjust based on your preference */
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+
+.ngx-mat-timepicker .mat-mdc-form-field-flex {
+  
       padding: 0 !important;
   }
   
-}
+
 /* Customizes the background color of Material Design raised buttons that are not disabled */
 .mat-mdc-raised-button:not(:disabled) {
   background-color: #4f46e5 !important; /* Dark purple color for better visibility */
