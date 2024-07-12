@@ -1,0 +1,134 @@
+.inventory-grid {
+    grid-template-columns: 48px auto 40px; /* Assuming the 'auto' column is for the 'name' */
+
+    @screen sm {
+        grid-template-columns: 48px auto 112px 72px 40px; /* Adjusted */
+    }
+
+    @screen md {
+        grid-template-columns: 48px 112px auto 112px 72px 40px; /* Adjusted */
+    }
+
+    @screen lg {
+        grid-template-columns: 48px 112px auto 112px 96px 96px 72px 40px; /* Adjusted */
+    }
+}
+
+/* General styling for the form container */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.border-b {
+    border-bottom: 1px solid #e5e7eb;
+}
+.flex {
+    display: flex;
+}
+.p-8 {
+    padding: 2rem;
+}
+.w-full {
+    width: 100%;
+}
+.mat-form-field {
+    margin-bottom: 1rem;
+}
+.mat-form-field.mat-focused .mat-form-field-label {
+    color: #3f51b5;
+}
+.mat-form-field.mat-focused .mat-form-field-underline {
+    background-color: #3f51b5;
+}
+
+
+.ngx-mat-timepicker .mat-mdc-form-field-flex {
+  
+    padding: 0 !important;
+}
+
+
+/* Customizes the background color of Material Design raised buttons that are not disabled */
+.mat-mdc-raised-button:not(:disabled) {
+background-color: #4f46e5 !important; /* Dark purple color for better visibility */
+}
+
+.mat-mdc-raised-button:not(:disabled):hover {
+background-color: #3730a3 !important; /* Slightly darker shade for hover effect */
+}
+
+/* Adjusts the position of the close button in the date picker for better visibility */
+.mat-datepicker-content .mat-datepicker-close-button {
+position: relative !important;
+top: 100% !important;
+left: 77% !important;
+margin-top: 8px !important;
+}/* Hide the button's label text */
+.mat-datepicker-close-button .mdc-button__label {
+display: none;
+}
+
+/* Add a tick icon using ::before pseudo-element */
+.mat-datepicker-close-button::before {
+content: "\2714"; /* Unicode character for tick mark */
+font-size: 24px; /* Adjust size as needed */
+color: #ffffff; /* Tick mark color, assuming white is desired */
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+}
+
+/* Ensure the button itself is properly styled to accommodate the icon */
+.mat-datepicker-close-button {
+display: inline-flex;
+justify-content: center;
+align-items: center;
+width: 40px; /* Adjust width as needed */
+height: 40px; /* Adjust height as needed */
+border-radius: 50%; /* Circular shape */
+background-color: #4f46e5; /* Background color, adjust as needed */
+}
+
+
+.email-template-container {
+    max-width: 300px;
+    max-height: 350px;
+    overflow: hidden; /* Hide overflow to prevent scrollbars */
+}
+
+.email-template-card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative; /* Ensure proper positioning */
+}
+
+.email-template-card mat-card-content {
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scrollbars if necessary */
+}
+
+.email-template-card mat-card-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none; /* Optional: Remove iframe border */
+    transform-origin: 0 0; /* Ensure scaling origin */
+}
+
+
+
+
+
+
+
+
+/* Example of a media query to adjust layout for smaller screens */
+@media (max-width: 600px) {
+    .html-container {
+        padding: 10px;
+    }
+}
+

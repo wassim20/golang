@@ -167,6 +167,7 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 		listCampaigns = append(listCampaigns, CampaignsDetails{
 			ID:          campaign.ID,
 			Name:        campaign.Name,
+			Type:        campaign.Type,
 			Subject:     campaign.Subject,
 			HTML:        campaign.HTML,
 			FromEmail:   campaign.FromEmail,
@@ -241,6 +242,7 @@ func (db Database) ReadCampaign(ctx *gin.Context) {
 	detailedCampaign := &CampaignsDetails{
 		ID:          campaign.ID,
 		Name:        campaign.Name,
+		Type:        campaign.Type,
 		Subject:     campaign.Subject,
 		HTML:        campaign.HTML,
 		Plain:       campaign.Plain,

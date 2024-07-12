@@ -11,7 +11,7 @@ type CampaignIn struct {
 	Type       string    `json:"type" binding:"required"`      // Type is the type of the campaign.
 	Name       string    `json:"name" binding:"required"`      // Name is the name of the campaign.
 	Subject    string    `json:"subject" binding:"required"`   // Subject is the subject of the campaign.
-	HTML       string    `json:"html" binding:"required"`      // HTML is the HTML content of the campaign.
+	HTML       string    `json:"html" `                        // HTML is the HTML content of the campaign.
 	FromEmail  string    `json:"fromEmail" binding:"required"` // FromEmail is the from email address of the campaign.
 	FromName   string    `json:"fromName" binding:"required"`  // FromName is the from name of the campaign.
 	DeliveryAt time.Time `json:"deliveryAt,omitempty"`         // DeliveryAt is the delivery time of the campaign (nullable).
@@ -56,6 +56,7 @@ type CampaignsTable struct {
 type CampaignsDetails struct {
 	ID          uuid.UUID `json:"id"`          // ID is the unique identifier for the campaign.
 	Name        string    `json:"name"`        // Name is the name of the campaign.
+	Type        string    `json:"type"`        // Type is the type of the campaign.
 	Subject     string    `json:"subject"`     // Subject is the subject of the campaign.
 	HTML        string    `json:"html"`        // HTML is the HTML content of the campaign.
 	Plain       string    `json:"plain"`       // Plain is the plain text content of the campaign.

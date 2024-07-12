@@ -63,12 +63,13 @@
                             <!-- Details button -->
                             <div>
                                 <button class="min-w-10 min-h-7 h-7 px-2 leading-6" mat-stroked-button (click)="toggleDetails(campaign.id)">
-                                    <mat-icon class="icon-size-5" [svgIcon]="selectedcampaign?.id === campaign.id ? 'heroicons_solid:chevron-up' : 'heroicons_solid:chevron-down'"></mat-icon>
+                                    <mat-icon class="icon-size-5" [svgIcon]="selectedCampaign?.id === campaign.id ? 'heroicons_solid:chevron-up' : 'heroicons_solid:chevron-down'"></mat-icon>
                                 </button>
+                               
                             </div>
                         </div>
                         <div class="grid">
-                            <ng-container *ngIf="selectedcampaign?.id === campaign.id">
+                            <ng-container *ngIf="selectedCampaign?.id === campaign.id">
                                 <ng-container *ngTemplateOutlet="rowDetailsTemplate; context: {$implicit: campaign}"></ng-container>
                             </ng-container>
                         </div>
@@ -77,6 +78,153 @@
             </div>
         </ng-container>
         </ng-container>
+
+
+       <!-- Template for campaign details -->
+<ng-template #rowDetailsTemplate let-campaign>
+    <div class="shadow-lg overflow-hidden">
+        <div class="flex border-b">
+            <!-- Selected campaign form -->
+            <form class="flex flex-col w-full" [formGroup]="selectedCampaignForm">
+                <div class="flex flex-col sm:flex-row p-8">
+
+
+
+                    <!-- HTMLLLLL -->
+                    <div class="email-template-container">
+                        <ng-container *ngIf="selectedCampaign.html; else noHtml">
+                          <mat-card  appearance="outlined">
+                            <mat-card-content class="email-template-card" [innerHTML]="sanitizeHtml(selectedCampaign.html)">
+                                <body style="width: 100%; height: 100%;">
+                                  </body>
+                              </mat-card-content>
+                          </mat-card>
+                        </ng-container>
+                        <ng-template #noHtml>
+                          <span class="flex items-center min-h-20 text-lg font-semibold">NO HTML CONTENT</span>
+                        </ng-template>
+                      </div>
+  
+                      
+                      
+                    
+
+
+
+                    <div class="flex flex-auto flex-wrap">
+                        <!-- Name, Subject & etc. -->
+                        <div class="flex flex-col w-full lg:w-2/4 sm:pl-8">
+
+                            <!-- Campaign Name -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Campaign Name</mat-label>
+                                <input matInput formControlName="name">
+                            </mat-form-field>
+                            <mat-form-field class="w-full">
+                                <mat-label>Campaign Type</mat-label>
+                                <input matInput formControlName="type">
+                            </mat-form-field>
+
+                            <!-- From Name and From Email -->
+                            <div class="flex">
+                                <mat-form-field class="w-1/2 pr-2">
+                                    <mat-label>From Name</mat-label>
+                                    <input matInput formControlName="fromName">
+                                </mat-form-field>
+                                <mat-form-field class="w-1/2 pl-2">
+                                    <mat-label>From Email</mat-label>
+                                    <input matInput formControlName="fromEmail">
+                                </mat-form-field>
+                            </div>
+
+                            <!-- Reply To and Subject -->
+                            <div class="flex">
+                                <mat-form-field class="w-1/2 pr-2">
+                                    <mat-label>Reply To</mat-label>
+                                    <input matInput formControlName="replyTo">
+                                </mat-form-field>
+                                <mat-form-field class="w-1/2 pl-2">
+                                    <mat-label>Subject</mat-label>
+                                    <input matInput formControlName="subject">
+                                </mat-form-field>
+                            </div>
+
+                            <!-- Status and Resend -->
+                            <div class="flex">
+                                <mat-form-field class="w-1/2 pr-2">
+                                    <mat-label>Status</mat-label>
+                                    <input matInput formControlName="status">
+                                </mat-form-field>
+                                
+                            </div>
+                        </div>
+
+                        <!-- Delivery At, Run At, and Track Open -->
+                        <div class="flex flex-col w-full lg:w-1/4 sm:pl-8">
+                            <mat-form-field class="w-full">
+                                <input matInput [ngxMatDatetimePicker]="picker1" placeholder="Choose a date" formControlName="deliveryAt" id="deliveryAt">
+                                <mat-hint>MM/DD/YYYY</mat-hint>
+                                <ngx-mat-datepicker-toggle matSuffix [for]="picker1"></ngx-mat-datepicker-toggle>
+                                <ngx-mat-datetime-picker #picker1
+                                                         [stepHour]="1"
+                                                         [stepMinute]="1"
+                                                         [showHours]="true"
+                                                         [showMinutes]="true">
+                                </ngx-mat-datetime-picker>
+                                <mat-error *ngIf="selectedCampaignForm.get('deliveryAt').touched && selectedCampaignForm.get('deliveryAt').invalid">
+                                  Please enter a valid date and time.
+                                </mat-error>
+                            </mat-form-field>
+                            <mat-form-field class="w-full">
+                                <input matInput [ngxMatDatetimePicker]="picker2" placeholder="Choose a date" formControlName="runAt" id="runAt">
+                                <mat-hint>MM/DD/YYYY</mat-hint>
+                                <ngx-mat-datepicker-toggle matSuffix [for]="picker2"></ngx-mat-datepicker-toggle>
+                                <ngx-mat-datetime-picker #picker2
+                                                         [stepHour]="1"
+                                                         [stepMinute]="1"
+                                                         [showHours]="true"
+                                                         [showMinutes]="true">
+                                </ngx-mat-datetime-picker>
+                                <mat-error *ngIf="selectedCampaignForm.get('runAt').touched && selectedCampaignForm.get('runAt').invalid">
+                                  Please enter a valid date and time.
+                                </mat-error>
+                            </mat-form-field>
+                            <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
+                        </div>
+                        
+                        <!-- Track Click and Sign DKIM -->
+                        <div class="flex flex-col w-full lg:w-1/4 sm:pl-8">
+                            <mat-checkbox formControlName="resend">resend</mat-checkbox>
+                            <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
+                            <mat-checkbox formControlName="signDKIM">Sign DKIM</mat-checkbox>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between w-full border-t px-8 py-4">
+                    <button mat-flat-button color="warn" (click)="deleteSelectedCampaign()">
+                        Delete
+                    </button>
+                    <div class="flex items-center">
+                        <div class="flex items-center mr-4" *ngIf="flashMessage">
+                            <ng-container *ngIf="flashMessage === 'success'">
+                                <mat-icon class="text-green-500" svgIcon="heroicons_outline:check"></mat-icon>
+                                <span class="ml-2">Campaign updated</span>
+                            </ng-container>
+                            <ng-container *ngIf="flashMessage === 'error'">
+                                <mat-icon class="text-red-500" svgIcon="heroicons_outline:x-mark"></mat-icon>
+                                <span class="ml-2">An error occurred, try again!</span>
+                            </ng-container>
+                        </div>
+                        <button mat-flat-button color="primary" (click)="updateSelectedCampaign()">
+                            Update
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</ng-template>
     
         <ng-template #nocampaigns>
             <div class="p-8 sm:p-16 border-t text-4xl font-semibold tracking-tight text-center">There are no campaigns!</div>

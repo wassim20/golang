@@ -14,32 +14,67 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { fuseAnimations } from '@fuse/animations';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { DateTimePickerModule } from "@syncfusion/ej2-angular-calendars";
 
 
 
 import { catchError, debounceTime, map, merge, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
 import { CampaignService } from '../campaign.service';
+import { NgxMatDatetimePickerModule, NgxMatNativeDateModule, NgxMatTimepickerModule } from '@angular-material-components/datetime-picker';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'campaignlist',
   standalone: true,
   templateUrl: './campaign-list.component.html',
-  styleUrls: ['./campaign-list.component.scss'],
-  imports        : [CommonModule,NgIf, MatProgressBarModule, MatFormFieldModule, MatIconModule, MatInputModule, FormsModule, ReactiveFormsModule, MatButtonModule, MatSortModule, NgFor, NgTemplateOutlet, MatPaginatorModule, NgClass, MatSlideToggleModule, MatSelectModule, MatOptionModule, MatCheckboxModule, MatRippleModule, AsyncPipe, CurrencyPipe],
+  styleUrls: ['./campaign-list.component.css'],
+  imports        : [CommonModule,NgIf, MatProgressBarModule, MatFormFieldModule, MatIconModule, MatInputModule, FormsModule, ReactiveFormsModule, MatButtonModule, MatSortModule, NgFor, NgTemplateOutlet, MatPaginatorModule, NgClass, MatSlideToggleModule, MatSelectModule, MatOptionModule, MatCheckboxModule, MatRippleModule, AsyncPipe, CurrencyPipe,
+    NgxMatDatetimePickerModule,
+      NgxMatTimepickerModule,
+      NgxMatNativeDateModule,
+      DateTimePickerModule,
+      MatCardModule,
+  ],
 
 })
 export class CampaignListComponent implements OnInit {
-createCampaign() {
-throw new Error('Method not implemented.');
-}
+
+
+
+
 
   campaigns: any;
+  selectedCampaign: any;
+  flashMessage: 'success' | 'error' | null = null;
+  selectedCampaignForm: UntypedFormGroup;
 
-  constructor(private service: CampaignService,) { }
+  constructor(private sanitizer: DomSanitizer,private service: CampaignService, private _changeDetectorRef: ChangeDetectorRef,private fb : UntypedFormBuilder) { }
 
   
 
 ngOnInit(): void {
+  this.selectedCampaign=null;
+
+  this.selectedCampaignForm = this.fb.group({
+    id: [''],
+    customOrder: [0],
+    deliveryAt: [''],
+    fromEmail: [''],
+    fromName: [''],
+    type: [''],
+    name: [''],
+    plain: [''],
+    replyTo: [''],
+    resend: [false],
+    runAt: [''],
+    signDKIM: [false],
+    status: [''],
+    subject: [''],
+    trackClick: [true],
+    trackOpen: [true],
+});
+
   this.service.getCampaigns(1, 10).subscribe({
     next: (data) => {
       if (data && data.data && data.data.items) {
@@ -57,24 +92,152 @@ ngOnInit(): void {
   });
 }
 
+createCampaign() {
+  throw new Error('Method not implemented.');
+  }
+
   
 
 
 
-deleteProduct() {
+deleteCampaign() {
 throw new Error('Method not implemented.');
 }
-saveProduct() {
-throw new Error('Method not implemented.');
+updateSelectedCampaign() {
+
+  //update the selected campaign
+ const campaignIn = {
+  type: '',
+  name: '',
+  subject: '',
+  html: '',
+  fromEmail: '',
+  fromName: '',
+  deliveryAt: null, // Assuming you will handle date as a string or null in TypeScript
+  trackOpen: false,
+  trackClick: false,
+  replyTo: ''
+};
+campaignIn.type = this.selectedCampaignForm.value.type;
+campaignIn.name = this.selectedCampaignForm.value.name;
+campaignIn.subject = this.selectedCampaignForm.value.subject;
+
+campaignIn.fromEmail = this.selectedCampaignForm.value.fromEmail;
+campaignIn.fromName = this.selectedCampaignForm.value.fromName;
+campaignIn.deliveryAt = this.selectedCampaignForm.value.deliveryAt;
+campaignIn.trackOpen = this.selectedCampaignForm.value.trackOpen;
+campaignIn.trackClick = this.selectedCampaignForm.value.trackClick;
+campaignIn.replyTo = this.selectedCampaignForm.value.replyTo;
+
+console.log(campaignIn);
+
+
+
+  this.service.updateCampaign("afa35ff6-4de5-4806-9a21-e0c2453d2834", this.selectedCampaign.id, campaignIn)
+  .subscribe(() =>
+    {
+        // Show a success message
+        this.showFlashMessage('success');
+    });
 }
-  ;
-toggleDetails(arg0: number) {
-throw new Error('Method not implemented.');
+showFlashMessage(type: 'success' | 'error'): void
+{
+    // Show the message
+    this.flashMessage = type;
+
+    // Mark for check
+    this._changeDetectorRef.markForCheck();
+
+    // Hide it after 3 seconds
+    setTimeout(() =>
+    {
+        this.flashMessage = null;
+
+        // Mark for check
+        this._changeDetectorRef.markForCheck();
+    }, 3000);
 }
-selectedProduct: any;
-createProduct() {
-throw new Error('Method not implemented.');
+closeDetails(): void
+{
+    this.selectedCampaign = null;
 }
+ toggleDetails(CampaignId: string): void {
+    // If the Campaign is already selected...
+    
+    
+    if (this.selectedCampaign && this.selectedCampaign.id === CampaignId) {
+        // Close the details
+        this.closeDetails();
+        return;
+    }
+
+    // Get the Campaign by id
+    this.service.getCampaignByID("afa35ff6-4de5-4806-9a21-e0c2453d2834", CampaignId)
+        .subscribe((Campaign) => {
+            // Set the selected Campaign
+            this.selectedCampaign = Campaign.data;
+
+            // Prepare the data for the form
+            const formValue = {
+                id: this.selectedCampaign.id,
+                customOrder: this.selectedCampaign.customOrder,
+                deliveryAt: this.selectedCampaign.deliveryAt,
+                fromEmail: this.selectedCampaign.fromEmail,
+                fromName: this.selectedCampaign.fromName,
+                html: this.selectedCampaign.html,
+                type: this.selectedCampaign.type,
+                name: this.selectedCampaign.name,
+                plain: this.selectedCampaign.plain,
+                replyTo: this.selectedCampaign.replyTo,
+                resend: this.selectedCampaign.resend,
+                runAt: this.selectedCampaign.runAt,
+                signDKIM: this.selectedCampaign.signDKIM,
+                status: this.selectedCampaign.status,
+                subject: this.selectedCampaign.subject,
+                trackClick: this.selectedCampaign.trackClick,
+                trackOpen: this.selectedCampaign.trackOpen,
+                
+              };
+              
+
+            //Fill the form with the prepared data
+            this.selectedCampaignForm.patchValue(formValue);
+            console.log(this.selectedCampaign.id,CampaignId);
+            
+            
+
+            // Mark for check
+            this._changeDetectorRef.markForCheck();
+        });
+}
+
+sanitizeHtml(html: string): SafeHtml {
+
+  
+
+  return this.sanitizer.bypassSecurityTrustHtml(html);
+}
+    
+
+adjustScale(iframe: HTMLIFrameElement): void {
+  if (!iframe) return;
+  
+  const contentWidth = iframe.contentWindow.document.body.scrollWidth;
+  const contentHeight = iframe.contentWindow.document.body.scrollHeight;
+  
+  const containerWidth = iframe.offsetWidth;
+  const containerHeight = iframe.offsetHeight;
+  
+  const scaleX = containerWidth / contentWidth;
+  const scaleY = containerHeight / contentHeight;
+  
+  const scale = Math.min(scaleX, scaleY);
+  
+  iframe.style.transform = `scale(${scale})`;
+}
+
+
+
 
 
 }
