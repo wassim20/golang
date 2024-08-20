@@ -38,3 +38,9 @@ func ReadAllContactsForMailingList(db *gorm.DB, mailinglistID uuid.UUID, limit, 
 	err := db.Where("mailinglist_id = ? ", mailinglistID).Limit(limit).Offset(offset).Find(&contacts).Error
 	return contacts, err
 }
+
+func ReadAllMailingList(db *gorm.DB, companyID uuid.UUID) ([]domains.Mailinglist, error) {
+	var model []domains.Mailinglist
+	err := db.Where("company_id = ? ", companyID).Find(&model).Error
+	return model, err
+}

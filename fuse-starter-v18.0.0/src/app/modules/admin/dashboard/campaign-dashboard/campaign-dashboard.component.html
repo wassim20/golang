@@ -1,0 +1,139 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+
+     
+          <mat-form-field appearance="fill">
+            <mat-label>Choose campaign</mat-label>
+            <mat-select [(value)]="selectedCampaign" (selectionChange)="onCampaignChange($event.value)">
+              <mat-option *ngFor="let campaign of campaigns" [value]="campaign">
+                {{ campaign.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        
+
+        <div *ngIf="isLoading; else content">
+            <div class="loading-spinner">
+              <!-- Add your spinner code here -->
+              <mat-spinner></mat-spinner>
+            </div>
+          </div>
+            <ng-template #content>
+          <div *ngIf="selectedCampaign && logs!= null ;else nologs" >
+            <h3>{{ selectedCampaign.name }} Analytics</h3>
+            <!-- Bar chart -->
+            <div id="barchart">
+              <apx-chart [series]="barChartOptions.series"
+                         [chart]="barChartOptions.chart"
+                         [dataLabels]="barChartOptions.dataLabels"
+                         [plotOptions]="barChartOptions.plotOptions"
+                         [xaxis]="barChartOptions.xaxis">
+              </apx-chart>
+            </div>
+            <div class="chart-container">
+            <div id="piechart">
+              <apx-chart [series]="pieChartOptions.series"
+                         [chart]="pieChartOptions.chart"
+                         [labels]="pieChartOptions.labels"
+                         [responsive]="pieChartOptions.responsive">
+              </apx-chart>
+            </div>
+            <div id="radialchart">
+              <h3 style="display: flex; justify-content: center; align-items: center;"> Total Emails sent with tracking {{logs.length}}</h3>
+              <apx-chart
+                [series]="radialChartOptions.series"
+                [chart]="radialChartOptions.chart"
+                [plotOptions]="radialChartOptions.plotOptions"
+                [labels]="radialChartOptions.labels"
+                [fill]="radialChartOptions.fill"
+                [tooltip]="radialChartOptions.tooltip"
+              ></apx-chart>
+            </div>
+          </div>
+            <div id="lineChart">
+              <apx-chart [series]="lineChartOptions.series"
+                         [chart]="lineChartOptions.chart"
+                         [dataLabels]="lineChartOptions.dataLabels"
+                         [stroke]="lineChartOptions.stroke"
+                         [xaxis]="lineChartOptions.xaxis"
+                         [yaxis]="lineChartOptions.yaxis"
+                         [markers]="lineChartOptions.markers"
+                         [title]="lineChartOptions.title"
+                         [grid]="lineChartOptions.grid">
+              </apx-chart>
+            </div>
+            
+            <div id="scatterchart">
+              <apx-chart
+                [series]="scatterChartOptions.series"
+                [chart]="scatterChartOptions.chart"
+                [xaxis]="scatterChartOptions.xaxis"
+                [yaxis]="scatterChartOptions.yaxis"
+                [dataLabels]="scatterChartOptions.dataLabels"
+                [grid]="scatterChartOptions.grid" 
+                [tooltip]="scatterChartOptions.tooltip"
+                
+              ></apx-chart>
+            </div> 
+            <div class="chart-container">
+              <div class="barchartopen">
+                <apx-chart
+                  [series]="barChartOptionsOpen.series"
+                  [chart]="barChartOptionsOpen.chart"
+                  [dataLabels]="barChartOptionsOpen.dataLabels"
+                  [plotOptions]="barChartOptionsOpen.plotOptions"
+                  [yaxis]="barChartOptionsOpen.yaxis"
+                  [xaxis]="barChartOptionsOpen.xaxis"
+                  [fill]="barChartOptionsOpen.fill"
+                  [title]="barChartOptionsOpen.title"
+                ></apx-chart>
+              </div>
+              <div class="barchartclick">
+                <apx-chart
+                  [series]="barChartOptionsClick.series"
+                  [chart]="barChartOptionsClick.chart"
+                  [dataLabels]="barChartOptionsClick.dataLabels"
+                  [plotOptions]="barChartOptionsClick.plotOptions"
+                  [yaxis]="barChartOptionsClick.yaxis"
+                  [xaxis]="barChartOptionsClick.xaxis"
+                  [fill]="barChartOptionsClick.fill"
+                  [title]="barChartOptionsClick.title"
+                ></apx-chart>
+              </div>
+            </div>
+            <div class="scatteropen">
+              <apx-chart
+                [series]="scatterChartOptionsOpen.series"
+                [chart]="scatterChartOptionsOpen.chart"
+                [dataLabels]="scatterChartOptionsOpen.dataLabels"
+                [grid]="scatterChartOptionsOpen.grid"
+                [title]="scatterChartOptionsOpen.title"
+                [xaxis]="scatterChartOptionsOpen.xaxis"
+                [yaxis]="scatterChartOptionsOpen.yaxis"
+                [tooltip]="scatterChartOptionsOpen.tooltip"
+              ></apx-chart>
+            </div>
+            <div class="scatterclick">
+              <apx-chart
+                [series]="scatterChartOptionsClick.series"
+                [chart]="scatterChartOptionsClick.chart"
+                [dataLabels]="scatterChartOptionsClick.dataLabels"
+                [grid]="scatterChartOptionsClick.grid"
+                [title]="scatterChartOptionsClick.title"
+                [xaxis]="scatterChartOptionsClick.xaxis"
+                [yaxis]="scatterChartOptionsClick.yaxis"
+                [tooltip]="scatterChartOptionsClick.tooltip"
+              ></apx-chart>
+            </div>
+          </div>
+            </ng-template>
+
+          <ng-template #nologs>
+            <div class="p-8 sm:p-16 border-t text-4xl font-semibold tracking-tight text-center">There are no logs for this campaign!</div>
+
+          </ng-template>
+
+
+</div>
+</div>

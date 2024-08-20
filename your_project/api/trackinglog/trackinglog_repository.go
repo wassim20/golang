@@ -26,6 +26,11 @@ func ReadAllPagination(db *gorm.DB, model []domains.TrackingLog, companyID uuid.
 	return model, err
 }
 
+func ReadAll(db *gorm.DB, model []domains.TrackingLog, companyID uuid.UUID, limit, offset int) ([]domains.TrackingLog, error) {
+	err := db.Where("company_id = ? ", companyID).Find(&model).Error
+	return model, err
+}
+
 // ReadByID retrieves a log by its unique identifier.
 func ReadByID(db *gorm.DB, model domains.TrackingLog, companyID uuid.UUID, campaignID uuid.UUID, id uuid.UUID) (domains.TrackingLog, error) {
 	err := db.Where("company_id = ? and campaign_id = ?", companyID, campaignID).First(&model, id).Error
@@ -35,5 +40,10 @@ func ReadByID(db *gorm.DB, model domains.TrackingLog, companyID uuid.UUID, campa
 func ReadTotalCountTrackingLog(db *gorm.DB, companyID uuid.UUID, campaignID uuid.UUID) (int64, error) {
 	var count int64
 	err := db.Model(&domains.TrackingLog{}).Where("company_id = ? and campaign_id = ?", companyID, campaignID).Count(&count).Error
+	return count, err
+}
+func ReadTotalCountAllTrackingLog(db *gorm.DB, companyID uuid.UUID) (int64, error) {
+	var count int64
+	err := db.Model(&domains.TrackingLog{}).Where("company_id = ? ", companyID).Count(&count).Error
 	return count, err
 }

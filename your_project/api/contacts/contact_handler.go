@@ -4,7 +4,6 @@ import (
 	"labs/constants"
 	"labs/domains"
 	"labs/utils"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -99,13 +98,13 @@ func (db Database) CreateContact(ctx *gin.Context) {
 // @Router /:companyID/mailinglist/:mailinglistID/contacts [get]
 func (db Database) ReadContacts(ctx *gin.Context) {
 	// Extract JWT values from the context
-	session := utils.ExtractJWTValues(ctx)
-	companyID, err := uuid.Parse(ctx.Param("companyID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	//session := utils.ExtractJWTValues(ctx)
+	// companyID, err := uuid.Parse(ctx.Param("companyID"))
+	// if err != nil {
+	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 	mailinglistID, err := uuid.Parse(ctx.Param("mailinglistID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
@@ -114,13 +113,13 @@ func (db Database) ReadContacts(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified mailinglist
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
-	log.Println(session)
+	//log.Println(session)
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -193,6 +192,107 @@ func (db Database) ReadContacts(ctx *gin.Context) {
 	response.Page = uint(page)
 	response.Limit = uint(limit)
 	response.TotalCount = count
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
+}
+func (db Database) ReadAllContacts(ctx *gin.Context) {
+	// Extract JWT values from the context
+	//session := utils.ExtractJWTValues(ctx)
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified mailinglist
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
+
+	//log.Println(session)
+
+	// Parse and validate the page from the request parameter
+	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Parse and validate the limit from the request parameter
+	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", strconv.Itoa(constants.DEFAULT_LIMIT_PAGINATION)))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the user's value is among the allowed choices
+	validChoices := utils.ResponseLimitPagination()
+	isValidChoice := false
+	for _, choice := range validChoices {
+		if uint(limit) == choice {
+			isValidChoice = true
+			break
+		}
+	}
+
+	// If the value is invalid, set it to default DEFAULT_LIMIT_PAGINATION
+	if !isValidChoice {
+		limit = constants.DEFAULT_LIMIT_PAGINATION
+	}
+
+	// Generate offset
+	offset := (page - 1) * limit
+
+	// Retrieve all contact data from the database
+	//get all mailinglist
+	mailinglists, err := ReadAllMailingList(db.DB, companyID)
+	if err != nil {
+		logrus.Error("Error occurred while finding all mailinglist data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	var allContacts []domains.Contact
+
+	for _, mailinglist := range mailinglists {
+		contacts, err := ReadAllContactsForMailingList(db.DB, mailinglist.ID, limit, offset)
+		if err != nil {
+			logrus.Error("Error occurred while finding contact data for mailing list ID ", mailinglist.ID, ". Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+		allContacts = append(allContacts, contacts...)
+
+	}
+
+	// Retriece total count
+	count := 0
+	// Generate a contact structure as a response
+	response := ContactPaginator{}
+	listContact := []ContactTable{}
+	for _, contact := range allContacts {
+		listContact = append(listContact, ContactTable{
+			ID:          contact.ID,
+			Email:       contact.Email,
+			Firstname:   contact.Firstname,
+			Lastname:    contact.Lastname,
+			PhoneNumber: contact.PhoneNumber,
+			FullName:    contact.FullName,
+			CreatedAt:   contact.CreatedAt,
+
+			// Ensure Mailinglist and Tags are properly set
+		})
+	}
+	response.Items = listContact
+	response.Page = uint(page)
+	response.Limit = uint(limit)
+	response.TotalCount = uint(count)
 
 	// Respond with success
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)

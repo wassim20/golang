@@ -6,6 +6,7 @@ import (
 	"labs/utils"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -165,22 +166,23 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 	// Convert retrieved campaigns to response format
 	for _, campaign := range campaigns {
 		listCampaigns = append(listCampaigns, CampaignsDetails{
-			ID:          campaign.ID,
-			Name:        campaign.Name,
-			Type:        campaign.Type,
-			Subject:     campaign.Subject,
-			HTML:        campaign.HTML,
-			FromEmail:   campaign.FromEmail,
-			FromName:    campaign.FromName,
-			ReplyTo:     campaign.ReplyTo,
-			Status:      campaign.Status,
-			SignDKIM:    campaign.SignDKIM,
-			TrackOpen:   campaign.TrackOpen,
-			TrackClick:  campaign.TrackClick,
-			Resend:      campaign.Resend,
-			CustomOrder: campaign.CustomOrder,
-			RunAt:       campaign.RunAt,
-			DeliveryAt:  campaign.DeliveryAt,
+			ID:            campaign.ID,
+			MailingListID: campaign.MailingListID,
+			Name:          campaign.Name,
+			Type:          campaign.Type,
+			Subject:       campaign.Subject,
+			HTML:          campaign.HTML,
+			FromEmail:     campaign.FromEmail,
+			FromName:      campaign.FromName,
+			ReplyTo:       campaign.ReplyTo,
+			Status:        campaign.Status,
+			SignDKIM:      campaign.SignDKIM,
+			TrackOpen:     campaign.TrackOpen,
+			TrackClick:    campaign.TrackClick,
+			Resend:        campaign.Resend,
+			CustomOrder:   campaign.CustomOrder,
+			RunAt:         campaign.RunAt,
+			DeliveryAt:    campaign.DeliveryAt,
 		})
 	}
 	response.Items = listCampaigns
@@ -210,7 +212,11 @@ func (db Database) ReadCampaign(ctx *gin.Context) {
 	//session := utils.ExtractJWTValues(ctx)
 
 	// Parse and validate the company ID from the request parameter
-	objectID, err := uuid.Parse(ctx.Param("ID"))
+	objectIDStr := ctx.Param("ID")
+	logrus.Infof("Received UUID: %s", objectIDStr)
+
+	objectIDStr = strings.TrimSpace(objectIDStr)
+	objectID, err := uuid.Parse(objectIDStr)
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -240,23 +246,24 @@ func (db Database) ReadCampaign(ctx *gin.Context) {
 	}
 
 	detailedCampaign := &CampaignsDetails{
-		ID:          campaign.ID,
-		Name:        campaign.Name,
-		Type:        campaign.Type,
-		Subject:     campaign.Subject,
-		HTML:        campaign.HTML,
-		Plain:       campaign.Plain,
-		FromEmail:   campaign.FromEmail,
-		FromName:    campaign.FromName,
-		ReplyTo:     campaign.ReplyTo,
-		Status:      campaign.Status,
-		SignDKIM:    campaign.SignDKIM,
-		TrackOpen:   campaign.TrackOpen,
-		TrackClick:  campaign.TrackClick,
-		Resend:      campaign.Resend,
-		CustomOrder: campaign.CustomOrder,
-		RunAt:       campaign.RunAt,
-		DeliveryAt:  campaign.DeliveryAt,
+		ID:            campaign.ID,
+		Name:          campaign.Name,
+		MailingListID: campaign.MailingListID,
+		Type:          campaign.Type,
+		Subject:       campaign.Subject,
+		HTML:          campaign.HTML,
+		Plain:         campaign.Plain,
+		FromEmail:     campaign.FromEmail,
+		FromName:      campaign.FromName,
+		ReplyTo:       campaign.ReplyTo,
+		Status:        campaign.Status,
+		SignDKIM:      campaign.SignDKIM,
+		TrackOpen:     campaign.TrackOpen,
+		TrackClick:    campaign.TrackClick,
+		Resend:        campaign.Resend,
+		CustomOrder:   campaign.CustomOrder,
+		RunAt:         campaign.RunAt,
+		DeliveryAt:    campaign.DeliveryAt,
 	}
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, detailedCampaign)
 }

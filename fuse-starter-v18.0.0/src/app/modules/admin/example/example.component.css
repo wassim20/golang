@@ -18,7 +18,7 @@
 
 .example-stepper mat-step-header {
   background-color: #e0e0e0;
-  padding: 10px;
+  padding: 0px 10px 0px 10px;
   border-radius: 5px;
 }
 
@@ -144,4 +144,50 @@ form {
   height: 40px; /* Adjust height as needed */
   border-radius: 50%; /* Circular shape */
   background-color: #4f46e5; /* Background color, adjust as needed */
+}
+
+.stepper-form{
+ 
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+
+
+}
+.stepper-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+/* Style for all buttons inside .stepper-buttons */
+.stepper-buttons button {
+  background-color: #4f46e5; /* Primary color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  padding: 0.5rem 1rem; /* Padding for better sizing */
+  border-radius: 0.25rem; /* Rounded corners */
+  cursor: pointer; /* Cursor to pointer to indicate it's clickable */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+/* Hover and focus styles for buttons */
+.stepper-buttons button:hover,
+.stepper-buttons button:focus {
+  background-color: #0056b3; /* Darker shade for hover/focus */
+  outline: none; /* Remove default focus outline */
+}
+
+/* Specific style for the Reset button for a secondary look */
+.stepper-buttons button:nth-child(2) {
+  background-color: #6c757d; /* Secondary color */
+}
+
+.stepper-buttons button:nth-child(2):hover,
+.stepper-buttons button:nth-child(2):focus {
+  background-color: #545b62; /* Darker shade for hover/focus on Reset button */
+}
+.full-width {
+  width: 100%;
+  margin-bottom: 1rem;
 }

@@ -26,153 +26,115 @@
 
 
 
-      <mat-stepper #stepper
-      *ngIf="!campaigncreated"
-      class="example-stepper"
-      [orientation]="(stepperOrientation | async)!"
-      >
-      <mat-step [stepControl]="firstFormGroup" label="Fill out your mailinglist" errorMessage="mailinglist is required.">
-        <form [formGroup]="firstFormGroup">
-          <mat-form-field>
-          <mat-select formControlName="mailingList" placeholder="Choose mailing list" required>
-            
-            <mat-option *ngFor="let i of MailingList" [value]="i.id">{{i.name}}</mat-option>
-            
-          </mat-select>
-        </mat-form-field>
-          <div>
-            <button mat-button matStepperNext>Next</button>
-          </div>
-          
-        </form>
-      </mat-step>
-      <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="fill the campaign please">
-        <form [formGroup]="campaignForm">
-          <!-- <mat-form-field>
-            <input matInput formControlName="name" placeholder="Campaign Name" required>
-          </mat-form-field> -->
-          
-          <div class="input-group">
-            <input class="input" type="text" formControlName="name"  id="Campaign Name" required>
-            <label class="label" for = "Campaign Name">Campaign Name</label>
-            <mat-error *ngIf="campaignForm.controls['name'].touched && campaignForm.controls['name'].invalid">
-              Please enter a valid name 
-            </mat-error>
-          </div>
-          <div class="input-group">
-          <div >
-            <mat-select class="mat-select" formControlName="type" placeholder="Choose a type" required style="
-  font-size: 0.75rem;
-  color: #000000;
-  width: 100%;
-  border: 1px solid #9e9e9e;
-  border-radius: 10px;
-  padding: 1rem 12px;
-">
-  <mat-option value="html">HTML</mat-option>
-  <mat-option value="text">Text</mat-option>
-</mat-select>
-          </div>
-          </div>
-          <mat-error *ngIf="campaignForm.controls['type'].touched && campaignForm.controls['type'].invalid">
-            Please select a type 
-          </mat-error>
-          <!-- Subject -->
-          <div class="input-group">
-          <input class="input" type="text" formControlName="subject" id="Subject" required>
-          <label class="label" for="Subject">Subject</label>
-          <mat-error *ngIf="campaignForm.controls['subject'].touched && campaignForm.controls['subject'].invalid">
-            verify the subject 
-          </mat-error>
-          </div>
-          <!-- From name -->
-          <div class="input-group">
-            <input class="input" type="text" formControlName="fromName" id="FromName" required>
-            <label class="label" for="FromName">From Name</label>
-            <mat-error *ngIf="campaignForm.controls['fromName'].touched && campaignForm.controls['fromName'].invalid">
-              Please enter a from name. 
-            </mat-error>
-          </div>
-          
-          <div class="input-group">
-            <input class="input" type="email" formControlName="fromEmail" id="FromEmail" required>
-            <label class="label" for="FromEmail">From Email</label>
-            <mat-error *ngIf="campaignForm.controls['fromEmail'].touched && campaignForm.controls['fromEmail'].invalid">
-              Please enter a from email address. 
-            </mat-error>
-          </div>
-          <div class="input-group">
-          
-            <input class="input" matInput formControlName="replyTo" id="replyTo" type="email" required>
-            <label class="label" for = "replyTo">Reply To</label>
-            <mat-error *ngIf="campaignForm.controls['replyTo'].touched && campaignForm.controls['replyTo'].invalid">
-              Please enter a valid email address.
-            </mat-error>
-          
-          </div>
-          <!-- Other fields as per your form group definition -->
-      
-          <div>
-            <button mat-button matStepperPrevious>Back</button>
-            <button mat-button matStepperNext>Next</button>
-          </div>
-        </form>
-      </mat-step>
-      <mat-step [stepControl]="campaignForm" label="Additional Campaign Details" errorMessage="just a bit more">
-        <form [formGroup]="additionalCampaignForm">
-          <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
-          <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
-          <mat-checkbox formControlName="resend">Resend</mat-checkbox>
-    
-          <mat-form-field>
-            <input matInput [ngxMatDatetimePicker]="picker" placeholder="Choose a date" formControlName="runAt" id="runAt">
-            <mat-hint>MM/DD/YYYY</mat-hint>
-            <ngx-mat-datepicker-toggle matSuffix [for]="picker"></ngx-mat-datepicker-toggle>
-            <ngx-mat-datetime-picker #picker 
-                                     [stepHour]="1" 
-                                     [stepMinute]="1"
-                                     [showHours]="true" 
-                                     [showMinutes]="true"
-                                     ></ngx-mat-datetime-picker>
-            <mat-error *ngIf="additionalCampaignForm.get('runAt').touched && additionalCampaignForm.get('runAt').invalid">
-              Please enter a valid date and time.
-            </mat-error>
-          </mat-form-field>
-    
-          <mat-form-field>
-            <input matInput [ngxMatDatetimePicker]="deliveryPicker" placeholder="Delivery At" formControlName="deliveryAt" id="deliveryAt">
-            <mat-hint>MM/DD/YYYY</mat-hint>
-            <ngx-mat-datepicker-toggle matSuffix [for]="deliveryPicker"></ngx-mat-datepicker-toggle>
-            <ngx-mat-datetime-picker #deliveryPicker 
-                                     [stepHour]="1" 
-                                     [stepMinute]="1"
-                                     [showHours]="true" 
-                                     [showMinutes]="true"
-                                     ></ngx-mat-datetime-picker>
-            <mat-error *ngIf="additionalCampaignForm.get('deliveryAt').touched && additionalCampaignForm.get('deliveryAt').invalid">
-              Please enter a valid delivery date and time.
-            </mat-error>
-          </mat-form-field>
-    
-          <div>
-            <button mat-button matStepperPrevious>Back</button>
-            <button mat-button  matStepperNext>Next</button>
-          </div>
-        </form>
-      </mat-step>
-      <mat-step>
-        <ng-template matStepLabel>Done</ng-template>
-        <p>You are now done.</p>
-        <div>
-          <button mat-button matStepperPrevious>Back</button>
-          <button mat-button (click)="stepper.reset()">Reset</button>
-          <button mat-button (click)="onSubmit()">Submit</button>
-        </div>
-      </mat-step>
-      
-
-
-    </mat-stepper>
+      <mat-stepper #stepper *ngIf="!campaigncreated" [orientation]="(stepperOrientation | async)!" class="example-stepper">
+  <mat-step [stepControl]="firstFormGroup" label="Fill out your mailing list" errorMessage="Mailing list is required.">
+    <form [formGroup]="firstFormGroup" class="">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Choose mailing list</mat-label>
+        <mat-select formControlName="mailingList" required>
+          <mat-option *ngFor="let i of MailingList" [value]="i.id">{{i.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="firstFormGroup.controls['mailingList'].touched && firstFormGroup.controls['mailingList'].invalid">
+          Mailing list is required.
+        </mat-error>
+      </mat-form-field>
+    </form>
+    <div class="stepper-buttons">
+      <button mat-button matStepperNext>Next</button>
+    </div>
+  </mat-step>
+  <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="Fill the campaign, please.">
+    <form [formGroup]="campaignForm" class="stepper-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Campaign Name</mat-label>
+        <input matInput formControlName="name" required>
+        <mat-error *ngIf="campaignForm.controls['name'].touched && campaignForm.controls['name'].invalid">
+          Please enter a valid name.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Choose a type</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-option value="html">HTML</mat-option>
+          <mat-option value="text">Text</mat-option>
+        </mat-select>
+        <mat-error *ngIf="campaignForm.controls['type'].touched && campaignForm.controls['type'].invalid">
+          Please select a type.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subject</mat-label>
+        <input matInput formControlName="subject" required>
+        <mat-error *ngIf="campaignForm.controls['subject'].touched && campaignForm.controls['subject'].invalid">
+          Verify the subject.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>From Name</mat-label>
+        <input matInput formControlName="fromName" required>
+        <mat-error *ngIf="campaignForm.controls['fromName'].touched && campaignForm.controls['fromName'].invalid">
+          Please enter a from name.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>From Email</mat-label>
+        <input matInput formControlName="fromEmail" required>
+        <mat-error *ngIf="campaignForm.controls['fromEmail'].touched && campaignForm.controls['fromEmail'].invalid">
+          Please enter a from email address.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reply To</mat-label>
+        <input matInput formControlName="replyTo" required>
+        <mat-error *ngIf="campaignForm.controls['replyTo'].touched && campaignForm.controls['replyTo'].invalid">
+          Please enter a valid email address.
+        </mat-error>
+      </mat-form-field>
+    </form>
+    <div class="stepper-buttons">
+      <button mat-button matStepperPrevious>Back</button>
+      <button mat-button matStepperNext>Next</button>
+    </div>
+  </mat-step>
+  <mat-step [stepControl]="additionalCampaignForm" label="Additional Campaign Details" errorMessage="Just a bit more">
+    <form [formGroup]="additionalCampaignForm" class="stepper-form">
+      <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
+      <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
+      <mat-checkbox formControlName="resend">Resend</mat-checkbox>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Choose a date</mat-label>
+        <input matInput [ngxMatDatetimePicker]="picker" formControlName="runAt">
+        <ngx-mat-datepicker-toggle matSuffix [for]="picker"></ngx-mat-datepicker-toggle>
+        <ngx-mat-datetime-picker #picker></ngx-mat-datetime-picker>
+        <mat-error *ngIf="additionalCampaignForm.get('runAt').touched && additionalCampaignForm.get('runAt').invalid">
+          Please enter a valid date and time.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Delivery At</mat-label>
+        <input matInput [ngxMatDatetimePicker]="deliveryPicker" formControlName="deliveryAt">
+        <ngx-mat-datepicker-toggle matSuffix [for]="deliveryPicker"></ngx-mat-datepicker-toggle>
+        <ngx-mat-datetime-picker #deliveryPicker></ngx-mat-datetime-picker>
+        <mat-error *ngIf="additionalCampaignForm.get('deliveryAt').touched && additionalCampaignForm.get('deliveryAt').invalid">
+          Please enter a valid delivery date and time.
+        </mat-error>
+      </mat-form-field>
+    </form>
+    <div class="stepper-buttons">
+      <button mat-button matStepperPrevious>Back</button>
+      <button mat-button matStepperNext>Next</button>
+    </div>
+  </mat-step>
+  <mat-step>
+    <ng-template matStepLabel>Done</ng-template>
+    <p>You are now done.</p>
+    <div class="stepper-buttons">
+      <button mat-button matStepperPrevious>Back</button>
+      <button mat-button (click)="stepper.reset()">Reset</button>
+      <button mat-button (click)="onSubmit()">Submit</button>
+    </div>
+  </mat-step>
+</mat-stepper>
 
 
 

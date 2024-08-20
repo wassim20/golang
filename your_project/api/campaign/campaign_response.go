@@ -54,21 +54,22 @@ type CampaignsTable struct {
 
 // @Description	CampaignsDetails represents detailed information about a specific campaign.
 type CampaignsDetails struct {
-	ID          uuid.UUID `json:"id"`          // ID is the unique identifier for the campaign.
-	Name        string    `json:"name"`        // Name is the name of the campaign.
-	Type        string    `json:"type"`        // Type is the type of the campaign.
-	Subject     string    `json:"subject"`     // Subject is the subject of the campaign.
-	HTML        string    `json:"html"`        // HTML is the HTML content of the campaign.
-	Plain       string    `json:"plain"`       // Plain is the plain text content of the campaign.
-	FromEmail   string    `json:"fromEmail"`   // FromEmail is the from email address of the campaign.
-	FromName    string    `json:"fromName"`    // FromName is the from name of the campaign.
-	ReplyTo     string    `json:"replyTo"`     // ReplyTo is the reply-to email address of the campaign.
-	Status      string    `json:"status"`      // Status is the status of the campaign.
-	SignDKIM    bool      `json:"signDKIM"`    // SignDKIM indicates whether the campaign is signed with DKIM.
-	TrackOpen   bool      `json:"trackOpen"`   // TrackOpen indicates whether opens are tracked for the campaign.
-	TrackClick  bool      `json:"trackClick"`  // TrackClick indicates whether clicks are tracked for the campaign.
-	Resend      bool      `json:"resend"`      // Resend indicates whether the campaign allows resend.
-	CustomOrder int       `json:"customOrder"` // CustomOrder is the custom order for sorting.
-	RunAt       time.Time `json:"runAt"`       // RunAt is the scheduled run time of the campaign.
-	DeliveryAt  time.Time `json:"deliveryAt"`  // DeliveryAt is the delivery time of the campaign.
+	ID            uuid.UUID `json:"id"`            // ID is the unique identifier for the campaign.
+	MailingListID uuid.UUID `json:"mailingListId"` // MailingListID is the ID of the mailing list associated with the campaign.
+	Name          string    `json:"name"`          // Name is the name of the campaign.
+	Type          string    `json:"type"`          // Type is the type of the campaign.
+	Subject       string    `json:"subject"`       // Subject is the subject of the campaign.
+	HTML          string    `json:"html"`          // HTML is the HTML content of the campaign.
+	Plain         string    `json:"plain"`         // Plain is the plain text content of the campaign.
+	FromEmail     string    `json:"fromEmail"`     // FromEmail is the from email address of the campaign.
+	FromName      string    `json:"fromName"`      // FromName is the from name of the campaign.
+	ReplyTo       string    `json:"replyTo"`       // ReplyTo is the reply-to email address of the campaign.
+	Status        string    `json:"status"`        // Status is the status of the campaign.
+	SignDKIM      bool      `json:"signDKIM"`      // SignDKIM indicates whether the campaign is signed with DKIM.
+	TrackOpen     bool      `json:"trackOpen"`     // TrackOpen indicates whether opens are tracked for the campaign.
+	TrackClick    bool      `json:"trackClick"`    // TrackClick indicates whether clicks are tracked for the campaign.
+	Resend        bool      `json:"resend"`        // Resend indicates whether the campaign allows resend.
+	CustomOrder   int       `json:"customOrder"`   // CustomOrder is the custom order for sorting.
+	RunAt         time.Time `json:"runAt"`         // RunAt is the scheduled run time of the campaign.
+	DeliveryAt    time.Time `json:"deliveryAt"`    // DeliveryAt is the delivery time of the campaign.
 } //@name CampaignsDetails

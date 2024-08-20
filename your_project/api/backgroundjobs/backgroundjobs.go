@@ -229,7 +229,7 @@ func SendCampaignEmailJob(db *gorm.DB, campaignID uuid.UUID) error {
 				//d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
 				d := gomail.NewDialer("sandbox.smtp.mailtrap.io", 2525, "969018208d53bf", "4da6491a9da571")
 				if err := d.DialAndSend(msg); err != nil {
-					logrus.Error("Error sending email to", contact.Email, ":", err.Error())
+					logrus.Error("Error sending email to ", contact.Email, ":", err.Error())
 					return
 				}
 				fmt.Println("/////////////////////////////////////////////////////////" + body)

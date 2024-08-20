@@ -24,9 +24,13 @@ import (
 func RoutesApiInit(router *gin.Engine, db *gorm.DB) {
 
 	// CORS middleware configuration
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:4200"} // Replace with your Angular app's URL
-	config.AllowHeaders = []string{"Authorization"}
+	config := cors.Config{
+		AllowOrigins:     []string{"http://localhost:4200"}, // Replace with your Angular app's URL
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}
 	router.Use(cors.New(config))
 	api := router.Group("/api")
 	{

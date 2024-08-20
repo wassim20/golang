@@ -1,5 +1,5 @@
 import { AsyncPipe,CommonModule, CurrencyPipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,NgModule, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,NgModule, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ElementRef, TemplateRef } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
@@ -15,7 +15,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { fuseAnimations } from '@fuse/animations';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { DateTimePickerModule } from "@syncfusion/ej2-angular-calendars";
-
+import * as htmlToImage from 'html-to-image';
 
 
 import { catchError, debounceTime, map, merge, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
@@ -23,6 +23,9 @@ import { CampaignService } from '../campaign.service';
 import { NgxMatDatetimePickerModule, NgxMatNativeDateModule, NgxMatTimepickerModule } from '@angular-material-components/datetime-picker';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatCardModule } from '@angular/material/card';
+import html2canvas from 'html2canvas';
+import { NavigationExtras, Router, RouterModule } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'campaignlist',
@@ -31,6 +34,7 @@ import { MatCardModule } from '@angular/material/card';
   styleUrls: ['./campaign-list.component.css'],
   imports        : [CommonModule,NgIf, MatProgressBarModule, MatFormFieldModule, MatIconModule, MatInputModule, FormsModule, ReactiveFormsModule, MatButtonModule, MatSortModule, NgFor, NgTemplateOutlet, MatPaginatorModule, NgClass, MatSlideToggleModule, MatSelectModule, MatOptionModule, MatCheckboxModule, MatRippleModule, AsyncPipe, CurrencyPipe,
     NgxMatDatetimePickerModule,
+    RouterModule,
       NgxMatTimepickerModule,
       NgxMatNativeDateModule,
       DateTimePickerModule,
@@ -42,14 +46,17 @@ export class CampaignListComponent implements OnInit {
 
 
 
+  @ViewChild('htmlContent', { static: false }) htmlContent: ElementRef;
+  @ViewChild('previewDialog') previewDialog: TemplateRef<any>;
 
-
+  imageSrc: string = null;
   campaigns: any;
   selectedCampaign: any;
   flashMessage: 'success' | 'error' | null = null;
   selectedCampaignForm: UntypedFormGroup;
+  isLoading: boolean = false; 
 
-  constructor(private sanitizer: DomSanitizer,private service: CampaignService, private _changeDetectorRef: ChangeDetectorRef,private fb : UntypedFormBuilder) { }
+  constructor( private dialog: MatDialog,private router: Router,private sanitizer: DomSanitizer,private service: CampaignService, private _changeDetectorRef: ChangeDetectorRef,private fb : UntypedFormBuilder) { }
 
   
 
@@ -91,11 +98,31 @@ ngOnInit(): void {
     }
   });
 }
+navigateToDashboard(campaignId: string) {
+  const navigationExtras: NavigationExtras = {
+    state: { campaignId: campaignId }
+  };
+  this.router.navigate(['/dashboard'], navigationExtras);
+}
 
 createCampaign() {
-  throw new Error('Method not implemented.');
-  }
+  this.router.navigate(['/example']);
+}
 
+openPreviewDialog(html): void {
+ 
+  
+  
+  this.generateImage(html);
+  this.dialog.open(this.previewDialog,{
+    data: {
+      html: html,
+      imageSrc: this.imageSrc,
+      isLoading: this.isLoading
+    }
+  });
+
+}
   
 
 
@@ -160,9 +187,13 @@ showFlashMessage(type: 'success' | 'error'): void
 closeDetails(): void
 {
     this.selectedCampaign = null;
+    this.isLoading = false;
+    this.imageSrc = null; // Clear the image source
 }
  toggleDetails(CampaignId: string): void {
     // If the Campaign is already selected...
+    this.imageSrc = null; // Clear the image source
+    this.isLoading = true;
     
     
     if (this.selectedCampaign && this.selectedCampaign.id === CampaignId) {
@@ -209,6 +240,48 @@ closeDetails(): void
             // Mark for check
             this._changeDetectorRef.markForCheck();
         });
+}
+
+generateImage(html): void {
+  
+  
+  if (html) {
+    this.isLoading = true;
+    // Create a hidden iframe
+    let iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.visibility = 'visible';
+    document.body.appendChild(iframe);
+    // Set the iframe's content
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+
+    // Wait for the iframe content to load
+    iframe.onload = () => {
+      html2canvas(iframe.contentDocument.body, { useCORS: true, logging: true })
+        .then((canvas) => {
+          this.imageSrc = canvas.toDataURL();
+          console.log(this.imageSrc);
+        })
+        .catch((error) => {
+          console.error('oops, something went wrong!', error);
+        })
+        .finally(() => {
+          // Remove the iframe from the DOM
+          document.body.removeChild(iframe);
+          this.isLoading = false;
+        });
+    };
+  }
+  else{
+    this.isLoading = false;
+  
+  }
 }
 
 sanitizeHtml(html: string): SafeHtml {

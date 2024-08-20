@@ -48,7 +48,7 @@ type TrackingLog struct {
 	Error           string     `gorm:"nullable"`
 	RecipientEmail  string     `gorm:"column:recipient_email; "`      // Email address of the recipient
 	OpenTrackingID  uuid.UUID  `gorm:"column:open_tracking_id;"`      // Unique ID for open tracking (if used)
-	OpenedAt        time.Time  `gorm:"column:opened_at;"`             // Timestamp when the email was opened (optional)
+	OpenedAt        *time.Time `gorm:"column:opened_at;"`             // Timestamp when the email was opened (optional)
 	ClickTrackingID uuid.UUID  `gorm:"column:click_tracking_id;"`     // Unique ID for click tracking (if used)
 	ClickedAt       *time.Time `gorm:"column:clicked_at;omitempty;"`  // Timestamp when a link was clicked (optional)
 	ClickCount      int        `gorm:"column:click_count; default:0"` // Number of times a link was clicked

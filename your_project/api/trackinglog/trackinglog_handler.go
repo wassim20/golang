@@ -1,10 +1,12 @@
 package trackinglog
 
 import (
+	"fmt"
 	"labs/api/campaign"
 	"labs/constants"
 	"labs/domains"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -28,7 +30,7 @@ import (
 // @Failure      401     {object} utils.ApiResponses "Unauthorized"
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router       /{companyID}/{camapignID}/logs [post]
+// @Router       /{companyID}/{campaignID}/logs [post]
 func (db Database) CreateTrackingLog(ctx *gin.Context) {
 
 	// Extract JWT values from the context
@@ -40,7 +42,7 @@ func (db Database) CreateTrackingLog(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	campaignID, err := uuid.Parse(ctx.Param("camapignID"))
+	campaignID, err := uuid.Parse(ctx.Param("campaignID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -109,11 +111,11 @@ func (db Database) CreateTrackingLog(ctx *gin.Context) {
 // @Failure      401     {object} utils.ApiResponses "Unauthorized"
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router       /{companyID}/{camapignID}/logs [get]
+// @Router       /{companyID}/{campaignID}/logs [get]
 func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 
 	// Extract JWT values from the context
-	session := utils.ExtractJWTValues(ctx)
+	//session := utils.ExtractJWTValues(ctx)
 
 	companyID, err := uuid.Parse(ctx.Param("companyID"))
 	if err != nil {
@@ -121,7 +123,7 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	campaignID, err := uuid.Parse(ctx.Param("camapignID"))
+	campaignID, err := uuid.Parse(ctx.Param("campaignID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -129,11 +131,11 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified log
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -170,7 +172,7 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 	offset := (page - 1) * limit
 
 	// Retrieve all company data from the database
-	logs, err := ReadAllPagination(db.DB, []domains.TrackingLog{}, session.CompanyID, campaignID, limit, offset)
+	logs, err := ReadAllPagination(db.DB, []domains.TrackingLog{}, companyID, campaignID, limit, offset)
 	if err != nil {
 		logrus.Error("Error occurred while finding all company data. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
@@ -178,10 +180,18 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 	}
 
 	// Retriece total count
-	count, err := ReadTotalCountTrackingLog(db.DB, session.CompanyID, campaignID)
+	count, err := ReadTotalCountTrackingLog(db.DB, companyID, campaignID)
 	if err != nil {
 		logrus.Error("Error occurred while finding total count. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	if len(logs) == 0 {
+		// No logs found, return a specific response
+		utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, gin.H{
+			"message": "No tracking logs available for the specified company and campaign.",
+		})
 		return
 	}
 
@@ -191,13 +201,122 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 	for _, log := range logs {
 
 		listlogs = append(listlogs, TrackingLogTable{
-			ID:         log.ID,
-			CompanyID:  log.CompanyID,
-			CampaignID: log.CampaignID,
-			Status:     log.Status,
-			Error:      log.Error,
-			CreatedAt:  log.CreatedAt,
-			UpdatedAt:  log.UpdatedAt,
+			ID:             log.ID,
+			CompanyID:      log.CompanyID,
+			CampaignID:     log.CampaignID,
+			Status:         log.Status,
+			Error:          log.Error,
+			RecipientEmail: log.RecipientEmail,
+			OpenedAt:       log.OpenedAt,
+			ClickedAt:      log.ClickedAt,
+			ClickCount:     log.ClickCount,
+			CreatedAt:      log.CreatedAt,
+			UpdatedAt:      log.UpdatedAt,
+		})
+	}
+	response.Items = listlogs
+	response.Page = uint(page)
+	response.Limit = uint(limit)
+	response.TotalCount = uint(count)
+
+	// Respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
+}
+
+func (db Database) ReadAllTrackingLogs(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	//session := utils.ExtractJWTValues(ctx)
+
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified log
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
+
+	// Parse and validate the page from the request parameter
+	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Parse and validate the limit from the request parameter
+	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", strconv.Itoa(constants.DEFAULT_LIMIT_PAGINATION)))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the user's value is among the allowed choices
+	validChoices := utils.ResponseLimitPagination()
+	isValidChoice := false
+	for _, choice := range validChoices {
+		if uint(limit) == choice {
+			isValidChoice = true
+			break
+		}
+	}
+
+	// If the value is invalid, set it to default DEFAULT_LIMIT_PAGINATION
+	if !isValidChoice {
+		limit = constants.DEFAULT_LIMIT_PAGINATION
+	}
+
+	// Generate offset
+	offset := (page - 1) * limit
+
+	// Retrieve all company data from the database
+	logs, err := ReadAll(db.DB, []domains.TrackingLog{}, companyID, limit, offset)
+	if err != nil {
+		logrus.Error("Error occurred while finding all company data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Retriece total count
+	count, err := ReadTotalCountAllTrackingLog(db.DB, companyID)
+	if err != nil {
+		logrus.Error("Error occurred while finding total count. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	if len(logs) == 0 {
+		// No logs found, return a specific response
+		utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, gin.H{
+			"message": "No tracking logs available for the specified company and campaign.",
+		})
+		return
+	}
+
+	// Generate a log structure as a response
+	response := TrackingLogPagination{}
+	listlogs := []TrackingLogTable{}
+	for _, log := range logs {
+
+		listlogs = append(listlogs, TrackingLogTable{
+			ID:             log.ID,
+			CompanyID:      log.CompanyID,
+			CampaignID:     log.CampaignID,
+			Status:         log.Status,
+			Error:          log.Error,
+			RecipientEmail: log.RecipientEmail,
+			OpenedAt:       log.OpenedAt,
+			ClickedAt:      log.ClickedAt,
+			ClickCount:     log.ClickCount,
+			CreatedAt:      log.CreatedAt,
+			UpdatedAt:      log.UpdatedAt,
 		})
 	}
 	response.Items = listlogs
@@ -221,7 +340,7 @@ func (db Database) ReadTrackingLogs(ctx *gin.Context) {
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      404     {object} utils.ApiResponses "Tracking log not found"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router			 /{companyID}/{camapignID}/logs/{ID}	[get]
+// @Router			 /{companyID}/{campaignID}/logs/{ID}	[get]
 func (db Database) ReadTrackingLogByID(ctx *gin.Context) {
 
 	// Extract JWT values from the context
@@ -232,7 +351,7 @@ func (db Database) ReadTrackingLogByID(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	campaignID, err := uuid.Parse(ctx.Param("camapignID"))
+	campaignID, err := uuid.Parse(ctx.Param("campaignID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -290,7 +409,7 @@ func (db Database) ReadTrackingLogByID(ctx *gin.Context) {
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      404     {object} utils.ApiResponses "Tracking log not found"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router			/{companyID}/{camapignID}/logs/{ID}	[put]
+// @Router			/{companyID}/{campaignID}/logs/{ID}	[put]
 func (db Database) UpdateTrackingLog(ctx *gin.Context) {
 
 	// Extract JWT values from the context
@@ -302,7 +421,7 @@ func (db Database) UpdateTrackingLog(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	campaignID, err := uuid.Parse(ctx.Param("camapignID"))
+	campaignID, err := uuid.Parse(ctx.Param("campaignID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -367,7 +486,7 @@ func (db Database) UpdateTrackingLog(ctx *gin.Context) {
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      404     {object} utils.ApiResponses "Tracking log not found"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router       /{companyID}/{camapignID}/logs/{ID} [delete]
+// @Router       /{companyID}/{campaignID}/logs/{ID} [delete]
 func (db Database) DeleteTrackingLog(ctx *gin.Context) {
 
 	session := utils.ExtractJWTValues(ctx)
@@ -381,7 +500,7 @@ func (db Database) DeleteTrackingLog(ctx *gin.Context) {
 	}
 
 	// // Parse and validate the log ID from the request parameter
-	// camapignID, err := uuid.Parse(ctx.Param("camapignID"))
+	// campaignID, err := uuid.Parse(ctx.Param("campaignID"))
 	// if err != nil {
 	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -431,7 +550,7 @@ func (db Database) DeleteTrackingLog(ctx *gin.Context) {
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      404     {object} utils.ApiResponses "Tracking log not found"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router       /{companyID}/{camapignID}/logs/open/{trackingID} [delete]
+// @Router       /{companyID}/{campaignID}/logs/open/{trackingID} [delete]
 func (db Database) handleOpenRequest(ctx *gin.Context) {
 	trackingID := ctx.Query("trackingID")
 	if trackingID == "" {
@@ -455,9 +574,10 @@ func (db Database) handleOpenRequest(ctx *gin.Context) {
 	}
 
 	// Update tracking log status (optional)
-	trackingLog.Status = "opened"     // Update status if needed
-	trackingLog.OpenedAt = time.Now() // Update opened_at timestamp if needed
-	trackingLog.ClickCount++          // Increment click count if needed
+	trackingLog.Status = "opened" // Update status if needed
+	openedAt := time.Now()
+	trackingLog.OpenedAt = &openedAt // Update opened_at timestamp if needed
+	trackingLog.ClickCount++         // Increment click count if needed
 
 	if err := db.DB.Save(&trackingLog).Error; err != nil {
 		logrus.Errorf("Error updating tracking log status for open tracking ID '%s': %v", trackingID, err)
@@ -480,7 +600,7 @@ func (db Database) handleOpenRequest(ctx *gin.Context) {
 // @Failure      403     {object} utils.ApiResponses "Forbidden"
 // @Failure      404     {object} utils.ApiResponses "Tracking log not found"
 // @Failure      500     {object} utils.ApiResponses "Internal Server Error"
-// @Router       /{companyID}/{camapignID}/logs/click/{trackingID} [delete]
+// @Router       /{companyID}/{campaignID}/logs/click/{trackingID} [delete]
 func (db Database) handleClickRequest(ctx *gin.Context) {
 	trackingID := ctx.Param("trackingID")
 	if trackingID == "" {
@@ -551,8 +671,9 @@ func (db Database) handleOpenRequestWorflow(ctx *gin.Context) {
 	}
 
 	// Update tracking log status (optional)
-	trackingLog.Status = "opened"     // Update status if needed
-	trackingLog.OpenedAt = time.Now() // Update opened_at timestamp if needed
+	trackingLog.Status = "opened" // Update status if needed
+	openedAt := time.Now()
+	trackingLog.OpenedAt = &openedAt // Update opened_at timestamp if needed
 	// Increment click count if needed
 
 	if err := db.DB.Save(&trackingLog).Error; err != nil {
@@ -613,4 +734,609 @@ func (db Database) handleClickRequestWorflow(ctx *gin.Context) {
 
 	// Respond to the request (optional)
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// updateChartData handles the count and sending of barchart data.
+// @Summary      Get bar chart data
+// @Description  Get the count of opened, clicked and error tracking logs of a specific campaign.
+// @Tags         TrackingLogs
+// @Produce      json
+// @Param        companyID path string
+// @Param        campaignID path string
+// @Success      200     {object} utils.ApiResponses "Bar chart data"
+// @Failure      400     {object} utils.ApiResponses "Invalid request"
+// @Failure      401     {object} utils.ApiResponses "Unauthorized"
+// @Failure      403     {object} utils.ApiResponses "Forbidden"
+// @Failure      500     {object} utils.ApiResponses "Internal Server Error"
+// @Router       /{companyID}/logs/barchartdata [get]
+func (db Database) updateChartData(ctx *gin.Context) {
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var result struct {
+		OpenedCount  int64 `json:"opened"`
+		ClickedCount int64 `json:"clicked"`
+		ErrorCount   int64 `json:"error"`
+	}
+
+	// Make a query to get the count of opened, clicked, and error tracking logs of a specific campaign
+	if campaignID == "" {
+
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at  != '0001-01-01 00:09:21+00:09:21' THEN 1 ELSE NULL END) AS opened_count, "+
+				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
+			Where("company_id = ?", companyID).
+			Scan(&result).Error
+
+		if err != nil {
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at  != '0001-01-01 00:09:21+00:09:21' THEN 1 ELSE NULL END) AS opened_count, "+
+				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
+			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
+			Scan(&result).Error
+
+		if err != nil {
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
+}
+func (db Database) updatePieChartData(ctx *gin.Context) {
+
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var logs []domains.TrackingLog
+
+	// Fetch logs
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	openedEmails := 0
+	clickedEmails := 0
+
+	for _, log := range logs {
+
+		if log.OpenedAt != nil {
+			openedEmails++
+		}
+		if log.ClickedAt != nil {
+			clickedEmails++
+		}
+	}
+	var result struct {
+		OpenedEmails  int64 `json:"cpenedEmails"`
+		ClickedEmails int64 `json:"clickedEmails"`
+	}
+	result.OpenedEmails = int64(openedEmails)
+	result.ClickedEmails = int64(clickedEmails)
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
+}
+func (db Database) updateRadialChartData(ctx *gin.Context) {
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var logs []domains.TrackingLog
+
+	// Fetch logs
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	totalLogs := len(logs)
+	openedLogs := 0
+
+	for _, log := range logs {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+			openedLogs++
+		}
+	}
+	openedPercentage := float64(0)
+	if totalLogs > 0 {
+		openedPercentage = float64(openedLogs) / float64(totalLogs) * 100
+	}
+
+	type Response struct {
+		OpenedPercentage float64 `json:"openedPercentage"`
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, Response{OpenedPercentage: openedPercentage})
+}
+func aggregateDataByDate(logs []domains.TrackingLog, key string) map[string]int {
+	if logs == nil {
+		logrus.Error("Logs data is null or undefined")
+		return map[string]int{}
+	}
+	aggregatedData := make(map[string]int)
+	for _, log := range logs {
+		var timestamp *time.Time
+		switch key {
+		case "openedAt":
+			timestamp = log.OpenedAt
+		case "clickedAt":
+			timestamp = log.ClickedAt
+		}
+		if !timestamp.IsZero() && timestamp.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+			date := timestamp.Format("2006-01-02")
+			aggregatedData[date]++
+		}
+	}
+	return aggregatedData
+}
+func (db Database) updateLineChartData(ctx *gin.Context) {
+
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var openedData []domains.TrackingLog
+	var clickedData []domains.TrackingLog
+	var logs []domains.TrackingLog
+
+	if campaignID == "" {
+		// Fetch logs and pass opened and clicked logs to the function aggregate simultaniously
+
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+
+	} else {
+		// Fetch logs and pass opened and clicked logs to the function aggregate simultaniously
+
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+	// Separate logs into openedData and clickedData
+	for _, log := range logs {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+			openedData = append(openedData, log)
+		}
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" { // Check if ClickedAt is not nil before using it
+			clickedData = append(clickedData, log)
+		}
+	}
+
+	fmt.Println("openedData length:", len(openedData))
+	fmt.Println("clickedData length:", len(clickedData))
+
+	openedDataresult := aggregateDataByDate(openedData, "openedAt")
+	clickedDataresult := aggregateDataByDate(clickedData, "clickedAt")
+	// Combine all unique dates from both opened and clicked data
+	dateSet := make(map[string]struct{})
+	for date := range openedDataresult {
+		dateSet[date] = struct{}{}
+	}
+	for date := range clickedDataresult {
+		dateSet[date] = struct{}{}
+	}
+
+	var allDates []string
+	for date := range dateSet {
+		allDates = append(allDates, date)
+	}
+	sort.Strings(allDates)
+
+	openedSeriesData := make([]int, len(allDates))
+	clickedSeriesData := make([]int, len(allDates))
+
+	for i, date := range allDates {
+		openedSeriesData[i] = openedDataresult[date]
+		clickedSeriesData[i] = clickedDataresult[date]
+	}
+
+	type Response struct {
+		AllDates          []string `json:"allDates"`
+		OpenedSeriesData  []int    `json:"openedSeriesData"`
+		ClickedSeriesData []int    `json:"clickedSeriesData"`
+	}
+	response := Response{
+		AllDates:          allDates,
+		OpenedSeriesData:  openedSeriesData,
+		ClickedSeriesData: clickedSeriesData,
+	}
+
+	// Return the response
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
+
+}
+func (db Database) updateScatterChartData(ctx *gin.Context) {
+
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var logs []domains.TrackingLog
+
+	// Fetch logs
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	//filter data
+	var openedData []map[string]interface{}
+	var clickedData []map[string]interface{}
+
+	for _, log := range logs {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+			openedData = append(openedData, map[string]interface{}{
+				"x":              log.OpenedAt.Unix() * 1000, // Convert to milliseconds
+				"y":              log.ClickCount,
+				"recipientEmail": log.RecipientEmail,
+			})
+		}
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+			clickedData = append(clickedData, map[string]interface{}{
+				"x":              log.ClickedAt.Unix() * 1000, // Convert to milliseconds
+				"y":              log.ClickCount,
+				"recipientEmail": log.RecipientEmail,
+			})
+		}
+	}
+
+	response := struct {
+		OpenedData  []map[string]interface{} `json:"openedData"`
+		ClickedData []map[string]interface{} `json:"clickedData"`
+	}{
+		OpenedData:  openedData,
+		ClickedData: clickedData,
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
+
+}
+func (db Database) barChartDataOpens(ctx *gin.Context) {
+
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var logs []domains.TrackingLog
+	//fetch logs
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	opensPerDay := make([]int, 7)
+	for _, log := range logs {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+			dayOfWeek := log.OpenedAt.Weekday() // Weekday() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
+			opensPerDay[dayOfWeek]++
+		}
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, opensPerDay)
+
+}
+func (db Database) barChartDataClicks(ctx *gin.Context) {
+
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+	var logs []domains.TrackingLog
+	//fetch logs
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	opensPerDay := make([]int, 7)
+	for _, log := range logs {
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+			dayOfWeek := log.ClickedAt.Weekday() // Weekday() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
+			opensPerDay[dayOfWeek]++
+		}
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, opensPerDay)
+}
+func (db Database) scatterChartDataOpens(ctx *gin.Context) {
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+
+	// Extract and validate campaignID
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+
+	// Fetch logs
+	var logs []domains.TrackingLog
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	opensPerHourDay := make(map[string]int)
+
+	// Iterate through the logs and populate the map
+	for _, log := range logs {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+			date := log.OpenedAt
+			hours := date.Hour()
+			if date.Minute() >= 30 {
+				hours++
+			}
+			dayOfWeek := int(date.Weekday())
+
+			key := fmt.Sprintf("%d-%d", dayOfWeek, hours)
+			opensPerHourDay[key]++
+		}
+	}
+	type ScatterChartData struct {
+		X int `json:"x"`
+		Y int `json:"y"`
+		Z int `json:"z"`
+	}
+	// Convert the map into a slice of structs for the scatter chart data
+	var seriesData []ScatterChartData
+	for key, value := range opensPerHourDay {
+		var dayOfWeek, hour int
+		fmt.Sscanf(key, "%d-%d", &dayOfWeek, &hour)
+		seriesData = append(seriesData, ScatterChartData{
+			X: dayOfWeek,
+			Y: hour,
+			Z: value,
+		})
+	}
+
+	// Return the response
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, seriesData)
+
+}
+func (db Database) scatterChartDataClicks(ctx *gin.Context) {
+	// Extract and validate companyID
+	companyID := ctx.Param("companyID")
+	if _, err := uuid.Parse(companyID); err != nil {
+		logrus.Errorf("Invalid companyID format: %s, error: %v", companyID, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
+		return
+	}
+
+	// Extract and validate campaignID
+	campaignID := ctx.Query("campaignID")
+	if campaignID != "" {
+		if _, err := uuid.Parse(campaignID); err != nil {
+			logrus.Errorf("Invalid campaignID format: %s, error: %v", campaignID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid campaignID format"})
+			return
+		}
+	}
+
+	// Fetch logs
+	var logs []domains.TrackingLog
+	if campaignID == "" {
+		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		if err != nil {
+			logrus.Error("Error occurred while finding logs. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
+
+	opensPerHourDay := make(map[string]int)
+
+	// Iterate through the logs and populate the map
+	for _, log := range logs {
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+			date := log.ClickedAt
+			hours := date.Hour()
+			if date.Minute() >= 30 {
+				hours++
+			}
+			dayOfWeek := int(date.Weekday())
+
+			key := fmt.Sprintf("%d-%d", dayOfWeek, hours)
+			opensPerHourDay[key]++
+		}
+	}
+	type ScatterChartData struct {
+		X int `json:"x"`
+		Y int `json:"y"`
+		Z int `json:"z"`
+	}
+	// Convert the map into a slice of structs for the scatter chart data
+	var seriesData []ScatterChartData
+	for key, value := range opensPerHourDay {
+		var dayOfWeek, hour int
+		fmt.Sscanf(key, "%d-%d", &dayOfWeek, &hour)
+		seriesData = append(seriesData, ScatterChartData{
+			X: dayOfWeek,
+			Y: hour,
+			Z: value,
+		})
+	}
+
+	// Return the response
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, seriesData)
+
 }

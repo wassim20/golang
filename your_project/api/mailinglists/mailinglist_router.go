@@ -12,10 +12,16 @@ func MailinglistRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 
 	// Initialize database instance
 	baseInstance := Database{DB: db}
+	contactsbaseInstance := contacts.Database{DB: db}
 
 	// Automigrate / Update table
 	NewMailinglistRepository(db)
 
+	allcontacts := router.Group("/:companyID/allcontacts")
+	{
+		//read all contacts for a given company
+		allcontacts.GET("", contactsbaseInstance.ReadAllContacts)
+	}
 	// Private
 	mailinglist := router.Group("/:companyID/mailinglist")
 	{

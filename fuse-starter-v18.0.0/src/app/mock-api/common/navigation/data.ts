@@ -3,11 +3,18 @@ import { FuseNavigationItem } from '@fuse/components/navigation';
 
 export const defaultNavigation: FuseNavigationItem[] = [
     {
-        id   : 'example',
-        title: 'campaigns',
+        id   : 'dashboard',
+        title: 'Dashboard',
         type : 'basic',
         icon : 'heroicons_outline:chart-pie',
-        link : '/example'
+        link : '/dashboard'
+    },
+    {
+        id   : 'campaigns',
+        title: 'campaigns',
+        type : 'basic',
+        icon: 'heroicons_outline:chart-bar',
+        link : '/campaignlist'
     },
     { // automation
         id: 'automation',

@@ -10,14 +10,14 @@ import { LayoutComponent } from 'app/layout/layout.component';
 export const appRoutes: Route[] = [
 
     // Redirect empty path to '/example'
-    {path: '', pathMatch : 'full', redirectTo: 'example'},
+    {path: '', pathMatch : 'full', redirectTo: 'campaignlist'},
 
     // Redirect signed-in user to the '/example'
     //
     // After the user signs in, the sign-in page will redirect the user to the 'signed-in-redirect'
     // path. Below is another redirection for that path to redirect the user to the desired
     // location. This is a small convenience to keep all main routes together here on this file.
-    {path: 'signed-in-redirect', pathMatch : 'full', redirectTo: 'example'},
+    {path: 'signed-in-redirect', pathMatch : 'full', redirectTo: 'campaignlist'},
 
     // Auth routes for guests
     {
@@ -78,7 +78,9 @@ export const appRoutes: Route[] = [
             {path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes')},
             {path:'campaignlist', loadChildren: () => import('app/modules/admin/example/campaign-list/campaign-list.routes')},
             {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
-           
+            {path:'dashboard', loadChildren: () => import('app/modules/admin/dashboard/dashboard.routes')},
+            {path:'dashboard/:campaignID', loadChildren: () => import('app/modules/admin/dashboard/campaign-dashboard/campaign-dashboard.routes')},
+            
         ]
         
 
