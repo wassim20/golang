@@ -665,8 +665,7 @@ export class DashboardComponent implements OnInit {
       series: [{
         name: "Clicks",
         data: []
-      }],
-      chart: {
+      }],chart: {
         height: 350,
         type: "bubble",
         zoom: {
@@ -753,7 +752,7 @@ export class DashboardComponent implements OnInit {
       }
     
     
-  }
+  };
 }
   
   
@@ -847,293 +846,236 @@ export class DashboardComponent implements OnInit {
         );
       }
       updateChartData(): void {
-      let totalOpened = 0;
-      let totalClicked = 0;
-      let totalErrors = 0;
-      
-      if (this.logs && this.logs.length > 0) {
-      
-      this.logs.forEach(log => {
-        if (log.openedAt && new Date(log.openedAt).getFullYear() > 1) {
-          totalOpened++;
-        }
-        if (log.clickCount > 0) {
-          totalClicked++;
-        }
-        if (log.error) {
-          totalErrors++;
-        }
-      });} else{
-        console.log('No logs to display.');
-      
-      }
-      
-      // Adjusting the structure to match a single dataset for all categories
-      this.barChartOptions.series = [
-        {
-          name: "",
-          data: [totalOpened,totalClicked,totalErrors]
-        },
+        let totalOpened = 0;
+        let totalClicked = 0;
+        let totalErrors = 0;
         
-      ];
-      
-      
-      }
-      updateBubbleChartClick() {
-        const clicksPerHourDay: { [key: string]: number } = {};
-      
-        this.logs.forEach(log => {
-          if (log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00") {
-            const date = new Date(log.clickedAt);
-            const hours = date.getHours() + (date.getMinutes() >= 30 ? 1 : 0);
-            const dayOfWeek = date.getDay();
-      
-            const key = `${dayOfWeek}-${hours}`;
-            if (!clicksPerHourDay[key]) {
-              clicksPerHourDay[key] = 0;
-            }
-            clicksPerHourDay[key]++;
-          }
+        this.service.updateChartData().subscribe((data) => {
+          console.log(data.data);
+          
+          totalOpened = data.data.opened;
+          totalClicked = data.data.clicked;
+          totalErrors = data.data.error;
+          console.log(totalOpened);
+          
+          // Adjusting the structure to match a single dataset for all categories
+          this.barChartOptions.series = [
+            {
+              name: "",
+              data: [totalOpened, totalClicked, totalErrors]
+            },
+          ];
+          this.cdr.detectChanges();
         });
+        
+        
+      }
+      updateBubbleChartClick(): void {
+        this.service.bubbleChartDataClicks().subscribe((response) => {
+          
       
-        const values: number[] = Object.values(clicksPerHourDay);
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        const midThreshold = min + (max - min) / 3;
-        const largeThreshold = min + 2 * (max - min) / 3;
+          // Update the bubble chart series data using the data from the backend
+          this.bubbleChartOptioncClick.series = [{
+            name: 'Clicks',
+            data: response.data.map(item => ({
+              x: item.x,  // Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+              y: item.y,  // Hour of the day (0 = midnight, 1 = 1 AM, ..., 23 = 11 PM)
+              z: item.z   // Bubble size (1 = small, 2 = medium, 3 = large)
+            }))
+          }];
       
-        const seriesData = Object.entries(clicksPerHourDay).map(([key, value]) => {
-          const [dayOfWeek, hour] = key.split('-').map(Number);
-          let size;
-          if (value <= midThreshold) {
-            size = 1; // small
-          } else if (value <= largeThreshold) {
-            size = 2; // mid
-          } else {
-            size = 3; // large
-          }
-          return {
-            x: dayOfWeek,
-            y: hour,
-            z: size
-          };
+          // Log the series data for debugging purposes
+          console.log(this.bubbleChartOptioncClick.series[0].data);
+      
+          // Trigger change detection to update the chart
+          this.cdr.detectChanges();
+        },
+        (error) => {
+          console.error('Error fetching bubble chart click data:', error);
+          // Handle the error appropriately, e.g., display an error message
         });
-      
-        this.bubbleChartOptioncClick.series = [{
-          name: 'Clicks',
-          data: seriesData
-        }];
-        console.log(this.bubbleChartOptioncClick.series[0].data);
-      
-        this.cdr.detectChanges();
       }
-updateBubbleChartOpen() {
-  const opensPerHourDay: { [key: string]: number } = {};
-
-  this.logs.forEach(log => {
-    if (log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00") {
-      const date = new Date(log.openedAt);
-      const hours = date.getHours() + (date.getMinutes() >= 30 ? 1 : 0);
-      const dayOfWeek = date.getDay();
-
-      const key = `${dayOfWeek}-${hours}`;
-      if (!opensPerHourDay[key]) {
-        opensPerHourDay[key] = 0;
+      
+      updateBubbleChartOpen(): void {
+        this.service.bubbleChartDataOpens().subscribe((response) => {
+          
+      
+          // Update the bubble chart series data using the data from the backend
+          this.bubbleChartOptionsOpen.series = [{
+            name: 'Opens',
+            data: response.data.map(item => ({
+              x: item.x,  // Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+              y: item.y,  // Hour of the day (0 = midnight, 1 = 1 AM, ..., 23 = 11 PM)
+              z: item.z   // Bubble size (1 = small, 2 = medium, 3 = large)
+            }))
+          }];
+          // Trigger change detection to update the chart
+          this.cdr.detectChanges();
+        },
+        (error) => {
+          console.error('Error fetching bubble chart data:', error);
+          // Handle the error appropriately, e.g., display an error message
+        });
       }
-      opensPerHourDay[key]++;
-    }
-  });
-
-  const values: number[] = Object.values(opensPerHourDay);
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const midThreshold = min + (max - min) / 3;
-  const largeThreshold = min + 2 * (max - min) / 3;
-
-  const seriesData = Object.entries(opensPerHourDay).map(([key, value]) => {
-    const [dayOfWeek, hour] = key.split('-').map(Number);
-    let size;
-    if (value <= midThreshold) {
-      size = 1; // small
-    } else if (value <= largeThreshold) {
-      size = 2; // mid
-    } else {
-      size = 3; // large
-    }
-    return {
-      x: dayOfWeek,
-      y: hour,
-      z: size
-    };
-  });
-
-  this.bubbleChartOptionsOpen.series = [{
-    name: 'Opens',
-    data: seriesData
-  }];
-  console.log(this.bubbleChartOptionsOpen.series[0].data);
-
-  this.cdr.detectChanges();
-}
+      
   updateBarChartClick() {
-    if (!this.logs) {
-      console.error('Logs data is not available.');
-      return;
-    }
-
-    const clickPerDay = Array(7).fill(0);
-
-    this.logs.forEach(log => {
-      if (log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00") {
-          const date = new Date(log.clickedAt);
-          const dayOfWeek = date.getDay(); // getDay() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
-          clickPerDay[dayOfWeek]++;
-      }
-      this.barChartOptionsClick.series[0].data = clickPerDay;
-      console.log(this.barChartOptionsClick.series[0].data);
-      
-  });
+   this.service.barChartDataClicks().subscribe((data) => {
+      this.barChartOptionsClick.series[0].data = data.data;
+      this.cdr.detectChanges();      
+   });
 
     
   }
   updateBarChartOpen() {
-    if (!this.logs) {
-      console.error('Logs data is not available.');
-      return;
-    }
-    // Initialize an array with 7 elements for each day of the week
-    const opensPerDay = Array(7).fill(0);
+    this.service.barChartDataOpens().subscribe((data) => {
 
-    this.logs.forEach(log => {
-        if (log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00") {
-            const date = new Date(log.openedAt);
-            const dayOfWeek = date.getDay(); // getDay() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
-            opensPerDay[dayOfWeek]++;
-        }
-    });
+    
 
     // Update the bar chart data
-    this.barChartOptionsOpen.series[0].data = opensPerDay;
+    this.barChartOptionsOpen.series[0].data = data.data;
+    this.cdr.detectChanges();
+  });
 }
-  updateScatterChartData() {
-    const openedData = this.logs.filter(log => log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00" && log.openedAt !== "0001-01-01T00:00:00Z");
-    const clickedData = this.logs.filter(log => log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00");
+updateScatterChartData(): void {
+  this.service.updateScatterChartData().subscribe((data) => {
+    console.log("Received scatter chart data from backend:", data);
+    console.log(new Date(data.data.openedData[3].x)); 
 
-    // Update the scatter chart series data
+    // Update the scatter chart series data using the data from the backend
     this.scatterChartOptions.series = [
+      
       {
         name: "Opened Emails",
-        data: openedData.map(log => ({
-          x: new Date(log.openedAt).getTime(),
-          y: log.clickCount,
-          recipientEmail: log.recipientEmail
+        data: data.data.openedData.map(item => ({
+          
+          x: item.x,  // Timestamp already provided by the backend
+          y: item.y,  // Click count provided by the backend
+          recipientEmail: item.recipientEmail
         }))
       },
       {
         name: "Clicked Emails",
-        data: clickedData.map(log => ({
-          x: new Date(log.clickedAt).getTime(),
-          y: log.clickCount,
-          recipientEmail: log.recipientEmail
-          
+        data: data.data.clickedData.map(item => ({
+          x: item.x,  // Timestamp already provided by the backend
+          y: item.y,  // Click count provided by the backend
+          recipientEmail: item.recipientEmail
         }))
       }
     ];
+    this.cdr.detectChanges();
+
+    // Update tooltip to use the custom data
     this.scatterChartOptions.tooltip = {
       enabled: true,
       custom: ({ seriesIndex, dataPointIndex, w }) => {
-        // Access the custom data for the tooltip
         const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex].recipientEmail;
         const clickCount = w.config.series[seriesIndex].data[dataPointIndex].y;
         return `<div class="apexcharts-tooltip-title">Recipient Email: ${recipientEmail}</div>
                 <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
       }
     };
-  }
+
+    // Trigger change detection to update the chart
+    this.cdr.detectChanges();
+  },
+  (error) => {
+    console.error('Error fetching scatter chart data:', error);
+    // Optionally handle the error, such as displaying a notification to the user
+  });
+}
+
   updateRadialChartData() {
     const totalLogs = this.logs.length;
 
-    // Calculate the number of opened emails
-    const openedLogs = this.logs.filter(log => log.openedAt && log.openedAt !== "0001-01-01T00:00:00Z").length;
-    // Calculate the percentage of opened emails
-    const openedPercentage = totalLogs > 0 ? (openedLogs / totalLogs) * 100 : 0;
-  
-    this.radialChartOptions.tooltip = {
-      enabled: true,
-      y: {
-              formatter: () => {
-                
-               
-                return `Opened Emails: ${openedLogs}`;
-              },
-            },
+    this.service.updateRadialChartData().subscribe((data) => {
+
+
       
-  };
-    // Update the radial chart with the calculated percentage
-    this.radialChartOptions.series = [openedPercentage];
-  }
-  updateLineChartData() {
-  // Helper function to aggregate data by date
-  const aggregateDataByDate = (logs, key) => {
-    if (!logs) {
-      console.error("Logs data is null or undefined");
-      return {};
+      this.radialChartOptions.tooltip = {
+        enabled: true,
+        y: {
+          formatter: () => {
+            
+            
+            return `Opened Emails: ${data.data.openedLogs}`;
+          },
+        },
+        
+      };
+      // Update the radial chart with the calculated percentage
+      this.radialChartOptions.series = [data.data.openedPercentage];
+      this.cdr.detectChanges();
+    });
     }
-    return logs.reduce((acc, log) => {
-      if (log[key] && log[key] !== "0001-01-01T01:00:00+01:00") {
-        const date = new Date(log[key]).toISOString().substring(0, 10);
-        acc[date] = (acc[date] || 0) + 1;
+  updateLineChartData(): void {
+      this.service.updateLineChartData().subscribe((data) => {
+        console.log("Received data from backend:", data);
+    
+       // Ensure allDates are treated as strings
+    const allDates = data.data.allDates.map(date => `${date}`);
+
+    // Update the chart options
+    this.lineChartOptions.xaxis = {
+      categories: allDates,
+      labels: {
+        format: 'yyyy-MM-dd', // Optional: Ensure proper date format
       }
-      return acc;
-    }, {});
-  };
-
-  const openedData = aggregateDataByDate(this.logs, 'openedAt');
-  const clickedData = aggregateDataByDate(this.logs, 'clickedAt');
-  
-  // Combine all unique dates from both opened and clicked data
-  const allDates = Array.from(new Set([
-    ...Object.keys(openedData),
-    ...Object.keys(clickedData)
-  ])).sort();
-
-  // Create the series data arrays
-  const openedSeriesData = allDates.map(date => openedData[date] || 0);
-  const clickedSeriesData = allDates.map(date => clickedData[date] || 0);
-  console.log("heeeeeeeeeeeeereeee",{openedSeriesData,clickedSeriesData,allDates});
-  
-
-  // Update the chart options
-  this.lineChartOptions.xaxis.categories = allDates;
-  this.lineChartOptions.series = [
-    {
-      name: "Opened Emails",
-      data: openedSeriesData
-    },
-    {
-      name: "Clicked Emails",
-      data: clickedSeriesData
+    };
+    
+        // Update the chart options
+        this.lineChartOptions.xaxis.categories = allDates;
+        this.lineChartOptions.series = [
+          {
+            name: "Opened Emails",
+            data: data.data.openedSeriesData
+          },
+          {
+            name: "Clicked Emails",
+            data: data.data.clickedSeriesData
+          }
+        ];
+    
+        // Trigger change detection to update the chart
+        this.cdr.detectChanges();
+      });
     }
-  ];
-}
-  updatePieChartData(): void {
+    
+updatePieChartData(): void {
   if (!this.contacts) {
     console.error("Contacts data is null or undefined");
     return;
   }
 
-  if (!this.logs) {
-    console.error("Logs data is null or undefined");
-    return;
-  }
-
   const totalContacts = this.contacts.length;
-  const openedEmails = this.logs.filter(log => log.openedAt && new Date(log.openedAt).getFullYear() > 1).length;
-  const clickedEmails = this.logs.filter(log => log.clickCount > 0).length;
 
-  this.pieChartOptions.labels = ["Opened Emails", "Clicked Emails", "Total Contacts: " + totalContacts];
-  // Update the entire dataset to avoid potential issues
-  this.pieChartOptions.series = [openedEmails, clickedEmails];
+  // Call the backend service to get the necessary data
+  this.service.updatePieChartData().subscribe(
+    (data) => {
+      // Assume the backend returns an object with openedEmails and clickedEmails properties
+      const openedEmails = data.data.cpenedEmails || 0;
+      const clickedEmails = data.data.clickedEmails || 0;
+
+      // Update pie chart options with the data from the backend
+      this.updateChartOptions(totalContacts, openedEmails, clickedEmails);
+    },
+    (error) => {
+      console.error('Error fetching data from backend:', error);
+      // Handle error gracefully - perhaps show a message to the user or use default values
+      this.updateChartOptions(totalContacts, 0, 0);  // Default to zero if there's an error
+    }
+  );
+}
+
+// Separate method to update chart options
+private updateChartOptions(totalContacts: number, openedEmails: number, clickedEmails: number): void {
+  this.pieChartOptions = {
+    ...this.pieChartOptions,
+    labels: ["Opened Emails", "Clicked Emails", `Total Contacts: ${totalContacts}`],
+    series: [openedEmails, clickedEmails]
+  };
+
+  // Trigger change detection to update the view
+  this.cdr.detectChanges();
 }
 getDayName(dayIndex) {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

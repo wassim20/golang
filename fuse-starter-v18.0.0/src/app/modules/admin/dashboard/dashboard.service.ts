@@ -81,5 +81,50 @@ export class DashboardService {
       }
     });
   }
+  updateChartData(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/barchartdata`, {
+      headers: this.getHeaders()
+    });
+  }
+  updatePieChartData(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/piechartdata`, {
+      headers: this.getHeaders()
+    });
+  }
+  updateRadialChartData(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/radialchartdata`, {
+      headers: this.getHeaders()
+    });
+  }
+  updateLineChartData(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/linechartdata`, {
+      headers: this.getHeaders()
+    });
+  }
+  updateScatterChartData(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/scatterchartdata`, {
+      headers: this.getHeaders()
+    });
+  }
+  barChartDataOpens(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/barchartopens`, {
+      headers: this.getHeaders()
+    });
+  }
+  barChartDataClicks(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/barchartclicks`, {
+      headers: this.getHeaders()
+    });
+  }
+  bubbleChartDataOpens(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/scatterchartopens`, {
+      headers: this.getHeaders()
+    });
+  }
+  bubbleChartDataClicks(){
+    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/logs/scatterchartclicks`, {
+      headers: this.getHeaders()
+    });
+  }
 
 }

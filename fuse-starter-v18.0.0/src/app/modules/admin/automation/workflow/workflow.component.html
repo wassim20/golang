@@ -1,46 +1,81 @@
-<div class="body">
-    <mat-card appearance="outlined">
-      <mat-card-content>
-        <p>Trigger:</p>
-        {{formData.message}}
-  
-        
-        <div *ngFor="let action of actions; let i = index">
-          <mat-card appearance="outlined">
-            <mat-card-content>
-              <p>{{ action.type }}</p>
-              <mat-form-field *ngIf="action.type === 'Send Email'">
-                <mat-label>Subject</mat-label>
-                <input matInput type="text" [(ngModel)]="action.email.subject">
-              </mat-form-field>
-              <mat-form-field *ngIf="action.type === 'Send Email'">
-                <mat-label>Body</mat-label>
-                <textarea matInput [(ngModel)]="action.email.body"></textarea>
-              </mat-form-field>
-              <mat-form-field *ngIf="action.type === 'Wait'">
-                <mat-label>Wait for</mat-label>
-                <input matInput type="number" [(ngModel)]="action.wait.duration">
-                <mat-select [(ngModel)]="action.wait.unit">
-                  <mat-option value="minutes">Minutes</mat-option>
-                  <mat-option value="hours">Hours</mat-option>
-                  <mat-option value="days">Days</mat-option>
-                </mat-select>
-              </mat-form-field>
-              <mat-form-field *ngIf="action.type === 'Condition'">
-                <mat-label>Condition</mat-label>
-                <mat-select [(ngModel)]="action.condition.type">
-                  <mat-option value="Open Previous Email">Open Previous Email</mat-option>
-                  <!-- Add more condition types as needed -->
-                </mat-select>
-              </mat-form-field>
-              <button mat-icon-button (click)="removeAction(i)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </mat-card-content>
-          </mat-card>
-        </div>
-  
-        <button mat-raised-button (click)="addAction()">Add Action</button>
-      </mat-card-content>
-    </mat-card>
+<div class="workflow-container" #workflowContainer>
+  <div class="workflow-controls">
+    <button mat-icon-button (click)="toggleFullScreen()">
+      <mat-icon>fullscreen</mat-icon>
+    </button>
+    <button mat-icon-button (click)="zoomIn()">
+      <mat-icon>zoom_in</mat-icon>
+    </button>
+    <button mat-icon-button (click)="zoomOut()">
+      <mat-icon>zoom_out</mat-icon>
+    </button>
+    <button mat-icon-button (click)="resetZoom()">
+      <mat-icon>zoom_out_map</mat-icon>
+    </button>
   </div>
+
+  <div class="workflow-area" [style.transform]="zoomTransform" #workflowArea>
+    <h3>Automation starts when the following trigger condition is met</h3>
+
+    <div *ngFor="let action of actions">
+      <ng-container
+        [ngTemplateOutlet]="renderAction"
+        [ngTemplateOutletContext]="{ action: action }"
+      ></ng-container>
+    </div>
+
+    <button
+      *ngIf="!hasCondition()"
+      mat-icon-button
+      (click)="addAction()"
+      class="add-icon"
+    >
+      <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+    </button>
+
+    <ng-template #renderAction let-action="action">
+      <div class="action-card" (dblclick)="editAction(action)">
+        <p>{{ action.title }}</p>
+
+        <div *ngIf="action.type === 'condition'">
+          <div class="branch-container">
+            <div class="branch">
+              <strong>Yes</strong>
+              <ng-container *ngFor="let yesAction of action.yesBranch">
+                <ng-container
+                  [ngTemplateOutlet]="renderAction"
+                  [ngTemplateOutletContext]="{ action: yesAction }"
+                ></ng-container>
+              </ng-container>
+              <button
+                *ngIf="!hasCondition(action.yesBranch)"
+                mat-icon-button
+                (click)="addAction(action, 'yes')"
+                class="add-icon"
+              >
+                <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+              </button>
+            </div>
+            <div class="branch">
+              <strong>No</strong>
+              <ng-container *ngFor="let noAction of action.noBranch">
+                <ng-container
+                  [ngTemplateOutlet]="renderAction"
+                  [ngTemplateOutletContext]="{ action: noAction }"
+                ></ng-container>
+              </ng-container>
+              <button
+                *ngIf="!hasCondition(action.noBranch)"
+                mat-icon-button
+                (click)="addAction(action, 'no')"
+                class="add-icon"
+              >
+                <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</div>

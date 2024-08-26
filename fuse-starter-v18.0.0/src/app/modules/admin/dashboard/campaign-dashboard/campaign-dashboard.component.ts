@@ -27,6 +27,11 @@ import {
   ApexTheme
 } from "ng-apexcharts";
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 //import { ChartOptions } from 'chart.js';
 
 export type BarChartOptions = {
@@ -94,7 +99,8 @@ export type PieChartOptions = {
 @Component({
   selector: 'campaign-dashboard',
   standalone: true,
-  imports: [MatFormFieldModule, MatSelectModule,RouterModule,
+  imports: [MatFormFieldModule, MatSelectModule,RouterModule,MatDatepickerModule, FormsModule, ReactiveFormsModule,MatIconModule,
+    MatButtonModule,MatTooltipModule,
     CommonModule, MatOptionModule, HttpClientModule,MatProgressSpinnerModule,NgApexchartsModule],
   templateUrl: './campaign-dashboard.component.html',
   styleUrls: ['./campaign-dashboard.component.scss']

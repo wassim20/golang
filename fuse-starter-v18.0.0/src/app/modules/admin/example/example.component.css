@@ -19,7 +19,8 @@
 .example-stepper mat-step-header {
   background-color: #e0e0e0;
   padding: 0px 10px 0px 10px;
-  border-radius: 5px;
+  border-radius: 15px;
+  height: 50px;
 }
 
 .example-stepper mat-step-header.mat-step-header-selected {
@@ -155,6 +156,7 @@ form {
 
 }
 .stepper-buttons {
+  color: white;
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
@@ -163,7 +165,7 @@ form {
 /* Style for all buttons inside .stepper-buttons */
 .stepper-buttons button {
   background-color: #4f46e5; /* Primary color */
-  color: white; /* Text color */
+  color: white !important; /* Text color with higher priority */
   border: none; /* Remove default border */
   padding: 0.5rem 1rem; /* Padding for better sizing */
   border-radius: 0.25rem; /* Rounded corners */
