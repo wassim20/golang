@@ -27,28 +27,28 @@ import (
 // @Router			/:companyID/workflow/:workflowID/action		[post]
 func (db Database) CreateAction(ctx *gin.Context) {
 	// Extract JWT values from the context
-	session := utils.ExtractJWTValues(ctx)
+	// session := utils.ExtractJWTValues(ctx)
 	//ID for action to pass it to the send email in first case
 	IDAction := uuid.New()
 	// Parse and validate the company ID from the request parameter
-	companyID, err := uuid.Parse(ctx.Param("companyID"))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// companyID, err := uuid.Parse(ctx.Param("companyID"))
+	// if err != nil {
+	// 	logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 	workflowID, err := uuid.Parse(ctx.Param("workflowID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return
 	}
-	// Check if the employee belongs to the specified mailinglist
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// // Check if the employee belongs to the specified mailinglist
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Parse the incoming JSON request into a ActionIn struct
 	action := new(ActionIn)
@@ -73,9 +73,8 @@ func (db Database) CreateAction(ctx *gin.Context) {
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 		return
 	}
-
 	// Respond with success
-	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, utils.Null())
+	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, dbAction)
 }
 
 // ReadActions handles the retrieval of all actions.
@@ -298,7 +297,7 @@ func (db Database) UpdateAction(ctx *gin.Context) {
 	}
 
 	// Parse the incoming JSON request into an ActionIn struct
-	action := new(ActionIn)
+	action := new(Actionup)
 	if err := ctx.ShouldBindJSON(action); err != nil {
 		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -314,7 +313,7 @@ func (db Database) UpdateAction(ctx *gin.Context) {
 
 	// Update the action data in the database
 	dbAction := &domains.Action{
-		Name: action.Name,
+
 		Type: action.Type,
 		Data: action.Data,
 	}

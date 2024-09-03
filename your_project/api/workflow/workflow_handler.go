@@ -29,7 +29,7 @@ import (
 // @Router			/{companyID}/workflow		[post]
 func (db Database) CreateWorkflow(ctx *gin.Context) {
 	// Extract JWT values from the context
-	session := utils.ExtractJWTValues(ctx)
+	//session := utils.ExtractJWTValues(ctx)
 	// Parse and validate the company ID from the request parameter
 	companyID, err := uuid.Parse(ctx.Param("companyID"))
 	if err != nil {
@@ -38,12 +38,12 @@ func (db Database) CreateWorkflow(ctx *gin.Context) {
 		return
 	}
 
-	// Check if the employee belongs to the specified workflow
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
+	// // Check if the employee belongs to the specified workflow
+	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+	// 	return
+	// }
 
 	// Parse the incoming JSON request into a WorkflowIn struct
 	workflow := new(WorkflowIn)
@@ -59,6 +59,7 @@ func (db Database) CreateWorkflow(ctx *gin.Context) {
 		Name:          workflow.Name,
 		Status:        "pending",
 		Trigger:       workflow.Trigger,
+		TriggerData:   workflow.Trigger_data,
 		MailinglistID: workflow.MailinglistID,
 		CompanyID:     companyID,
 	}
@@ -70,7 +71,7 @@ func (db Database) CreateWorkflow(ctx *gin.Context) {
 	}
 
 	// Respond with success
-	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, utils.Null())
+	utils.BuildResponse(ctx, http.StatusCreated, constants.SUCCESS, dbWorkflow.ID)
 }
 
 // ReadWorkflows 	Handles the retrieval of all workflows.
@@ -99,7 +100,7 @@ func (db Database) ReadWorkflows(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified workflow
-	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+	if err := domains.CheckEmployeeBelonging(db.DB, session.CompanyID, session.UserID, session.CompanyID); err != nil {
 		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
 		return

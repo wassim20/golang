@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"labs/domains"
 	"time"
 
@@ -17,9 +18,10 @@ type WorkflowsPagination struct {
 
 // @Description	WorkflowIn represents the input structure for creating a new workflow.
 type WorkflowIn struct {
-	Name          string    `json:"name"`           // Name is the name of the workflow.
-	Trigger       string    `json:"trigger"`        // Trigger is the trigger of the workflow.
-	MailinglistID uuid.UUID `json:"mailinglist_id"` // MailinglistID is the ID of the mailinglist associated with the workflow.
+	Name          string          `json:"name"`           // Name is the name of the workflow.
+	Trigger       string          `json:"trigger"`        // Trigger is the trigger of the workflow.
+	MailinglistID uuid.UUID       `json:"mailinglist_id"` // MailinglistID is the ID of the mailinglist associated with the workflow.
+	Trigger_data  json.RawMessage `json:"trigger_data"`   // TriggerData is the data associated with the trigger.
 } //@name WorkflowIn
 
 // @Description	WorkflowDetails represents detailed information about a specific workflow.

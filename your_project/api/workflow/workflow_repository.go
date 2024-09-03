@@ -1,13 +1,11 @@
 package workflow
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"labs/constants"
 	"labs/domains"
-	"labs/utils"
-	"net/http"
-	"regexp"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
 	"gopkg.in/gomail.v2"
 	"gorm.io/gorm"
 )
@@ -43,534 +42,305 @@ func ReadByID(db *gorm.DB, model domains.Workflow, id uuid.UUID) (domains.Workfl
 	return model, err
 }
 
+// Start initiates the workflow execution
 func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context, contact domains.Contact) error {
-
-	var wg sync.WaitGroup
-	var x int = 2
-	actions, err := getActions(db, workflow.ID)
+	actions, err := getOrderedActions(db, workflow.ID)
 	if err != nil {
 		return err
 	}
-	result := make(chan bool)
 
-	//iterate through the actions
-	for i := 0; i < len(actions); i++ {
+	var wg sync.WaitGroup
+	executed := make(map[uuid.UUID]bool)
+
+	for i := 0; i < len(actions); {
 		action := actions[i]
+		if executed[action.ID] {
+			i++
+			continue
+		}
+		executed[action.ID] = true
+
 		wg.Add(1)
-		index := i
-		// make a go routine here for each action
 		go func(action domains.Action) {
 			defer wg.Done()
-			//switch through the action type and perform what is needed
-			switch action.Type {
-			case "email":
-				//checking previous action status and parentID
-				if x == 1 {
-					x = x + 1
-					return
-				}
-				if action.ParentID == actions[index-1].ID && index > 1 && actions[index-1].Status == "condition" {
-					var checking map[string]interface{}
-					x = x - 1
-					if err := json.Unmarshal([]byte(action.Data), &checking); err != nil {
-						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-						return
-					}
-					// parse the data to con string
-					if _, ok := checking["route"]; !ok {
-						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-						return
-					}
-					con := checking["route"].(bool)
-
-					if con != <-result {
-						return
-
-					}
-				}
-
-				var emailData map[string]interface{}
-				if err := json.Unmarshal([]byte(action.Data), &emailData); err != nil {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				// Check for required fields
-				if _, ok := emailData["subject"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := emailData["track_open"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := emailData["track_click"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := emailData["HTML"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := emailData["from"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := emailData["reply-to"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if err := SendEmail(db, workflow, emailData, action.ID, contact.Email); err != nil {
-					logrus.Errorf("Error sending email action: %v", err)
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-
-				}
-
-			case "wait":
-				if x == 1 {
-					x = x + 1
-					return
-				}
-				if action.ParentID == actions[index-1].ID && index > 1 && actions[index-1].Status == "condition" {
-					var checking map[string]interface{}
-					x = x - 1
-					if err := json.Unmarshal([]byte(actions[index-1].Data), &checking); err != nil {
-						logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-						utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-						return
-					}
-					// parse the data to con string
-					con := checking["route"].(bool)
-					if con != <-result {
-						return
-
-					}
-				}
-				var waitData map[string]interface{}
-				if err := json.Unmarshal([]byte(action.Data), &waitData); err != nil {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := waitData["duration"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if err := Wait(db, workflow.ID, waitData, action.ID, ctx); err != nil {
-					logrus.Errorf("Error waiting action: %v", err)
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-				}
-
-			case "condition":
-				// Implement condition logic here
-				var conditionData map[string]interface{}
-				if err := json.Unmarshal([]byte(action.Data), &conditionData); err != nil {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				// Check for required fields criteria,campaignID,duration,route
-				if _, ok := conditionData["criteria"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := conditionData["campaignID"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := conditionData["duration"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if _, ok := conditionData["route"]; !ok {
-					logrus.Error("Error mapping request from frontend. Error: ", err.Error())
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-					return
-				}
-				if err := Condition(db, workflow.ID, conditionData, action.ID, ctx, result); err != nil {
-					logrus.Errorf("Error condition action: %v", err)
-					utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-				}
-
+			if err := executeAction(db, workflow, action, ctx, contact); err != nil {
+				logrus.Errorf("Error executing action %s: %v", action.ID, err)
 			}
 
+			// Determine next action based on condition branch if applicable
+			if action.Type == "condition" {
+				nextActionID := handleConditionAndDecideNext(db, workflow, action, ctx, contact)
+				if nextActionID != uuid.Nil {
+					// Set the loop index to the position of the next action
+					for j, nextAction := range actions {
+						if nextAction.ID == nextActionID {
+							i = j
+							break
+						}
+					}
+				} else {
+					i++ // No further actions, exit loop
+				}
+			} else {
+				i++ // Continue to the next action
+			}
 		}(action)
 
+		wg.Wait() // Wait for the action to complete before proceeding
 	}
-	wg.Wait()
 
 	return nil
 }
 
-func SendEmail(db *gorm.DB, workflow domains.Workflow, emailData map[string]interface{}, actionID uuid.UUID, email string) error {
-	// 1. Extract Email Details from Data
-	subject, ok := emailData["subject"].(string)
-	if !ok {
-		return fmt.Errorf("missing required field 'subject' in email data")
+// executeAction determines the type of action and handles it appropriately
+func executeAction(db *gorm.DB, workflow domains.Workflow, action domains.Action, ctx *gin.Context, contact domains.Contact) error {
+	switch action.Type {
+	case "email":
+		return handleEmailAction(db, workflow, action, contact)
+	case "condition":
+		// Handled separately in Start function
+		return nil
+	case "wait":
+		return handleWaitAction(db, workflow.ID, action, ctx)
+	default:
+		return fmt.Errorf("unknown action type: %s", action.Type)
+	}
+}
+
+// handleEmailAction processes an email action by sending an email with tracking logs
+func handleEmailAction(db *gorm.DB, workflow domains.Workflow, action domains.Action, contact domains.Contact) error {
+	var emailData map[string]interface{}
+	if err := json.Unmarshal([]byte(action.Data), &emailData); err != nil {
+		return fmt.Errorf("error unmarshaling email data: %v", err)
 	}
 
-	trackOpen, ok := emailData["track_open"].(bool)
-	if !ok {
-		return fmt.Errorf("missing required field 'track_open' in email data")
-	}
-
-	trackClick, ok := emailData["track_click"].(bool)
-	if !ok {
-		return fmt.Errorf("missing required field 'track_click' in email data")
-	}
-
-	htmlBody, ok := emailData["HTML"].(string)
-	if !ok {
-		return fmt.Errorf("missing required field 'HTML' in email data")
-	}
-	from, ok := emailData["from"].(string)
-	if !ok {
-		return fmt.Errorf("missing required field 'from' in email data")
-	}
-	replyTo, ok := emailData["reply-to"].(string)
-	if !ok {
-		return fmt.Errorf("missing required field 'reply-to' in email data")
+	requiredFields := []string{"subject", "HTML", "from", "reply_to"}
+	for _, field := range requiredFields {
+		if _, ok := emailData[field]; !ok {
+			return fmt.Errorf("missing required field '%s' in email data", field)
+		}
 	}
 
 	// Fetch available servers for sending emails
-	servers := []domains.Server{}
-	err := db.Where("company_id = ?", workflow.CompanyID).Find(&servers).Error
-	if err != nil {
-		logrus.Errorf("Error fetching servers for company: %v", err)
-		return err
+	var servers []domains.Server
+	if err := db.Where("company_id = ?", workflow.CompanyID).Find(&servers).Error; err != nil {
+		return fmt.Errorf("error fetching servers: %v", err)
 	}
-	// Check if there are any servers available
 	if len(servers) == 0 {
-		logrus.Error("No servers available for sending emails")
-		return fmt.Errorf("no servers available for sending emails") // Or return an error if desired
+		return fmt.Errorf("no servers available for sending emails")
 	}
 	server := servers[0]
 
-	var wg sync.WaitGroup
-	wg.Add(len(servers))
-
 	msg := gomail.NewMessage()
-	msg.SetHeader("From", from)
-	msg.SetHeader("To", email)
-	msg.SetHeader("Subject", subject)
-	msg.SetBody("text/html", htmlBody)
-	msg.SetHeader("Reply-To", replyTo)
+	msg.SetHeader("From", emailData["from"].(string))
+	msg.SetHeader("To", contact.Email)
+	msg.SetHeader("Subject", emailData["subject"].(string))
+	msg.SetHeader("Reply-To", emailData["reply_to"].(string))
 
-	//create tracking log
+	// Create tracking log
 	trackingLog := &domains.TrackingLog{
 		ID:             uuid.New(),
 		CompanyID:      workflow.CompanyID,
-		CampaignID:     uuid.Nil,
-		ActionID:       actionID,
-		RecipientEmail: email,
+		ActionID:       action.ID,
+		RecipientEmail: contact.Email,
 		Status:         "pending",
 	}
-	// Add tracking pixel to the email body if tracking is enabled
-	if trackOpen {
+
+	body := emailData["HTML"].(string)
+	body = strings.Replace(body, "[Recipient Name]", contact.Firstname, -1) // Replace placeholder with recipient's first name
+
+	// Open tracking
+	if trackOpen, ok := emailData["track_open"].(bool); ok && trackOpen {
 		trackingLog.OpenTrackingID = uuid.New()
-		openTrackingPixelURL := "http://localhost:8080/api/" + workflow.CompanyID.String() + "/logs/open/" + trackingLog.OpenTrackingID.String()
-		// Append the tracking pixel <img> tag within the HTML body
-		htmlBody = strings.Replace(htmlBody, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
+		openTrackingPixelURL := fmt.Sprintf("https://apitest385.cbot.tn/api/static/pixel.png?trackingID=%s", trackingLog.OpenTrackingID.String())
+		body = strings.Replace(body, "</body>", fmt.Sprintf(`<img src="%s" width="1" height="1" alt="" style="display:none;" /></body>`, openTrackingPixelURL), 1)
 	}
-	if trackClick {
+
+	// Click tracking
+	if trackClick, ok := emailData["track_click"].(bool); ok && trackClick {
 		trackingLog.ClickTrackingID = uuid.New()
+		openClickTrackingURL := fmt.Sprintf("https://apitest385.cbot.tn/api/click?trackingID=%s", trackingLog.ClickTrackingID.String())
 
-		openClickTrackingURL := "http://localhost:8080/api/" + workflow.CompanyID.String() + "/logs/click/" + trackingLog.ClickTrackingID.String()
+		// Modify links in the HTML to include click tracking
+		doc, _ := html.Parse(strings.NewReader(body))
 
-		re := regexp.MustCompile(`(?i)<(a|button)[^>]*href=["'](?P<href>[^"']*)["'][^>]*>(?P<content>.*?)</(a|button)>`) // Case-insensitive match
-		htmlBody = re.ReplaceAllStringFunc(htmlBody, func(s string) string {
-			matches := re.FindStringSubmatch(s)
-			href := matches[re.SubexpIndex("href")]
-			content := matches[re.SubexpIndex("content")]
-
-			finalURL := href
-			if href == "" {
-				finalURL = "#"
+		var f func(*html.Node)
+		f = func(n *html.Node) {
+			if n.Type == html.ElementNode && n.Data == "a" {
+				for i, a := range n.Attr {
+					if a.Key == "href" {
+						originalURL := a.Val
+						trackingURL := fmt.Sprintf("%s&redirect=%s", openClickTrackingURL, url.QueryEscape(originalURL))
+						n.Attr[i].Val = trackingURL
+					}
+				}
 			}
-
-			// Append the tracking parameter to the original URL
-			trackingURL := fmt.Sprintf(`%s?click=%s&email=%s`, finalURL, openClickTrackingURL, email)
-
-			// Return the modified link
-			return fmt.Sprintf(`<%s href="%s"%s>%s</%s>`, matches[1], trackingURL, matches[2:], content, matches[4])
-		})
-
-	}
-	if err := domains.Create(db, trackingLog); err != nil {
-		logrus.Errorf("error saving tracking log for contact %s: %v", email, err)
-
-		// Handle the error (e.g., retry saving the log, log the error for debugging)
-	}
-
-	// Send the email using the first available server
-	go func() {
-		defer wg.Done()
-		d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
-		if err := d.DialAndSend(msg); err != nil {
-			logrus.Errorf("Error sending email: %v", err)
-			logrus.Error("Error sending email to", email, ":", err.Error())
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				f(c)
+			}
 		}
-	}()
-	// Wait for all emails to be sent
+		f(doc)
 
-	wg.Wait()
-	//update the action status
-	action := domains.Action{}
-	err = db.First(&action, actionID).Error
-	if err != nil {
-		return err
-	}
-	action.Status = "completed"
-	if err := db.Save(&action).Error; err != nil {
-		logrus.Error("Error updating action status to completed:", err.Error())
-		// Handle error (consider retrying or notifying admins)
+		var buf bytes.Buffer
+		html.Render(&buf, doc)
+		body = buf.String()
 	}
 
-	return nil
+	// Save tracking log
+	if err := domains.Create(db, trackingLog); err != nil {
+		logrus.Errorf("Error saving tracking log for contact %s: %v", contact.Email, err)
+	}
+
+	// Send the email
+	msg.SetBody("text/html", body)
+	d := gomail.NewDialer(server.Host, server.Port, server.Username, server.Password)
+	if err := d.DialAndSend(msg); err != nil {
+		return fmt.Errorf("error sending email: %v", err)
+	}
+
+	// Update action status to completed
+	return updateActionStatus(db, action.ID, "completed")
 }
 
-func Wait(db *gorm.DB, workflowID uuid.UUID, waitData map[string]interface{}, actionID uuid.UUID, ctx *gin.Context) error {
-	// 1. Extract Email Details from Data
+// handleWaitAction processes a wait action by waiting for a specified duration
+func handleWaitAction(db *gorm.DB, workflowID uuid.UUID, action domains.Action, ctx *gin.Context) error {
+	var waitData map[string]interface{}
+	if err := json.Unmarshal([]byte(action.Data), &waitData); err != nil {
+		return fmt.Errorf("error unmarshaling wait data: %v", err)
+	}
+
 	waitDurationString, ok := waitData["duration"].(string)
 	if !ok {
-		return fmt.Errorf("missing required field 'duration' (string) in wait data")
+		return fmt.Errorf("missing required field 'duration' in wait data")
 	}
 	waitDuration, err := time.ParseDuration(waitDurationString)
 	if err != nil {
 		return fmt.Errorf("invalid wait duration format: %v", err)
 	}
 
-	// 3. Update the action status to waiting
-	action := &domains.Action{}
-	err = db.First(&action, actionID).Error
-	if err != nil {
-		return err
-	}
-	action.Status = "waiting"
-	if err := db.Save(&action).Error; err != nil {
-		logrus.Error("Error updating action status to waiting:", err.Error())
-		// Handle error (consider retrying or notifying admins)
-	}
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logrus.Errorf("Error during background wait: %v", err)
-				// Handle any potential errors during background execution
-			}
-		}()
+	// Wait for the specified duration
+	time.Sleep(waitDuration)
 
-		// Wait for the specified duration
-		select {
-		case <-time.After(waitDuration):
-			// Action completed after waiting
-			logrus.Infof("Action %s (ID: %s) waited for %s", action.Name, actionID, waitDuration)
-
-			// Update action status to completed (consider using a transaction)
-			err := db.Transaction(func(db *gorm.DB) error {
-				action := &domains.Action{}
-				if err := db.First(&action, actionID).Error; err != nil {
-					return err
-				}
-				action.Status = "completed"
-				if err := db.Save(&action).Error; err != nil {
-					return err
-				}
-				return nil
-			})
-
-			if err != nil {
-				logrus.Error("Error updating action status to completed:", err.Error())
-				// Handle error (consider retrying or notifying admins)
-			}
-		case <-ctx.Done():
-			// Context canceled before wait completes
-			logrus.Warnf("Action %s (ID: %s) wait canceled by context", action.Name, actionID)
-
-			err := db.Transaction(func(tx *gorm.DB) error {
-				action := &domains.Action{}
-				if err := tx.First(&action, actionID).Error; err != nil {
-					return err
-				}
-				action.Status = "canceled"
-				if err := tx.Save(&action).Error; err != nil {
-					return err
-				}
-				return nil
-			})
-
-			if err != nil {
-				logrus.Error("Error updating action status to canceled:", err.Error())
-				// Handle error (consider retrying or notifying admins)
-			}
-		}
-	}()
-
-	return nil
+	// Update action status to completed
+	return updateActionStatus(db, action.ID, "completed")
 }
-func Condition(db *gorm.DB, workflowID uuid.UUID, conditionData map[string]interface{}, actionID uuid.UUID, ctx *gin.Context, result chan bool) error {
-	// 1. Extract Condition Details from Data
+
+// handleConditionAndDecideNext handles a condition action and returns the ID of the next action to execute
+func handleConditionAndDecideNext(db *gorm.DB, workflow domains.Workflow, action domains.Action, ctx *gin.Context, contact domains.Contact) uuid.UUID {
+	var conditionData map[string]interface{}
+	if err := json.Unmarshal([]byte(action.Data), &conditionData); err != nil {
+		logrus.Errorf("Error unmarshaling condition data: %v", err)
+		return uuid.Nil
+	}
 
 	criteria, ok := conditionData["criteria"].(string)
 	if !ok {
-		return fmt.Errorf("missing required field 'criteria' in condition data")
-	}
-	switch criteria {
-	case "read":
-		// 2. Extract action ID from Data
-		actionID, ok := conditionData["actionID"].(string)
-		if !ok {
-			logrus.Error("missing required field 'actionID' in condition data")
-			return fmt.Errorf("missing required field 'actionID' in condition data")
-		}
-		// 3. Extract Duration from Data
-		durationString, ok := conditionData["duration"].(string)
-		if !ok {
-			logrus.Error("missing required field 'duration' in condition data")
-			return fmt.Errorf("missing required field 'duration' in condition data")
-		}
-		duration, err := time.ParseDuration(durationString)
-		if err != nil {
-			logrus.Error("invalid duration format:")
-			return fmt.Errorf("invalid duration format: %v", err)
-		}
-		// make a go routine here
-		go func() {
-			//constant checking in the database while the duration is not yet reached
-			ticker := time.NewTicker(time.Second * 10) // Check every second
-			defer ticker.Stop()
-			timer := time.NewTimer(duration)
-			defer timer.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					//get set of trackinglogs based on campaign id
-					trackingLogs := []domains.TrackingLog{}
-					err := db.Where("action_id = ?", actionID).Find(&trackingLogs).Error
-					if err != nil {
-						logrus.Errorf("can't read trackinglogs from database: %v", err)
-						return
-					}
-					//check if the log is read
-					for _, log := range trackingLogs {
-						if log.Status == "clicked" {
-							// pass the log.recipient_email to the next action
-							// no need to pass it we have it in all the functions
-
-							result <- true
-
-						}
-					}
-				case <-timer.C:
-					// Duration has elapsed, stop the checking
-
-					result <- false
-					return
-				case <-ctx.Done():
-					// Context canceled before the duration is reached
-					logrus.Warn("Condition check canceled by context")
-					return
-
-				}
-			}
-
-		}()
-	case "click":
-		actionID, ok := conditionData["actionID"].(string)
-		if !ok {
-			logrus.Error("missing required field 'actionID' in condition data")
-			return fmt.Errorf("missing required field 'actionID' in condition data")
-		}
-		// 3. Extract Duration from Data
-		durationString, ok := conditionData["duration"].(string)
-		if !ok {
-			logrus.Error("missing required field 'duration' in condition data")
-			return fmt.Errorf("missing required field 'duration' in condition data")
-		}
-		duration, err := time.ParseDuration(durationString)
-		if err != nil {
-			logrus.Error("invalid duration format:")
-			return fmt.Errorf("invalid duration format: %v", err)
-		}
-		go func() {
-			//constant checking in the database while the duration is not yet reached
-			ticker := time.NewTicker(time.Second * 10) // Check every second
-			defer ticker.Stop()
-			timer := time.NewTimer(duration)
-			defer timer.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					//get set of trackinglogs based on campaign id
-					trackingLogs := []domains.TrackingLog{}
-					err := db.Where("action_id = ?", actionID).Find(&trackingLogs).Error
-					if err != nil {
-						logrus.Errorf("can't read trackinglogs from database: %v", err)
-						return
-					}
-					//check if the log is read
-					for _, log := range trackingLogs {
-						if log.ClickCount > 0 {
-							// pass the log.recipient_email to the next action
-
-							result <- true
-
-						}
-					}
-				case <-timer.C:
-					// Duration has elapsed, stop the checking
-
-					result <- false
-					return
-				case <-ctx.Done():
-					// Context canceled before the duration is reached
-					logrus.Warn("Condition check canceled by context")
-					return
-
-				}
-			}
-
-		}()
-
+		logrus.Errorf("Missing required field 'criteria' in condition data")
+		return uuid.Nil
 	}
 
-	return nil
+	durationString, ok := conditionData["duration"].(string)
+	if !ok {
+		logrus.Errorf("Missing required field 'duration' in condition data")
+		return uuid.Nil
+	}
+	duration, err := time.ParseDuration(durationString)
+	if err != nil {
+		logrus.Errorf("Invalid duration format: %v", err)
+		return uuid.Nil
+	}
+
+	// Wait and check if the condition is met
+	met := checkConditionWithTimeout(db, action, criteria, duration)
+
+	// Determine the next action based on the branch outcome
+	branch := "no"
+	if met {
+		branch = "yes"
+	}
+	return getNextActionByBranch(db, workflow.ID, action.ID, branch).ID
 }
-func getActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
+
+// checkConditionWithTimeout waits for a condition to be met within a duration
+func checkConditionWithTimeout(db *gorm.DB, action domains.Action, criteria string, duration time.Duration) bool {
+	timeout := time.After(duration)
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			return false
+		case <-ticker.C:
+			if checkCondition(db, action.ID, criteria) {
+				return true
+			}
+		}
+	}
+}
+
+// checkCondition checks whether the specified condition has been met
+func checkCondition(db *gorm.DB, actionID uuid.UUID, criteria string) bool {
+	var trackingLogs []domains.TrackingLog
+	if err := db.Where("action_id = ?", actionID).Find(&trackingLogs).Error; err != nil {
+		logrus.Errorf("Error fetching tracking logs: %v", err)
+		return false
+	}
+
+	for _, log := range trackingLogs {
+		switch criteria {
+		case "read":
+			if log.Status == "opened" {
+				return true
+			}
+		case "click":
+			if log.ClickCount > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// getNextActionByBranch retrieves the next action based on the branch
+func getNextActionByBranch(db *gorm.DB, workflowID uuid.UUID, parentID uuid.UUID, branch string) domains.Action {
+	var nextAction domains.Action
+	db.Where("workflow_id = ? AND parent_id = ? AND JSON_EXTRACT(data, '$.branch') = ?", workflowID, parentID, branch).First(&nextAction)
+	return nextAction
+}
+
+// updateActionStatus updates the status of an action in the database
+func updateActionStatus(db *gorm.DB, actionID uuid.UUID, status string) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		action := domains.Action{}
+		if err := tx.First(&action, actionID).Error; err != nil {
+			return err
+		}
+		action.Status = status
+		return tx.Save(&action).Error
+	})
+}
+
+// getOrderedActions retrieves and orders actions based on dependencies
+func getOrderedActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
 	var actions []domains.Action
 	if err := db.Where("workflow_id = ?", workflowID).Find(&actions).Error; err != nil {
 		return nil, err
 	}
 
-	// Build a map of actions by their ID
 	actionMap := make(map[uuid.UUID]*domains.Action)
 	for i := range actions {
 		actionMap[actions[i].ID] = &actions[i]
 	}
 
-	// Build a map of actions by their ParentID
 	parentMap := make(map[uuid.UUID][]*domains.Action)
 	for _, action := range actions {
 		if action.ParentID != uuid.Nil {
 			parentMap[action.ParentID] = append(parentMap[action.ParentID], actionMap[action.ID])
-
 		}
 	}
 
-	// Perform topological sort if actions form a DAG
 	var orderedActions []domains.Action
 	visited := make(map[uuid.UUID]bool)
 	var visit func(uuid.UUID)
@@ -586,7 +356,9 @@ func getActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
 	}
 
 	for id := range actionMap {
-		visit(id)
+		if !visited[id] {
+			visit(id)
+		}
 	}
 
 	return orderedActions, nil

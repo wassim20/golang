@@ -775,7 +775,7 @@ func (db Database) updateChartData(ctx *gin.Context) {
 	if campaignID == "" {
 
 		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at  != '0001-01-01 00:09:21+00:09:21' THEN 1 ELSE NULL END) AS opened_count, "+
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
 				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
 				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
 			Where("company_id = ?", companyID).
@@ -788,7 +788,7 @@ func (db Database) updateChartData(ctx *gin.Context) {
 		}
 	} else {
 		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at  != '0001-01-01 00:09:21+00:09:21' THEN 1 ELSE NULL END) AS opened_count, "+
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
 				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
 				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
 			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
@@ -805,7 +805,6 @@ func (db Database) updateChartData(ctx *gin.Context) {
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
 }
 func (db Database) updatePieChartData(ctx *gin.Context) {
-
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -821,44 +820,41 @@ func (db Database) updatePieChartData(ctx *gin.Context) {
 			return
 		}
 	}
-	var logs []domains.TrackingLog
 
-	// Fetch logs
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-	}
-
-	openedEmails := 0
-	clickedEmails := 0
-
-	for _, log := range logs {
-
-		if log.OpenedAt != nil {
-			openedEmails++
-		}
-		if log.ClickedAt != nil {
-			clickedEmails++
-		}
-	}
 	var result struct {
-		OpenedEmails  int64 `json:"cpenedEmails"`
-		ClickedEmails int64 `json:"clickedEmails"`
+		OpenedCount  int64 `json:"opened_count"`
+		ClickedCount int64 `json:"clicked_count"`
+		ErrorCount   int64 `json:"error_count"`
 	}
-	result.OpenedEmails = int64(openedEmails)
-	result.ClickedEmails = int64(clickedEmails)
+
+	// Fetch logs and counts
+	if campaignID == "" {
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
+				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+				"COUNT(CASE WHEN error IS NOT NULL AND error != '' THEN 1 ELSE NULL END) AS error_count").
+			Where("company_id = ?", companyID).
+			Scan(&result).Error
+
+		if err != nil {
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	} else {
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
+				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+				"COUNT(CASE WHEN error IS NOT NULL AND error != '' THEN 1 ELSE NULL END) AS error_count").
+			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
+			Scan(&result).Error
+
+		if err != nil {
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
+			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			return
+		}
+	}
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
 }
@@ -878,43 +874,51 @@ func (db Database) updateRadialChartData(ctx *gin.Context) {
 			return
 		}
 	}
-	var logs []domains.TrackingLog
 
-	// Fetch logs
+	var result struct {
+		TotalLogs  int64 `json:"total_logs"`
+		OpenedLogs int64 `json:"opened_logs"`
+	}
+
+	// Fetch counts
 	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(*) AS total_logs, "+
+				"COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_logs").
+			Where("company_id = ?", companyID).
+			Scan(&result).Error
+
 		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
 			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 			return
 		}
 	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		err := db.DB.Model(&domains.TrackingLog{}).
+			Select("COUNT(*) AS total_logs, "+
+				"COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_logs").
+			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
+			Scan(&result).Error
+
 		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
+			logrus.Error("Error occurred while finding all company data. Error: ", err)
 			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 			return
 		}
 	}
 
-	totalLogs := len(logs)
-	openedLogs := 0
-
-	for _, log := range logs {
-		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
-			openedLogs++
-		}
-	}
+	// Calculate opened percentage
 	openedPercentage := float64(0)
-	if totalLogs > 0 {
-		openedPercentage = float64(openedLogs) / float64(totalLogs) * 100
+	if result.TotalLogs > 0 {
+		openedPercentage = float64(result.OpenedLogs) / float64(result.TotalLogs) * 100
 	}
 
 	type Response struct {
 		OpenedPercentage float64 `json:"openedPercentage"`
+		OpenedLogs       int64   `json:"openedLogs"`
 	}
 
-	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, Response{OpenedPercentage: openedPercentage})
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, Response{OpenedPercentage: openedPercentage, OpenedLogs: result.OpenedLogs})
 }
 func aggregateDataByDate(logs []domains.TrackingLog, key string) map[string]int {
 	if logs == nil {
@@ -993,6 +997,7 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 
 	openedDataresult := aggregateDataByDate(openedData, "openedAt")
 	clickedDataresult := aggregateDataByDate(clickedData, "clickedAt")
+	totalData := len(logs)
 	// Combine all unique dates from both opened and clicked data
 	dateSet := make(map[string]struct{})
 	for date := range openedDataresult {
@@ -1020,11 +1025,13 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 		AllDates          []string `json:"allDates"`
 		OpenedSeriesData  []int    `json:"openedSeriesData"`
 		ClickedSeriesData []int    `json:"clickedSeriesData"`
+		Totals            int      `json:"totals"`
 	}
 	response := Response{
 		AllDates:          allDates,
 		OpenedSeriesData:  openedSeriesData,
 		ClickedSeriesData: clickedSeriesData,
+		Totals:            totalData,
 	}
 
 	// Return the response
@@ -1245,20 +1252,40 @@ func (db Database) scatterChartDataOpens(ctx *gin.Context) {
 			opensPerHourDay[key]++
 		}
 	}
+	var values []int
+	for _, value := range opensPerHourDay {
+		values = append(values, value)
+	}
+	max := findMax(values)
+	min := findMin(values)
+	midThreshold := min + (max-min)/3
+	largeThreshold := min + 2*(max-min)/3
+
 	type ScatterChartData struct {
 		X int `json:"x"`
 		Y int `json:"y"`
 		Z int `json:"z"`
 	}
-	// Convert the map into a slice of structs for the scatter chart data
+
+	// Convert the map into a slice of structs for the scatter chart data with normalized Z values
 	var seriesData []ScatterChartData
 	for key, value := range opensPerHourDay {
 		var dayOfWeek, hour int
 		fmt.Sscanf(key, "%d-%d", &dayOfWeek, &hour)
+
+		var size int
+		if value <= midThreshold {
+			size = 1 // small
+		} else if value <= largeThreshold {
+			size = 2 // medium
+		} else {
+			size = 3 // large
+		}
+
 		seriesData = append(seriesData, ScatterChartData{
 			X: dayOfWeek,
 			Y: hour,
-			Z: value,
+			Z: size, // Normalized size
 		})
 	}
 
@@ -1319,24 +1346,64 @@ func (db Database) scatterChartDataClicks(ctx *gin.Context) {
 			opensPerHourDay[key]++
 		}
 	}
+	var values []int
+	for _, value := range opensPerHourDay {
+		values = append(values, value)
+	}
+	max := findMax(values)
+	min := findMin(values)
+	midThreshold := min + (max-min)/3
+	largeThreshold := min + 2*(max-min)/3
+
 	type ScatterChartData struct {
 		X int `json:"x"`
 		Y int `json:"y"`
 		Z int `json:"z"`
 	}
-	// Convert the map into a slice of structs for the scatter chart data
+
+	// Convert the map into a slice of structs for the scatter chart data with normalized Z values
 	var seriesData []ScatterChartData
 	for key, value := range opensPerHourDay {
 		var dayOfWeek, hour int
 		fmt.Sscanf(key, "%d-%d", &dayOfWeek, &hour)
+
+		var size int
+		if value <= midThreshold {
+			size = 1 // small
+		} else if value <= largeThreshold {
+			size = 2 // medium
+		} else {
+			size = 3 // large
+		}
+
 		seriesData = append(seriesData, ScatterChartData{
 			X: dayOfWeek,
 			Y: hour,
-			Z: value,
+			Z: size, // Normalized size
 		})
 	}
 
 	// Return the response
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, seriesData)
 
+}
+
+func findMax(values []int) int {
+	max := values[0]
+	for _, value := range values {
+		if value > max {
+			max = value
+		}
+	}
+	return max
+}
+
+func findMin(values []int) int {
+	min := values[0]
+	for _, value := range values {
+		if value < min {
+			min = value
+		}
+	}
+	return min
 }
