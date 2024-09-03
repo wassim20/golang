@@ -19,6 +19,15 @@
 .flex-col {
   flex-direction: column;
 }
+.small-icon {
+  min-height: 15px !important;
+   height: 12px !important;
+ }
+ .big-icon {
+  min-height: 25px !important;
+   height: 15px !important;
+ }
+ 
 
 .flex-auto {
   flex: 1 1 auto;

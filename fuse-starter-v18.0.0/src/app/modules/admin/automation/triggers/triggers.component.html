@@ -9,46 +9,82 @@
 <div [ngSwitch]="selectedTrigger">
   <div *ngSwitchCase="'welcome_subscriber'">
     <form class="form-container" [formGroup]="welcomeForm" (ngSubmit)="onSubmitWelcomeForm()">
-      <mat-form-field>
-        <input matInput type="text" placeholder="Message" formControlName="message" required>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Automation Name</mat-label>
+        <input matInput type="text" formControlName="name" required>
+        <mat-error *ngIf="welcomeForm.controls['name'].touched && welcomeForm.controls['name'].invalid">
+          Please enter a valid name.
+        </mat-error>
       </mat-form-field>
-      <mat-form-field *ngIf="mailingLists" appearance="fill">
+      <mat-form-field *ngIf="mailingLists" appearance="outline" class="full-width">
         <mat-label>Mailing List</mat-label>
         <mat-select formControlName="mailinglist">
-          <mat-option *ngFor="let list of mailingLists" [value]="list.value">{{list.name}}</mat-option>
+          <mat-option *ngFor="let list of mailingLists" [value]="list.id">{{list.name}}</mat-option>
         </mat-select>
+        <mat-error *ngIf="welcomeForm.controls['mailinglist'].touched && welcomeForm.controls['mailinglist'].invalid">
+          Please select a mailing list.
+        </mat-error>
       </mat-form-field>
       <button mat-raised-button color="primary" type="submit">Submit</button>
     </form>
   </div>
   <div *ngSwitchCase="'specific_date'">
     <form class="form-container" [formGroup]="specificDateForm" (ngSubmit)="onSubmitSpecificDateForm()">
-      <mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Automation Name</mat-label>
+        <input matInput type="text"  formControlName="name" required>
+        <mat-error *ngIf="specificDateForm.controls['name'].touched && specificDateForm.controls['name'].invalid">
+          Please enter a valid name.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
         <mat-label>Choose a date</mat-label>
         <input matInput [matDatepicker]="picker" formControlName="date">
         <mat-hint>MM/DD/YYYY</mat-hint>
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
+        <mat-error *ngIf="specificDateForm.controls['date'].touched && specificDateForm.controls['date'].invalid">
+          Please select a date.
+        </mat-error>
       </mat-form-field>
-      <mat-form-field *ngIf="mailingLists" appearance="fill">
+      <mat-form-field *ngIf="mailingLists" appearance="outline" class="full-width">
         <mat-label>Mailing List</mat-label>
         <mat-select formControlName="mailinglist">
-          <mat-option *ngFor="let list of mailingLists" [value]="list.value">{{list.name}}</mat-option>
+          <mat-option *ngFor="let list of mailingLists" [value]="list.id">{{list.name}}</mat-option>
         </mat-select>
+        <mat-error *ngIf="specificDateForm.controls['mailinglist'].touched && specificDateForm.controls['mailinglist'].invalid">
+          Please select a mailing list.
+        </mat-error>
       </mat-form-field>
       <button mat-raised-button color="primary" type="submit">Submit</button>
     </form>
   </div>
   <div *ngSwitchCase="'subscriber_added_date'">
     <form class="form-container" [formGroup]="AddedSubDateForm" (ngSubmit)="onSubmitAddedSubDateForm()">
-      <mat-form-field>
-        <input matInput type="number" placeholder="Days After" formControlName="daysAfter" required>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Automation Name</mat-label>
+        <input matInput type="text" formControlName="name" required>
+        <mat-error *ngIf="AddedSubDateForm.controls['name'].touched && AddedSubDateForm.controls['name'].invalid">
+          Please enter a valid name.
+        </mat-error>
       </mat-form-field>
-      <mat-form-field *ngIf="mailingLists" appearance="fill">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Days After</mat-label>
+        <input matInput type="number"  formControlName="daysAfter" required>
+        <mat-error *ngIf="AddedSubDateForm.controls['daysAfter'].touched && AddedSubDateForm.controls['daysAfter'].invalid">
+          Please enter a valid number.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field *ngIf="mailingLists" appearance="outline" class="full-width">
         <mat-label>Mailing List</mat-label>
         <mat-select formControlName="mailinglist">
-          <mat-option *ngFor="let list of mailingLists" [value]="list.value">{{list.name}}</mat-option>
+          <mat-option *ngFor="let list of mailingLists" [value]="list.id">{{list.name}}</mat-option>
+          <mat-error *ngIf="AddedSubDateForm.controls['mailinglist'].touched && AddedSubDateForm.controls['mailinglist'].invalid">
+            Please select a mailing list.
+          </mat-error>
         </mat-select>
+        
       </mat-form-field>
       <button mat-raised-button color="primary" type="submit">Submit</button>
     </form>

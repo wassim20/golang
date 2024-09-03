@@ -1,103 +1,191 @@
-.workflow-container {
-  padding: 20px;
-  position: relative;
-  max-width: 100%;
-  margin: 0 auto;
-  overflow-x: auto;
-  background-color: #f4f4f4;
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevent default scrolling on the body */
 }
 
-.workflow-area {
+.infinite-container {
   position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Enable both horizontal and vertical scrolling */
+  background-color: #f4f4f4;
+}
+
+/* Container for the entire workflow */
+.workflow-container {
+  position: relative;
+  width: 100%;
+  min-height: 100%; /* Full height for the workflow container */
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f4f4f4;
+  overflow: auto; /* Enables both horizontal and vertical scrolling */
+}
+
+/* Main area for workflow items */
+.workflow-area {
+  
   display: flex;
+  justify-content: center; /* Centers the content horizontally */
+  align-items: center; /* Centers the content vertically */
+
   flex-direction: column;
   align-items: center;
-  transform-origin: top left;
+  gap: 40px;
+  padding-top: 60px;
+  position: relative;
+  width: max-content; /* Allows the content to exceed the container width */
+}
+
+
+/* Controls at the top-right corner */
+.workflow-controls {
+  
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  
 }
 
 .action-card {
-  background-color: #e3f2fd;
-  border: 1px solid #2196f3;
-  padding: 10px 20px;
+  background-color: #e3f2fd; /* Light blue background */
+  border: 2px solid #2196f3; /* Blue border */
   border-radius: 8px;
-  margin: 10px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
   text-align: center;
-  min-width: 150px;
-  max-width: 300px;
-  transition: transform 0.2s ease-in-out;
-}
-
-.branch-container {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin: 10px 0;
   position: relative;
+  z-index: 1;
 }
 
-.branch {
-  flex: 1;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin: 0 5px;
-  background-color: #f9f9f9;
+/* Specific style for condition action */
+.action-card.condition {
+  background-color: transparent; /* No background for condition */
+  border: none; /* No border */
+  padding: 0; /* No padding */
+  margin: 0; /* No margin */
 }
 
-.branch-container .branch:first-child {
-  margin-right: 10px;
-}
-
-.branch-container .branch:last-child {
-  margin-left: 10px;
-}
-
-.branch-label {
+/* Condition text */
+.action-card.condition > p {
   font-weight: bold;
+  font-size: 16px;
+  color: #424242;
   margin-bottom: 10px;
 }
 
+/* Container for branches under a condition */
+.branch-container {
+  display: flex;
+  justify-content: space-between; /* Spread branches far apart */
+  align-items: flex-start;
+  gap: 150px; /* Space between 'Yes' and 'No' branches */
+  margin-top: 20px;
+  position: relative;
+  padding: 20px 0; /* Adds some spacing around branches */
+}
+
+/* Individual branch styling */
+.branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Space between nested action cards */
+  position: relative;
+}
+
+/* Lines connecting action cards */
+.connector-line {
+  width: 2px;
+  background-color: #2196f3;
+  position: absolute;
+  left: 50%;
+  top: -40px;
+  bottom: 100%;
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+/* Horizontal line between condition and branches */
+.branch-connector {
+  width: 100%; /* Full width to span the branches */
+  height: 2px;
+  background-color: #2196f3;
+  position: absolute;
+  top: -20px;
+  left: 0;
+  z-index: 0;
+}
+
+/* Label for branches */
+.branch-label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  color: #424242;
+}
+
+/* Add action button */
 .add-icon {
-  margin-top: 10px;
+  width: 40px;
+  height: 40px;
+  background-color: #ffffff;
+  border: 2px solid #2196f3;
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
-  height: 40px;
-  background-color: #e0f7fa;
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease;
+  color: #2196f3;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+.incomplete-indicator {
+  color: red;
+  margin-left: 5px;
 }
 
-.add-icon mat-icon {
-  font-size: 24px;
-  color: #00796b;
+.error-message {
+  color: red;
+  font-size: 12px;
 }
 
+.button-container {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+  height: 100%; /* Ensure the container takes the full height */
+}
 .add-icon:hover {
-  background-color: #b2ebf2;
+  background-color: #2196f3;
+  color: #ffffff;
 }
 
-.dotted-line {
-  border-left: 2px dotted #bbb;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 50%;
-  z-index: 0;
-}
-
-.dotted-horizontal {
-  border-top: 2px dotted #bbb;
-  width: 100%;
-  position: absolute;
-  top: 50%;
-  z-index: 0;
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .workflow-container {
+    padding: 10px;
+  }
+  
+  .action-card, .add-icon {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .branch-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .branch-connector {
+    width: 2px;
+    height: calc(100% + 40px);
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }

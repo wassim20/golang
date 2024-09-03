@@ -83,9 +83,16 @@ export class AuthSignUpComponent implements OnInit
         // Hide the alert
         this.showAlert = false;
 
+        const signupData = {
+            firstname: this.signUpForm.value.name.split(' ')[0],
+            lastname: this.signUpForm.value.name.split(' ')[1] || '',
+            email: this.signUpForm.value.email,
+            password: this.signUpForm.value.password,
+            companyName: this.signUpForm.value.company
+        };
+
         // Sign up
-        this._authService.signUp(this.signUpForm.value)
-            .subscribe(
+        this._authService.signUp(signupData).subscribe(
                 (response) =>
                 {
                     // Navigate to the confirmation required page

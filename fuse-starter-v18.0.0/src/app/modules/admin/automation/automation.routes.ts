@@ -8,12 +8,10 @@ const routes: Routes = [
   {
     path: '',
     component: AutomationComponent,
-    children: [
-      {
-        path: 'workflow', 
-        component: WorkflowComponent,
-      }
-    ]
+  },
+  {
+    path: 'workflow', 
+    component: WorkflowComponent,
   }
 ];
 

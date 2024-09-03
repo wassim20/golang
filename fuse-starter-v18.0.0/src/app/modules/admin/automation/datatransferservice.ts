@@ -7,7 +7,7 @@ export class DataTransferService {
   private workflowData: any;
 
   setWorkflowData(data: any) {
-    
+    console.log("here");
     
     this.workflowData = data;
   }

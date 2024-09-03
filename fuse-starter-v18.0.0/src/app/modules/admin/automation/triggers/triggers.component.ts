@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, EventEmitter, Output } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatOptionModule, MatOptionSelectionChange } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialogRef } from '@angular/material/dialog';
+import { CampaignService } from '../../example/campaign.service';
 
 @Component({
   selector: 'app-triggers',
@@ -28,20 +29,17 @@ import { MatDialogRef } from '@angular/material/dialog';
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class TriggersComponent {
+export class TriggersComponent implements OnInit {
   @Output() formSubmitted = new EventEmitter<any>(); // Adjusted to emit just form data
 
   constructor(
+    private service : CampaignService,
     private fb: FormBuilder,
     private cdRef: ChangeDetectorRef,
     private dialogRef: MatDialogRef<TriggersComponent>
   ) {}
   
-  public mailingLists: any = [
-    { name: 'Mailing List 1', value: 'mailing_list_1' },
-    { name: 'Mailing List 2', value: 'mailing_list_2' },
-    { name: 'Mailing List 3', value: 'mailing_list_3' }
-  ];
+  public mailingLists: any = [];
 
   public triggers: any[] = [
     { name: 'Welcome Subscriber', value: 'welcome_subscriber' },
@@ -55,29 +53,48 @@ export class TriggersComponent {
   welcomeForm: FormGroup;
   specificDateForm: FormGroup;
   AddedSubDateForm: FormGroup;
-
+  companyID : any;
   ngOnInit() {
+    this.companyID = 'afa35ff6-4de5-4806-9a21-e0c2453d2834'; // Use dynamic companyID as needed
+
+    this.service.getMailingLists(this.companyID).subscribe({
+      next: (data) => {
+
+        if (data && data.data && data.data.items) {
+          this.mailingLists = data.data.items; // Assign mailing list items
+          
+          
+         
+        } else {
+          console.error('Invalid response structure:', data);
+          // Handle unexpected response structure if needed
+        }
+        console.log(this.mailingLists);
+        
+      },
+      error: (error) => {
+        console.error('Error fetching mailing lists:', error);
+        // Handle error scenario if needed
+      }
+    });
     this.triggerForm = this.fb.group({
       selectedTrigger: ['', Validators.required]
     });
 
     this.welcomeForm = this.fb.group({
-      message: ['', Validators.required],
-      sendImmediately: [false],
-      
+      name: ['', Validators.required],
       mailinglist: ['', Validators.required]
     });
 
     this.specificDateForm = this.fb.group({
+      name: ['', Validators.required],
       date: ['', Validators.required],
-      
-      
       mailinglist: ['', Validators.required]
     });
 
     this.AddedSubDateForm = this.fb.group({
+      name: ['', Validators.required],
       daysAfter: ['', [Validators.required, Validators.min(1)]],
-      
       mailinglist: ['', Validators.required]
     });
   }
@@ -106,6 +123,7 @@ export class TriggersComponent {
     
     if (this.specificDateForm.valid) {
       const formData = this.specificDateForm.value;
+      formData.triggerType = 'specific date'; // Add the trigger type
       this.formSubmitted.emit(formData );
       this.dialogRef.close();
     }
@@ -114,6 +132,7 @@ export class TriggersComponent {
   onSubmitAddedSubDateForm() {
     if (this.AddedSubDateForm.valid) {
       const formData = this.AddedSubDateForm.value;
+      formData.triggerType = 'days after'; // Add the trigger type
       this.formSubmitted.emit(formData );
 
       this.dialogRef.close();

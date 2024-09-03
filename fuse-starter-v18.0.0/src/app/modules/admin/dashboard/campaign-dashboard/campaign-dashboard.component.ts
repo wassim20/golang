@@ -122,7 +122,10 @@ export class CampaignDashboardComponent {
   contacts: any;
   selectedCampaign: any;
   logs: any;
+  reorder : boolean = true;
+  stat_type: any = "all";
   isLoading: boolean = false;
+  selectedStat: string = 'all';
  
 
    constructor(private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router,private route:ActivatedRoute) {  
@@ -610,7 +613,7 @@ export class CampaignDashboardComponent {
       },
       title: {
         text: 'Email Opens by Time of Day',
-        align: 'center'
+        align: 'left'
       },
      
     };
@@ -683,7 +686,7 @@ export class CampaignDashboardComponent {
       },
       title: {
         text: 'Email Clicks by Time of Day',
-        align: 'center'
+        align: 'left'
       },
       
     };
@@ -696,68 +699,90 @@ export class CampaignDashboardComponent {
   
   ngOnInit(): void {
     this.isLoading = true;
+
     this.route.paramMap.subscribe(params => {
-      this.campaignId = params.get('campaignID');
-      console.log("campaignID", this.campaignId);
-      
+        this.campaignId = params.get('campaignID');
+        this.fetchCampaignsAndSelect();
     });
-    
+}
+
+private fetchCampaignsAndSelect(): void {
     this.service.getCampaigns(1, 10).subscribe({
-      next: (data) => {
-        if (data && data.data && data.data.items) {
-          this.campaigns = data.data.items; // Assign mailing list items
-          // Select the first campaign by default if not already selected
-          
-        } else {
-          console.error('Invalid response structure:', data);
-        }
-      },
-      error: (error) => {
-        console.error('Error fetching campaigns:', error);
-      }
-    });
-    if (this.campaignId) {
-      this.service.getCampaign(this.campaignId).subscribe({
         next: (data) => {
-          if (data && data.data) {
-            this.selectedCampaign = data.data;
-            
-  
-            // Convert fetchTrackingData and fetchContacts to return Promises
-            const fetchTrackingDataPromise = this.fetchTrackingData(this.selectedCampaign.id);
-            const fetchContactsPromise = this.fetchContacts(this.selectedCampaign.mailingListId);
-  
-            // Use Promise.all to wait for both promises to resolve
-            Promise.all([fetchTrackingDataPromise, fetchContactsPromise])
-              .then(() => {
-                console.log('Both fetchTrackingData and fetchContacts are done.');
-              })
-              .catch((error) => {
-                console.error('Error in one of the fetch operations:', error);
-              });
-          } else {
-            console.error('Invalid response structure:', data);
-          }
+            if (data && data.data && data.data.items) {
+                this.campaigns = data.data.items;
+                this.selectedCampaign = this.campaignId
+                    ? this.campaigns.find(campaign => campaign.id === this.campaignId)
+                    : 'all';
+
+                if (this.selectedCampaign && this.campaignId) {
+                    this.loadCampaignData(this.campaignId);
+                } else {
+                    this.isLoading = false;
+                }
+            } else {
+                console.error('Invalid response structure:', data);
+                this.isLoading = false;
+            }
         },
         error: (error) => {
-          console.error('Error fetching campaign:', error);
+            console.error('Error fetching campaigns:', error);
+            this.isLoading = false;
         }
-      });
+    });
+}
+
+private loadCampaignData(campaignId: string): void {
+    this.service.getCampaign(campaignId).subscribe({
+        next: (data) => {
+            if (data && data.data) {
+                
+                const fetchTrackingDataPromise = this.fetchTrackingData(this.selectedCampaign.id);
+                const fetchContactsPromise = this.fetchContacts(this.selectedCampaign.mailingListId);
+
+                Promise.all([fetchTrackingDataPromise, fetchContactsPromise])
+                    .then(() => {
+                        console.log('Both fetchTrackingData and fetchContacts are done.');
+                        this.isLoading = false;
+                    })
+                    .catch((error) => {
+                        console.error('Error in one of the fetch operations:', error);
+                        this.isLoading = false;
+                    });
+            } else {
+                console.error('Invalid response structure:', data);
+                this.isLoading = false;
+            }
+        },
+        error: (error) => {
+            console.error('Error fetching campaign:', error);
+            this.isLoading = false;
+        }
+    });
+}
+
+
+ 
+ 
+  onCampaignChange(campaign) {
+    if (campaign === 'all') {
+      this.selectedCampaign = 'all';
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.selectedCampaign = campaign;
+      this.cdr.detectChanges();
+      this.logs = null;
+      this.contacts = null;
+      this.isLoading = true;
   
+      this.router.navigate(['/dashboard', campaign.id]).then(() => {
+        this.selectedCampaign = campaign;
+        this.fetchTrackingData(campaign.id);
+        this.fetchContacts(campaign.mailingListId);
+      });
     }
   }
- 
-   onCampaignChange(campaign) {
-    this.selectedCampaign = campaign;
-    this.logs = null; // Reset logs data when a new campaign is selected
-    this.contacts = null; // Reset contacts data when a new campaign is selected
-    this.isLoading = true; // Set isLoading to true when a new campaign is selected
-    
-    this.fetchTrackingData(campaign.id); // Fetch tracking data for the selected campaign (assuming 'id' property)
-    this.fetchContacts(campaign.mailingListId); // Fetch contacts for the selected campaign (assuming 'mailingListID' property)
-    this.router.navigate(['/dashboard', campaign.id]);
   
-  }
   fetchContacts(mailingListID: any) {
     this.service.getContacts(mailingListID).subscribe(
         (data) => {
@@ -1065,5 +1090,23 @@ export class CampaignDashboardComponent {
 getDayName(dayIndex) {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   return days[dayIndex];
+}
+//stat change 
+statchange(type: string) {
+  this.selectedStat = type;
+  this.reorder = false; // Temporarily hide the chart
+  this.cdr.detectChanges(); // Trigger change detection
+
+  setTimeout(() => {
+    if (type === 'open') {
+      this.stat_type = 'open';
+    } else if (type === 'click') {
+      this.stat_type = 'click';
+    } else {
+      this.stat_type = 'all';
+    }
+    this.reorder = true; // Show the chart again
+    this.cdr.detectChanges(); // Trigger change detection
+  }, 0); // Delay to ensure the DOM updates
 }
 }

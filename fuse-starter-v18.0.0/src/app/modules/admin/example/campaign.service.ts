@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { jwtDecode } from 'jwt-decode';
+import { AuthService } from 'app/core/auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,19 +12,30 @@ import { throwError } from 'rxjs';
 export class CampaignService {
 
   
- private companyID ="afa35ff6-4de5-4806-9a21-e0c2453d2834" ;
+ // Decode the JWT token to extract the company ID
+ private getCompanyID(): string | null {
+  const token = this.auth.accessToken;
+  try {
+    const decodedToken: { company_id: string } = jwtDecode(token) as { company_id: string };
+    return decodedToken.company_id;
+  } catch (error) {
+    console.error('Failed to decode JWT token:', error);
+    return null;
+  }
+}
  private baseUrl = 'http://localhost:8080/api';
                     
- private jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjoiYjI3ZWU3N2MtOTA0My00MDAwLWI3ZTAtZjFhOTIwZGEyYzJmIiwiZXhwIjoxNzE5OTY2MDE4LCJpYXQiOjE3MTk3OTMyMTgsInJvbGVzIjpbeyJpZCI6ImMyNmQ0MGE2LTc0MzMtNDg1MC1hYmUyLWIwMzIxYzNkNDA3ZiIsIm5hbWUiOiJNYW5hZ2VyIiwiY29tcGFueV9pZCI6ImIyN2VlNzdjLTkwNDMtNDAwMC1iN2UwLWYxYTkyMGRhMmMyZiJ9XSwidXNlcl9pZCI6IjgzODJlYzZkLTI1OWUtNDQxMy04NjIyLWFiYTFlZWM3MzdlOSJ9.VJn51F28ekCyBpKnwMH-9olqj-FtTp715aBg5LGi2O4'
- constructor(private http: HttpClient) { }
+ //private jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjoiYjI3ZWU3N2MtOTA0My00MDAwLWI3ZTAtZjFhOTIwZGEyYzJmIiwiZXhwIjoxNzE5OTY2MDE4LCJpYXQiOjE3MTk3OTMyMTgsInJvbGVzIjpbeyJpZCI6ImMyNmQ0MGE2LTc0MzMtNDg1MC1hYmUyLWIwMzIxYzNkNDA3ZiIsIm5hbWUiOiJNYW5hZ2VyIiwiY29tcGFueV9pZCI6ImIyN2VlNzdjLTkwNDMtNDAwMC1iN2UwLWYxYTkyMGRhMmMyZiJ9XSwidXNlcl9pZCI6IjgzODJlYzZkLTI1OWUtNDQxMy04NjIyLWFiYTFlZWM3MzdlOSJ9.VJn51F28ekCyBpKnwMH-9olqj-FtTp715aBg5LGi2O4'
+ constructor(private http: HttpClient,private auth:AuthService) { }
   //api/:companyID/campaigns
   private getHeaders(): HttpHeaders {
     let headers = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.jwtToken}`)
+      .set('Authorization', `Bearer ${this.auth.accessToken}`)
       .set('Content-Type', 'application/json');
     return headers;
   }
   getMailingLists(companyID: string, page: number = 1, limit: number = 10): Observable<any> {
+    companyID = this.getCompanyID() || '';
     return this.http.get<any>(`${this.baseUrl}/${companyID}/mailinglist`, {
       headers: this.getHeaders(),
       params: {
@@ -32,7 +45,8 @@ export class CampaignService {
     });
   }
   getCampaigns( page: number = 1, limit: number = 10): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/${this.companyID}/campaigns`, {
+    const companyID = this.getCompanyID() || '';
+    return this.http.get<any>(`${this.baseUrl}/${companyID}/campaigns`, {
       headers: this.getHeaders(),
       params: {
         page: page.toString(),
@@ -41,6 +55,7 @@ export class CampaignService {
     });
   }
   createCampaign(companyID: string, campaign: any): Observable<any> {
+    companyID = this.getCompanyID() || '';
     campaign.html = "<h1>Test</h1>";
     const headers = this.getHeaders();
     return this.http.post<any>(`${this.baseUrl}/${companyID}/campaigns/${campaign.mailingListId}`, campaign, {
@@ -66,12 +81,14 @@ export class CampaignService {
   }
 
   getCampaignByID(companyID: string, campaignID: string): Observable<any> {
+    companyID = this.getCompanyID() || '';
     return this.http.get<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, {
       headers: this.getHeaders()
     });
   }
 
   updateCampaign(companyID: string, campaignID: string, campaign: any): Observable<any> {
+    companyID = this.getCompanyID() || '';
     return this.http.put<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, campaign, {
       headers: this.getHeaders()
     });

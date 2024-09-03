@@ -73,17 +73,21 @@ export class AuthService
             return throwError('User is already logged in.');
         }
 
-        return this._httpClient.post('api/auth/sign-in', credentials).pipe(
+        return this._httpClient.post('http://localhost:8080/api/auth/signin', credentials).pipe(
             switchMap((response: any) =>
             {
-                // Store the access token in the local storage
-                this.accessToken = response.accessToken;
+                // Extract and store the access token
+                this.accessToken = response.data.accessToken;
+                console.log(response.data.user.name);
+                
+                console.log("AccessToken stored:", this.accessToken);
+
 
                 // Set the authenticated flag to true
                 this._authenticated = true;
 
                 // Store the user on the user service
-                this._userService.user = response.user;
+                this._userService.user = response.data.user;
 
                 // Return a new observable with the response
                 return of(response);
@@ -138,6 +142,8 @@ export class AuthService
     {
         // Remove the access token from the local storage
         localStorage.removeItem('accessToken');
+        localStorage.clear();
+        this.accessToken = '';
 
         // Set the authenticated flag to false
         this._authenticated = false;
@@ -151,9 +157,9 @@ export class AuthService
      *
      * @param user
      */
-    signUp(user: { name: string; email: string; password: string; company: string }): Observable<any>
+    signUp(user:any): Observable<any>
     {
-        return this._httpClient.post('api/auth/sign-up', user);
+        return this._httpClient.post('http://localhost:8080/api/auth/signup', user);
     }
 
     /**

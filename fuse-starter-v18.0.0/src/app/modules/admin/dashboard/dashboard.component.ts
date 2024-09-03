@@ -29,7 +29,7 @@ import {
   ApexLegend,
   ApexTheme
 } from "ng-apexcharts";
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -147,9 +147,11 @@ export class DashboardComponent implements OnInit {
   selectedCampaign: any;
   logs: any;
   isLoading: boolean = false;
+  selectedStat: string = 'all'; // Default to 'all'
+
  
 
-   constructor(private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router) {  
+   constructor(private route :ActivatedRoute,private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router) {  
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras.state as { campaignId: string };
     this.campaignId = state?.campaignId;
@@ -637,7 +639,7 @@ export class DashboardComponent implements OnInit {
       },
       title: {
         text: 'Email Opens by Time of Day',
-        align: 'center'
+        align: 'left'
       },
       plotOptions: {
         bubble: {
@@ -728,7 +730,7 @@ export class DashboardComponent implements OnInit {
       },
       title: {
         text: 'Email clicks by Time of Day',
-        align: 'center'
+        align: 'left'
       },
       plotOptions: {
         bubble: {
@@ -759,42 +761,52 @@ export class DashboardComponent implements OnInit {
   
   
  
-  ngOnInit(): void {
-    this.isLoading = true;
-    
-    
-    this.service.getCampaigns(1, 10).subscribe({
-      next: (data) => {
-        if (data && data.data && data.data.items) {
-          this.campaigns = data.data.items; 
-         
-          this.fetchAllTrackingData();
-          this.fetchAllContacts();
-          this.isLoading = false;
-          
-          
-          
+ngOnInit(): void {
+  this.isLoading = true;
+
+  // Fetch campaigns list
+  this.service.getCampaigns(1, 10).subscribe({
+    next: (data) => {
+      if (data && data.data && data.data.items) {
+        this.campaigns = data.data.items;
+
+        // Check if "all" is selected
+        if (this.route.snapshot.paramMap.get('campaignID') === null) {
+          this.selectedCampaign = 'all';
         } else {
-          this.isLoading = true;
-          console.error('Invalid response structure:', data);
+          this.selectedCampaign = this.campaigns.find(campaign => campaign.id === this.route.snapshot.paramMap.get('campaignID'));
         }
-      },
-      error: (error) => {
-        console.error('Error fetching campaigns:', error);
+
+        this.fetchAllTrackingData();
+        this.fetchAllContacts();
+        this.isLoading = false;
+      } else {
+        console.error('Invalid response structure:', data);
+        this.isLoading = false;
       }
-    });
-    
-  }
+    },
+    error: (error) => {
+      console.error('Error fetching campaigns:', error);
+      this.isLoading = false;
+    }
+  });
+}
+
  
-   onCampaignChange(campaign) {
-    this.selectedCampaign = campaign;
-    this.logs = null; // Reset logs data when a new campaign is selected
-    this.contacts = null; // Reset contacts data when a new campaign is selected
-    
-    this.router.navigate(['/dashboard', campaign.id]);
-  //   this.fetchTrackingData(campaign.id); // Fetch tracking data for the selected campaign (assuming 'id' property)
-  //   this.fetchContacts(campaign.mailingListId); // Fetch contacts for the selected campaign (assuming 'mailingListID' property)
-   }
+  onCampaignChange(campaign) {
+    if (campaign === 'all') {
+      this.selectedCampaign = 'all';
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.selectedCampaign = campaign;
+      this.logs = null;
+      this.contacts = null;
+  
+      this.router.navigate(['/dashboard', campaign.id]).then(() => {
+        this.selectedCampaign = this.campaigns.find(c => c.id === campaign.id);
+      });
+    }
+  }
   fetchAllContacts() {
     this.service.getAllContacts().subscribe(
         (data) => {
@@ -1013,7 +1025,15 @@ updateScatterChartData(): void {
     
        // Ensure allDates are treated as strings
     const allDates = data.data.allDates.map(date => `${date}`);
+    const totals = data.data.totals;
 
+    this.lineChartOptions= {
+      ...this.lineChartOptions,
+      title: {
+        text: `Email Campaign Tracking (Total Sent: ${totals})`,
+        align: "left"
+      }}
+    
     // Update the chart options
     this.lineChartOptions.xaxis = {
       categories: allDates,
@@ -1084,6 +1104,7 @@ getDayName(dayIndex) {
 
 //stat change 
 statchange(type: string) {
+  this.selectedStat = type;
   this.reorder = false; // Temporarily hide the chart
   this.cdr.detectChanges(); // Trigger change detection
 

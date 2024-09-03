@@ -3,6 +3,7 @@ import { initialDataResolver } from 'app/app.resolvers';
 import { AuthGuard } from 'app/core/auth/guards/auth.guard';
 import { NoAuthGuard } from 'app/core/auth/guards/noAuth.guard';
 import { LayoutComponent } from 'app/layout/layout.component';
+import { EmptyLayoutComponent } from './layout/layouts/empty/empty.component';
 
 // @formatter:off
 /* eslint-disable max-len */
@@ -77,13 +78,12 @@ export const appRoutes: Route[] = [
         children: [
             {path: 'example', loadChildren: () => import('app/modules/admin/example/example.routes')},
             {path:'campaignlist', loadChildren: () => import('app/modules/admin/example/campaign-list/campaign-list.routes')},
-            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
             {path:'dashboard', loadChildren: () => import('app/modules/admin/dashboard/dashboard.routes')},
             {path:'dashboard/:campaignID', loadChildren: () => import('app/modules/admin/dashboard/campaign-dashboard/campaign-dashboard.routes')},
             
         ]
         
-
+        
     },
     {
         path:'',
@@ -94,6 +94,7 @@ export const appRoutes: Route[] = [
             initialData: initialDataResolver
         },
         children:[
+            {path:'automation', loadChildren: () => import('app/modules/admin/automation/automation.routes')},
             
         ]
     },

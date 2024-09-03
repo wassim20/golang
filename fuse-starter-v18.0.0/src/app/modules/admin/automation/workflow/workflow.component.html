@@ -1,81 +1,97 @@
-<div class="workflow-container" #workflowContainer>
-  <div class="workflow-controls">
-    <button mat-icon-button (click)="toggleFullScreen()">
-      <mat-icon>fullscreen</mat-icon>
-    </button>
-    <button mat-icon-button (click)="zoomIn()">
-      <mat-icon>zoom_in</mat-icon>
-    </button>
-    <button mat-icon-button (click)="zoomOut()">
-      <mat-icon>zoom_out</mat-icon>
-    </button>
-    <button mat-icon-button (click)="resetZoom()">
-      <mat-icon>zoom_out_map</mat-icon>
-    </button>
-  </div>
-
-  <div class="workflow-area" [style.transform]="zoomTransform" #workflowArea>
-    <h3>Automation starts when the following trigger condition is met</h3>
-
-    <div *ngFor="let action of actions">
-      <ng-container
-        [ngTemplateOutlet]="renderAction"
-        [ngTemplateOutletContext]="{ action: action }"
-      ></ng-container>
+<div class="infinite-container">
+  <div class="workflow-container" #workflowContainer>
+    <div class="workflow-controls">
+      <button mat-icon-button (click)="toggleFullScreen()">
+        <mat-icon>fullscreen</mat-icon>
+      </button>
+      <button mat-icon-button (click)="zoomIn()">
+        <mat-icon>zoom_in</mat-icon>
+      </button>
+      <button mat-icon-button (click)="zoomOut()">
+        <mat-icon>zoom_out</mat-icon>
+      </button>
+      <button mat-icon-button (click)="resetZoom()">
+        <mat-icon>zoom_out_map</mat-icon>
+      </button>
     </div>
-
-    <button
-      *ngIf="!hasCondition()"
-      mat-icon-button
-      (click)="addAction()"
-      class="add-icon"
-    >
-      <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+    <button mat-flat-button color="primary" *ngIf="areAllActionsComplete()" (click)="startWorkflow()">
+      Start Workflow
     </button>
 
-    <ng-template #renderAction let-action="action">
-      <div class="action-card" (dblclick)="editAction(action)">
-        <p>{{ action.title }}</p>
+    <div class="workflow-area" [style.transform]="zoomTransform" #workflowArea>
+      <h3>Automation starts when the following trigger condition is met</h3>
 
-        <div *ngIf="action.type === 'condition'">
-          <div class="branch-container">
-            <div class="branch">
-              <strong>Yes</strong>
-              <ng-container *ngFor="let yesAction of action.yesBranch">
-                <ng-container
-                  [ngTemplateOutlet]="renderAction"
-                  [ngTemplateOutletContext]="{ action: yesAction }"
-                ></ng-container>
-              </ng-container>
-              <button
-                *ngIf="!hasCondition(action.yesBranch)"
-                mat-icon-button
-                (click)="addAction(action, 'yes')"
-                class="add-icon"
-              >
-                <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
-              </button>
-            </div>
-            <div class="branch">
-              <strong>No</strong>
-              <ng-container *ngFor="let noAction of action.noBranch">
-                <ng-container
-                  [ngTemplateOutlet]="renderAction"
-                  [ngTemplateOutletContext]="{ action: noAction }"
-                ></ng-container>
-              </ng-container>
-              <button
-                *ngIf="!hasCondition(action.noBranch)"
-                mat-icon-button
-                (click)="addAction(action, 'no')"
-                class="add-icon"
-              >
-                <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
-              </button>
+      <div *ngFor="let action of actions; let i = index">
+        <!-- Render each action -->
+        <ng-container [ngTemplateOutlet]="renderAction" [ngTemplateOutletContext]="{ action: action }"></ng-container>
+      
+        <!-- Button to add a new action, only visible on the last action -->
+        <div class="button-container">
+          <button *ngIf="i === actions.length - 1 && !hasCondition() && !isNested()" mat-icon-button (click)="addAction(action)" class="add-icon">
+            <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+          </button>
+        </div>
+      </div>
+    
+      <!-- Button to add the first action if no actions exist yet -->
+      <button *ngIf="actions.length === 0" mat-icon-button (click)="addAction()" class="add-icon">
+        <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+      </button>
+
+      <ng-template #renderAction let-action="action">
+        <div [ngClass]="{'action-card': true, 'condition': action.type === 'condition'}" (dblclick)="editAction(action)">
+          <p style="display: flex;flex-direction: column;justify-content: center;text-align: center;">
+            <mat-icon>{{action.type}}</mat-icon>
+            {{ action.title }}
+            <mat-icon *ngIf="!isActionComplete(action)" class="incomplete-indicator">priority_high</mat-icon>
+          </p>
+      
+          <div *ngIf="!isActionComplete(action)" class="error-message" [innerHTML]="getIncompleteMessage(action)">
+          </div>
+
+          <!-- Condition handling with Yes/No branches -->
+          <div *ngIf="action.type === 'condition'">
+            <div class="branch-container">
+              <div class="branch">
+                <strong>Yes</strong>
+                <ng-container *ngFor="let yesAction of action.yesBranch; let j = index">
+                  <ng-container
+                    [ngTemplateOutlet]="renderAction"
+                    [ngTemplateOutletContext]="{ action: yesAction }"
+                  ></ng-container>
+                </ng-container>
+                <button
+                  *ngIf="action.yesBranch.length === 0 || (action.yesBranch.length > 0 && action.yesBranch[action.yesBranch.length - 1].type !== 'condition')"
+                  mat-icon-button
+                  (click)="addAction(action, 'yes')"
+                  class="add-icon"
+                >
+                  <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+                </button>
+              </div>
+              <div class="branch">
+                <strong>No</strong>
+                <ng-container *ngFor="let noAction of action.noBranch; let k = index">
+                  <ng-container
+                    [ngTemplateOutlet]="renderAction"
+                    [ngTemplateOutletContext]="{ action: noAction }"
+                  ></ng-container>
+                </ng-container>
+                <button
+                  *ngIf="action.noBranch.length === 0 || (action.noBranch.length > 0 && action.noBranch[action.noBranch.length - 1].type !== 'condition')"
+                  mat-icon-button
+                  (click)="addAction(action, 'no')"
+                  class="add-icon"
+                >
+                  <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </ng-template>
+      </ng-template>
+      
+      
+    </div>
   </div>
 </div>

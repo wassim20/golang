@@ -81,8 +81,12 @@ export class AuthSignInComponent implements OnInit
         // Hide the alert
         this.showAlert = false;
 
+        const signinData = {
+            email: this.signInForm.value.email,
+            password: this.signInForm.value.password
+        };
         // Sign in
-        this._authService.signIn(this.signInForm.value)
+        this._authService.signIn(signinData)
             .subscribe(
                 () =>
                 {

@@ -1,0 +1,245 @@
+/* Grid layout for campaign list */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: 48px auto 40px; /* Default layout for small screens */
+}
+
+@media (min-width: 640px) {
+    .inventory-grid {
+        grid-template-columns: 48px auto 112px 72px 40px; /* Adjusted for small screens */
+    }
+}
+
+@media (min-width: 768px) {
+    .inventory-grid {
+        grid-template-columns: 48px 112px auto 112px 72px 40px; /* Adjusted for medium screens */
+    }
+}
+
+@media (min-width: 1024px) {
+    .inventory-grid {
+        grid-template-columns: 48px 112px auto 112px 96px 96px 72px 40px; /* Adjusted for large screens */
+    }
+}
+
+/* General styling for form container */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.border-b {
+    border-bottom: 1px solid #e5e7eb;
+}
+.flex {
+    display: flex;
+}
+.p-8 {
+    padding: 2rem;
+}
+.w-full {
+    width: 100%;
+}
+.mat-form-field {
+    margin-bottom: 1rem;
+}
+.mat-form-field.mat-focused .mat-form-field-label {
+    color: #3f51b5;
+}
+.mat-form-field.mat-focused .mat-form-field-underline {
+    background-color: #3f51b5;
+}
+
+/* Styling for ngx-mat-timepicker */
+.ngx-mat-timepicker .mat-mdc-form-field-flex {
+    padding: 0 !important;
+}
+
+/* Customizes the background color of Material Design raised buttons that are not disabled */
+.mat-mdc-raised-button:not(:disabled) {
+    background-color: #4f46e5 !important; /* Dark purple color for better visibility */
+}
+
+.mat-mdc-raised-button:not(:disabled):hover {
+    background-color: #3730a3 !important; /* Slightly darker shade for hover effect */
+}
+
+/* Adjusts the position of the close button in the date picker for better visibility */
+.mat-datepicker-content .mat-datepicker-close-button {
+    position: relative !important;
+    top: 100% !important;
+    left: 77% !important;
+    margin-top: 8px !important;
+  }/* Hide the button's label text */
+  .mat-datepicker-close-button .mdc-button__label {
+    display: none;
+  }
+  
+  /* Add a tick icon using ::before pseudo-element */
+  .mat-datepicker-close-button::before {
+    content: "\2714"; /* Unicode character for tick mark */
+    font-size: 24px; /* Adjust size as needed */
+    color: #ffffff; /* Tick mark color, assuming white is desired */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .ngx-mat-timepicker .mat-mdc-form-field-flex {
+  
+    padding: 0 !important;
+}
+  
+  /* Ensure the button itself is properly styled to accommodate the icon */
+  .mat-datepicker-close-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px; /* Adjust width as needed */
+    height: 40px; /* Adjust height as needed */
+    border-radius: 50%; /* Circular shape */
+    background-color: #4f46e5; /* Background color, adjust as needed */
+  }
+
+/* Email template container and card styling */
+.email-template-container {
+    max-width: 300px;
+    max-height: 350px;
+    overflow: hidden; /* Hide overflow to prevent scrollbars */
+}
+
+.email-template-card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative; /* Ensure proper positioning */
+}
+
+.email-template-card mat-card-content {
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scrollbars if necessary */
+}
+
+.email-template-card mat-card-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none; /* Optional: Remove iframe border */
+    transform-origin: 0 0; /* Ensure scaling origin */
+}
+
+/* Scale the content to fit the container */
+#htmlContent > * {
+    transform: scale(0.75); /* Adjust scale as needed to fit the content */
+    transform-origin: top left;
+}
+
+/* Example of a media query to adjust layout for smaller screens */
+@media (max-width: 600px) {
+    .html-container {
+        padding: 10px;
+    }
+}
+
+.campaign-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: #f5f5f5;
+  }
+  
+  .form-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .preview-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100px;
+    border: 1px solid #e5e7eb;
+    background-color: #f9f9f9;
+    cursor: pointer;
+  }
+  
+  .preview-icon-container mat-icon {
+    font-size: 48px;
+    color: #3f51b5;
+  }
+  
+  .form-content {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 2rem;
+    gap: 1rem;
+  }
+  
+  .form-group {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group-inline {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .form-field {
+    width: 100%;
+  }
+  
+  .half-width {
+    width: 48%;
+  }
+  
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .flash-message {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+  }
+  
+  .dialog-image {
+    width: 100%;
+    height: auto;
+  }
+  
+  .mat-form-field {
+    margin-bottom: 1rem;
+  }
+  
+  .mat-checkbox {
+    margin-bottom: 1rem;
+  }
+  
+  .mat-icon {
+    vertical-align: middle;
+  }
+  
+  .mat-flat-button {
+    margin: 0 1rem;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    .form-content {
+      padding: 1rem;
+    }
+  
+    .form-group-inline {
+      flex-direction: column;
+    }
+  }
+  
