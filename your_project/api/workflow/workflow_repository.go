@@ -7,7 +7,6 @@ import (
 	"labs/domains"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -42,51 +41,50 @@ func ReadByID(db *gorm.DB, model domains.Workflow, id uuid.UUID) (domains.Workfl
 	return model, err
 }
 
-// Start initiates the workflow execution
 func Start(db *gorm.DB, workflow domains.Workflow, ctx *gin.Context, contact domains.Contact) error {
-	actions, err := getOrderedActions(db, workflow.ID)
-	if err != nil {
+	// Start with the root action (the one with no ParentID)
+	var rootAction domains.Action
+	if err := db.Where("workflow_id = ? AND parent_id = ?", workflow.ID, uuid.Nil).First(&rootAction).Error; err != nil {
+		return fmt.Errorf("failed to retrieve root action: %w", err)
+	}
+	logrus.Infof("Root Action: %v", rootAction)
+
+	// Dynamically execute actions starting from the root
+	return executeActionRecursively(db, workflow, rootAction, ctx, contact)
+}
+func executeActionRecursively(db *gorm.DB, workflow domains.Workflow, action domains.Action, ctx *gin.Context, contact domains.Contact) error {
+	// Execute the current action
+	if err := executeAction(db, workflow, action, ctx, contact); err != nil {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	executed := make(map[uuid.UUID]bool)
+	// After executing, fetch and execute child actions
+	var childActions []domains.Action
+	if err := db.Where("workflow_id = ? AND parent_id = ?", workflow.ID, action.ID).Find(&childActions).Error; err != nil {
+		return fmt.Errorf("failed to retrieve child actions: %w", err)
+	}
 
-	for i := 0; i < len(actions); {
-		action := actions[i]
-		if executed[action.ID] {
-			i++
-			continue
-		}
-		executed[action.ID] = true
-
-		wg.Add(1)
-		go func(action domains.Action) {
-			defer wg.Done()
-			if err := executeAction(db, workflow, action, ctx, contact); err != nil {
-				logrus.Errorf("Error executing action %s: %v", action.ID, err)
-			}
-
-			// Determine next action based on condition branch if applicable
-			if action.Type == "condition" {
-				nextActionID := handleConditionAndDecideNext(db, workflow, action, ctx, contact)
-				if nextActionID != uuid.Nil {
-					// Set the loop index to the position of the next action
-					for j, nextAction := range actions {
-						if nextAction.ID == nextActionID {
-							i = j
-							break
-						}
-					}
-				} else {
-					i++ // No further actions, exit loop
+	// Iterate over each child action
+	for _, child := range childActions {
+		// If the action is a condition, determine the correct branch to follow
+		if child.Type == "condition" {
+			nextActionID := handleConditionAndDecideNext(db, workflow, child, ctx, contact)
+			if nextActionID != uuid.Nil {
+				var nextAction domains.Action
+				if err := db.Where("id = ?", nextActionID).First(&nextAction).Error; err != nil {
+					return fmt.Errorf("failed to retrieve next action for condition: %w", err)
 				}
-			} else {
-				i++ // Continue to the next action
+				// Recursively execute the next action in the correct branch
+				if err := executeActionRecursively(db, workflow, nextAction, ctx, contact); err != nil {
+					return err
+				}
 			}
-		}(action)
-
-		wg.Wait() // Wait for the action to complete before proceeding
+		} else {
+			// Recursively execute non-condition child actions
+			if err := executeActionRecursively(db, workflow, child, ctx, contact); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -109,11 +107,14 @@ func executeAction(db *gorm.DB, workflow domains.Workflow, action domains.Action
 
 // handleEmailAction processes an email action by sending an email with tracking logs
 func handleEmailAction(db *gorm.DB, workflow domains.Workflow, action domains.Action, contact domains.Contact) error {
+	logrus.Infof("Raw Action Data (before unmarshaling): %s", string(action.Data))
+
 	var emailData map[string]interface{}
 	if err := json.Unmarshal([]byte(action.Data), &emailData); err != nil {
 		return fmt.Errorf("error unmarshaling email data: %v", err)
 	}
-
+	// Log the unmarshaled data to ensure it's correct
+	logrus.Infof("Unmarshaled Email Data: %v", emailData)
 	requiredFields := []string{"subject", "HTML", "from", "reply_to"}
 	for _, field := range requiredFields {
 		if _, ok := emailData[field]; !ok {
@@ -258,7 +259,16 @@ func handleConditionAndDecideNext(db *gorm.DB, workflow domains.Workflow, action
 	if met {
 		branch = "yes"
 	}
-	return getNextActionByBranch(db, workflow.ID, action.ID, branch).ID
+	nextAction, err := getNextActionByBranch(db, workflow.ID, action.ID, branch)
+	if err != nil {
+		logrus.Errorf("Error retrieving next action for branch %s: %v", branch, err)
+		return uuid.Nil
+	}
+
+	// Mark the condition action as completed after the branch decision
+	updateActionStatus(db, action.ID, "completed")
+
+	return nextAction.ID
 }
 
 // checkConditionWithTimeout waits for a condition to be met within a duration
@@ -303,11 +313,13 @@ func checkCondition(db *gorm.DB, actionID uuid.UUID, criteria string) bool {
 	return false
 }
 
-// getNextActionByBranch retrieves the next action based on the branch
-func getNextActionByBranch(db *gorm.DB, workflowID uuid.UUID, parentID uuid.UUID, branch string) domains.Action {
+func getNextActionByBranch(db *gorm.DB, workflowID uuid.UUID, parentID uuid.UUID, branch string) (domains.Action, error) {
 	var nextAction domains.Action
-	db.Where("workflow_id = ? AND parent_id = ? AND JSON_EXTRACT(data, '$.branch') = ?", workflowID, parentID, branch).First(&nextAction)
-	return nextAction
+	result := db.Where("workflow_id = ? AND parent_id = ? AND data->>'branch' = ?", workflowID, parentID, branch).First(&nextAction)
+	if result.Error != nil {
+		return domains.Action{}, result.Error
+	}
+	return nextAction, nil
 }
 
 // updateActionStatus updates the status of an action in the database
@@ -323,41 +335,49 @@ func updateActionStatus(db *gorm.DB, actionID uuid.UUID, status string) error {
 }
 
 // getOrderedActions retrieves and orders actions based on dependencies
+
+// getOrderedActions retrieves and orders actions based on dependencies
 func getOrderedActions(db *gorm.DB, workflowID uuid.UUID) ([]domains.Action, error) {
 	var actions []domains.Action
 	if err := db.Where("workflow_id = ?", workflowID).Find(&actions).Error; err != nil {
 		return nil, err
 	}
 
+	// Map to store actions by their ID for quick lookup
 	actionMap := make(map[uuid.UUID]*domains.Action)
 	for i := range actions {
 		actionMap[actions[i].ID] = &actions[i]
 	}
 
-	parentMap := make(map[uuid.UUID][]*domains.Action)
-	for _, action := range actions {
-		if action.ParentID != uuid.Nil {
-			parentMap[action.ParentID] = append(parentMap[action.ParentID], actionMap[action.ID])
-		}
+	// Map to group actions by their ParentID
+	childrenMap := make(map[uuid.UUID][]*domains.Action)
+	for i := range actions {
+		childrenMap[actions[i].ParentID] = append(childrenMap[actions[i].ParentID], &actions[i])
 	}
 
+	// List to hold the ordered actions
 	var orderedActions []domains.Action
-	visited := make(map[uuid.UUID]bool)
-	var visit func(uuid.UUID)
-	visit = func(id uuid.UUID) {
-		if visited[id] {
-			return
+
+	// Function to recursively add actions to the ordered list
+	var addActions func(actionID uuid.UUID)
+	addActions = func(actionID uuid.UUID) {
+		if action, exists := actionMap[actionID]; exists {
+			orderedActions = append(orderedActions, *action)
+
+			// Get children actions
+			children := childrenMap[actionID]
+
+			// Iterate over children actions and add them
+			for _, child := range children {
+				addActions(child.ID)
+			}
 		}
-		visited[id] = true
-		for _, child := range parentMap[id] {
-			visit(child.ID)
-		}
-		orderedActions = append(orderedActions, *actionMap[id])
 	}
 
-	for id := range actionMap {
-		if !visited[id] {
-			visit(id)
+	// Start with root actions (ParentID is nil)
+	for _, action := range actions {
+		if action.ParentID == uuid.Nil {
+			addActions(action.ID)
 		}
 	}
 

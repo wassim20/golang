@@ -127,12 +127,13 @@ getLastActionInBranch(parentAction: any, branch: 'yes' | 'no'): any {
 }
 
 isActionComplete(action: any): boolean {
+  const data = action.data ? JSON.parse(action.data) : {}; // Parse the JSON string
   if (action.type === 'email') {
-    return action.subject && action.track_open !== undefined && action.track_click !== undefined && action.HTML && action.from && action.reply_to;
+    return data.subject && data.track_open !== undefined && data.track_click !== undefined && data.HTML && data.from && data.reply_to;
   } else if (action.type === 'wait') {
-    return action.duration;
+    return data.duration;
   } else if (action.type === 'condition') {
-    return action.criteria && action.duration;
+    return data.criteria && data.duration;
   }
   return true;
 }
@@ -153,26 +154,27 @@ getIncompleteMessage(action: any): string {
 
 
 
-editAction(action: any): void {
+editAction(event:MouseEvent,action: any, branch?: 'yes' | 'no'): void {
+  event.stopPropagation();
+  console.log("branch",branch);
+  
   const dialogRef = this.dialog.open(EditActionDialogComponent, {
       width: '300px',
-      data: action
+      data: { ...action, branch } // Add branch information to data
   });
   const workflowData = this.datatransfer.getWorkflowData();
-  console.log("workflowData",workflowData);
   
   dialogRef.afterClosed().subscribe(result => {
-    
-      if (result) {
-        console.log("result",result);
-        
-
-          action.data = result;
-          console.log("action",action);
-          
-
+    if (result) {
+        action.data = JSON.stringify(result);
+         
+          const editedaction = {
+            id:action.id,
+            type:action.type,
+            data:action.data
+          };
           // Call backend to update the action
-          this.service.updateAction(workflowData.id,action ).subscribe(
+          this.service.updateAction(workflowData.id, editedaction).subscribe(
               (updatedAction) => {
                   console.log('Action updated successfully:', updatedAction);
               },
@@ -183,6 +185,7 @@ editAction(action: any): void {
       }
   });
 }
+
 areAllActionsComplete(): boolean {
   return this.actions.every(action => this.isActionComplete(action));
 }
@@ -291,7 +294,15 @@ startWorkflow() {
   <ng-container *ngIf="data.type === 'wait'">
     <mat-form-field>
       <mat-label>Duration</mat-label>
-      <input matInput [(ngModel)]="data.duration">
+      <div matPrefix>
+    <input matInput [(ngModel)]="durationValue" placeholder="Enter duration" type="number" min="0">
+  </div>
+  <mat-select [(ngModel)]="durationUnit">
+    <mat-option value="s">Seconds</mat-option>
+    <mat-option value="m">Minutes</mat-option>
+    <mat-option value="h">Hours</mat-option>
+    <mat-option value="d">Days</mat-option>
+  </mat-select>
     </mat-form-field>
   </ng-container>
 
@@ -309,9 +320,18 @@ startWorkflow() {
       <input matInput [(ngModel)]="data.campaignID">
     </mat-form-field> -->
     <mat-form-field>
-      <mat-label>Duration</mat-label>
-      <input matInput [(ngModel)]="data.duration">
-    </mat-form-field>
+  <mat-label>Duration</mat-label>
+  <div matPrefix>
+    <input matInput [(ngModel)]="durationValue" placeholder="Enter duration" type="number" min="0">
+  </div>
+  <mat-select [(ngModel)]="durationUnit">
+    <mat-option value="s">Seconds</mat-option>
+    <mat-option value="m">Minutes</mat-option>
+    <mat-option value="h">Hours</mat-option>
+    <mat-option value="d">Days</mat-option>
+  </mat-select>
+</mat-form-field>
+
 
   </ng-container>
 </div>
@@ -323,14 +343,29 @@ startWorkflow() {
   `,
 })
 export class EditActionDialogComponent {
+  durationValue: number = 0; // Stores the numerical part of the duration
+  durationUnit: string = 's'; // Stores the selected unit (s, m, h, d)
   constructor(
     public dialogRef: MatDialogRef<EditActionDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  ) {
+    if (this.data.duration) {
+      const durationPattern = /^(\d+)([smhd])$/;
+      const match = this.data.duration.match(durationPattern);
+      if (match) {
+        this.durationValue = parseInt(match[1], 10);
+        this.durationUnit = match[2];
+      }
+    }
+  
+  }
+  
 
   onSave(): void {
     let actionData: any = {};
-
+    console.log("data",this.data);
+    
+    this.data.duration = `${this.durationValue}${this.durationUnit}`;
     // Check the action type and include the relevant fields
     if (this.data.type === 'email') {
       actionData = {
@@ -339,11 +374,13 @@ export class EditActionDialogComponent {
         track_click: this.data.track_click,
         HTML: this.data.HTML,
         from: this.data.from,
+        branch: this.data.branch,
         reply_to: this.data.reply_to,
       };
     } else if (this.data.type === 'wait') {
       actionData = {
         duration: this.data.duration,
+        branch: this.data.branch,
       };
     } else if (this.data.type === 'condition') {
       actionData = {

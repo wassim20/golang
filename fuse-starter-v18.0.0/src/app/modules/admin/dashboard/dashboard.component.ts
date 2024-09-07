@@ -7,6 +7,9 @@ import { MatOptionModule } from '@angular/material/core'; // Import MatOptionMod
 import { HttpClientModule } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import jsPDF from 'jspdf';
+import ApexCharts from 'apexcharts';
+
 
 import {
 
@@ -34,6 +37,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import html2canvas from 'html2canvas';
 //import { ChartOptions } from 'chart.js';
 
 export type BarChartOptions = {
@@ -118,7 +122,7 @@ export type PieChartOptions = {
   selector: 'dashboard',
   standalone: true,
   imports: [MatFormFieldModule, MatSelectModule,RouterModule,MatDatepickerModule, FormsModule, ReactiveFormsModule,MatIconModule,
-    MatButtonModule,MatTooltipModule,
+    MatButtonModule,MatTooltipModule,NgApexchartsModule,
     CommonModule, MatOptionModule, HttpClientModule,MatProgressSpinnerModule,NgApexchartsModule],
   templateUrl: './dashboard.component.html',
   providers: [],
@@ -1120,4 +1124,34 @@ statchange(type: string) {
     this.cdr.detectChanges(); // Trigger change detection
   }, 0); // Delay to ensure the DOM updates
 }
+
+
+
+
+downloadPDF() {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const chartIds = ['barchart', 'piechart', 'radialchart', 'lineChart', 'scatterchart', 'barchartopen', 'barchartclick', 'scatteropen', 'scatterclick'];
+
+  const promises = chartIds.map((id, index) => {
+    const chartExec = ApexCharts.exec(id, 'dataURI');
+    if (chartExec && typeof chartExec.then === 'function') {
+      return chartExec.then((dataURI) => {
+        if (index > 0) doc.addPage();
+        doc.addImage(dataURI.imgURI, 'PNG', 10, 10, 190, 100); 
+      });
+    } else {
+      console.warn(`Chart ${id} not found or not initialized`);
+      return Promise.resolve();  // Return a resolved promise to continue the Promise.all
+    }
+  });
+
+  Promise.all(promises).then(() => {
+    doc.save('all-charts.pdf');
+  }).catch(error => {
+    console.error('Error generating PDF', error);
+  });
+}
+
+
+
 }

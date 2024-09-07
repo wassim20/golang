@@ -45,6 +45,8 @@
               >
               <span class="ml-2 mr-1">Choose</span>
           </button>
+          <button mat-flat-button color="primary" (click)="downloadPDF()">Download PDF</button>
+
             </div>
 <!-- cards  -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-4 md:grid-cols-3 lg:grid-cols-3 mb-12">
@@ -110,6 +112,7 @@
 
 
     <h3 class="text-gray-500 font-semibold text-start">All Campaigns Analatics</h3>
+        
           <div class="bg-white rounded-xl px-12">
             <!-- Bar chart -->
             <div *ngIf="stat_type == 'open' || stat_type == 'all'">
@@ -211,7 +214,7 @@
 
             <div class="chart-container" *ngIf="reorder">
               
-              <div class="barchartopen "*ngIf="stat_type == 'open' || stat_type == 'all'" [key]="chartKey">
+              <div class="barchartopen "*ngIf="stat_type == 'open' || stat_type == 'all'" [key]="chartKey" id="barchartopen">
                 <div class="flex items-center">
                   <h3 class="mr-2">Opens per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of opened emails for each day of the week." matTooltipPosition="above"></mat-icon>
@@ -228,7 +231,7 @@
                   [title]="barChartOptionsOpen.title"
                 ></apx-chart>
               </div>
-              <div class="barchartclick" *ngIf="stat_type == 'click' || stat_type == 'all'" [key]="chartKey">
+              <div class="barchartclick" *ngIf="stat_type == 'click' || stat_type == 'all'" [key]="chartKey" id="barchartclick">
                 <div class="flex items-center">
                   <h3 class="mr-2">Clicks per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of clicked emails for each day of the week." matTooltipPosition="above"></mat-icon>
@@ -249,7 +252,7 @@
 
             <!-- scatter open  -->
 
-            <div class="scatteropen" *ngIf="stat_type == 'open' || stat_type == 'all'">
+            <div class="scatteropen" *ngIf="stat_type == 'open' || stat_type == 'all'" id="scatteropen">
               <div class="flex items-center">
                 <h3 class="mr-2">Opens by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of opened emails throughout the day and week." matTooltipPosition="above"></mat-icon>
@@ -272,7 +275,7 @@
             </div>
             <!-- scatter click -->
 
-            <div class="scatterclick" *ngIf="stat_type == 'click' || stat_type == 'all'">
+            <div class="scatterclick" *ngIf="stat_type == 'click' || stat_type == 'all'" id="scatterclick">
               <div class="flex items-center">
                 <h3 class="mr-2">Clicks by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of clicked emails throughout the day and week." matTooltipPosition="above"></mat-icon>
@@ -295,6 +298,7 @@
             <hr *ngIf="stat_type == 'open' || stat_type == 'click' || stat_type == 'all'"/>
 
           </div>
+        
 
         </div>
             </ng-template>
