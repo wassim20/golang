@@ -23,6 +23,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
         icon: 'mat_solid:auto_awesome_motion',
         link: '/automation'
      },
+     //mailinglist
+        {
+            id: 'mailinglist',
+            title: 'Mailing List',
+            type: 'basic',
+            icon: 'mat_solid:email',
+            link: '/mailinglist'
+        },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
     {

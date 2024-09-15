@@ -67,6 +67,8 @@ export class AuthService
      */
     signIn(credentials: { email: string; password: string }): Observable<any>
     {
+        this._authenticated = false;
+        this.accessToken = '';
         // Throw error, if the user is already logged in
         if ( this._authenticated )
         {
@@ -78,9 +80,10 @@ export class AuthService
             {
                 // Extract and store the access token
                 this.accessToken = response.data.accessToken;
-                console.log(response.data.user.name);
                 
-                console.log("AccessToken stored:", this.accessToken);
+                
+                console.log(response);
+                
 
 
                 // Set the authenticated flag to true
@@ -138,17 +141,19 @@ export class AuthService
     /**
      * Sign out
      */
-    signOut(): Observable<any>
-    {
-        // Remove the access token from the local storage
+    signOut(): Observable<any> {
+        // Clear all user-specific data
+    
+        
         localStorage.removeItem('accessToken');
+        this._userService.user = null;
+        sessionStorage.clear();
         localStorage.clear();
         this.accessToken = '';
-
-        // Set the authenticated flag to false
         this._authenticated = false;
-
-        // Return the observable
+        
+    
+        // Return an observable
         return of(true);
     }
 

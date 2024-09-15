@@ -28,12 +28,12 @@ export class CampaignService {
  //private jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjoiYjI3ZWU3N2MtOTA0My00MDAwLWI3ZTAtZjFhOTIwZGEyYzJmIiwiZXhwIjoxNzE5OTY2MDE4LCJpYXQiOjE3MTk3OTMyMTgsInJvbGVzIjpbeyJpZCI6ImMyNmQ0MGE2LTc0MzMtNDg1MC1hYmUyLWIwMzIxYzNkNDA3ZiIsIm5hbWUiOiJNYW5hZ2VyIiwiY29tcGFueV9pZCI6ImIyN2VlNzdjLTkwNDMtNDAwMC1iN2UwLWYxYTkyMGRhMmMyZiJ9XSwidXNlcl9pZCI6IjgzODJlYzZkLTI1OWUtNDQxMy04NjIyLWFiYTFlZWM3MzdlOSJ9.VJn51F28ekCyBpKnwMH-9olqj-FtTp715aBg5LGi2O4'
  constructor(private http: HttpClient,private auth:AuthService) { }
   //api/:companyID/campaigns
-  private getHeaders(): HttpHeaders {
-    let headers = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.auth.accessToken}`)
-      .set('Content-Type', 'application/json');
-    return headers;
-  }
+    private getHeaders(): HttpHeaders {
+      let headers = new HttpHeaders()
+        .set('Authorization', `Bearer ${this.auth.accessToken}`)
+        .set('Content-Type', 'application/json');
+      return headers;
+    }
   getMailingLists(companyID: string, page: number = 1, limit: number = 10): Observable<any> {
     companyID = this.getCompanyID() || '';
     return this.http.get<any>(`${this.baseUrl}/${companyID}/mailinglist`, {

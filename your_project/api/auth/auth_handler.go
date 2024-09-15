@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"encoding/base64"
 	"labs/constants"
 	"labs/domains"
 	"labs/utils"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -165,6 +167,16 @@ func (db Database) SigninUser(ctx *gin.Context) {
 		})
 	}
 
+	profilePictureData, err := os.ReadFile(data.ProfilePicture)
+	if err != nil {
+		logrus.Error("Error reading profile picture file. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusInternalServerError, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Encode the image data to Base64
+	profilePictureBase64 := base64.StdEncoding.EncodeToString(profilePictureData)
+
 	// Generate JWT token
 	token := utils.GenerateToken(data.ID, data.CompanyID, roles)
 
@@ -175,7 +187,7 @@ func (db Database) SigninUser(ctx *gin.Context) {
 			ID:             data.ID,
 			Name:           data.Firstname + " " + data.Lastname,
 			Email:          data.Email,
-			ProfilePicture: data.ProfilePicture,
+			ProfilePicture: profilePictureBase64,
 			CompanyID:      data.CompanyID,
 		},
 	}

@@ -1,0 +1,114 @@
+<div class="sm:absolute sm:inset-0 flex flex-col flex-auto min-w-0 sm:overflow-hidden bg-card dark:bg-transparent">
+
+    <!-- Header -->
+    <div class="relative flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between py-4 px-4 md:px-6 border-b">
+      <!-- Loader -->
+      <div class="absolute inset-x-0 bottom-0">
+          <mat-progress-bar mode="determinate" *ngIf="isLoading"></mat-progress-bar>
+      </div>
+      <!-- Title -->
+      <div class="text-3xl font-extrabold tracking-tight">Mailing Lists</div>
+      <!-- Actions -->
+      <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+        <!-- Search -->
+        <mat-form-field class="fuse-mat-dense fuse-mat-rounded min-w-64" [subscriptSizing]="'dynamic'">
+            <mat-icon class="icon-size-5" matPrefix [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+            <input matInput  [autocomplete]="'off'" placeholder="Search mailing lists" (input)="onSearch($event)">
+        </mat-form-field>
+        <!-- Add mailing list button -->
+        <button class="ml-4" mat-flat-button [color]="'primary'" (click)="createMailingList()">
+            <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+            <span class="ml-2 mr-1">Add</span>
+        </button>
+      </div>
+    </div>
+  
+    <!-- Main -->
+    <div class="flex flex-auto overflow-hidden">
+      <div class="flex flex-col flex-auto sm:mb-18 overflow-hidden sm:overflow-y-auto">
+        <ng-container *ngIf="mailinglists && mailinglists.length > 0; else noMailingLists">
+            <div class="grid">
+                <div class="inventory-grid z-10 sticky top-0 grid gap-4 py-4 px-6 md:px-8 shadow text-md font-semibold text-secondary bg-gray-50 dark:bg-black dark:bg-opacity-5">
+                    <div></div>
+                    <div>Name</div>
+                    <div>Description</div>
+                    <div>Created By</div>
+                    <div class="hidden sm:block">Details</div>
+                    <div> Add Contacts</div>
+                </div>
+  
+                <!-- Rows -->
+                <ng-container *ngFor="let mailingList of mailinglists; trackBy: trackByFn">
+                    <div class="inventory-grid grid items-center gap-4 py-3 px-6 md:px-8 border-b">
+                        <div class="w-12 h-12 mr-6">
+                        </div>
+                        <div class="truncate">{{mailingList.name}}</div>
+                        <div class="truncate">{{mailingList.description}}</div>
+                        <div class="hidden lg:block">{{mailingList.created_by_user}}</div>
+                        
+                        <div>
+                            <button class="min-w-10 min-h-7 h-7 px-2 leading-6" mat-stroked-button (click)="toggleDetails(mailingList.id)">
+                                <mat-icon class="icon-size-5" [svgIcon]="selectedMailingList?.id === mailingList.id ? 'heroicons_solid:chevron-up' : 'heroicons_solid:chevron-down'"></mat-icon>
+                            </button>
+                        </div>
+                        <div>
+                            <button class="min-w-10 min-h-7 h-7 px-2 leading-6" mat-stroked-button (click)="addContacts(mailingList.id)">
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid">
+                        <ng-container *ngIf="selectedMailingList?.id === mailingList.id">
+                            <ng-container *ngTemplateOutlet="rowDetailsTemplate; context: {$implicit: mailingList}"></ng-container>
+                        </ng-container>
+                    </div>
+                </ng-container>
+            </div>
+        </ng-container>
+  
+        <!-- Template for mailing list details -->
+        <ng-template #rowDetailsTemplate let-mailingList>
+            <div class="shadow-lg overflow-hidden">
+                <form class="mailinglist-form" [formGroup]="selectedMailingListForm">
+                    <div class="form-content">
+                        <div class="form-group w-full lg:w-2/4">
+                            <mat-form-field class="form-field half-width">
+                                <mat-label>Mailing List Name</mat-label>
+                                <input matInput formControlName="name">
+                            </mat-form-field>
+                            <mat-form-field class="form-field half-width">
+                                <mat-label>Description</mat-label>
+                                <input matInput formControlName="description">
+                            </mat-form-field>
+                        </div>
+                        
+                    </div>
+                    <div class="form-footer">
+                        <button mat-flat-button color="warn" (click)="deleteSelectedMailingList()">
+                            Delete
+                        </button>
+                        <div class="flash-message" *ngIf="flashMessage">
+                            <ng-container *ngIf="flashMessage === 'success'">
+                                <mat-icon class="text-green-500" svgIcon="heroicons_outline:check"></mat-icon>
+                                <span class="ml-2">Mailing list updated</span>
+                            </ng-container>
+                            <ng-container *ngIf="flashMessage === 'error'">
+                                <mat-icon class="text-red-500" svgIcon="heroicons_outline:x-mark"></mat-icon>
+                                <span class="ml-2">An error occurred, try again!</span>
+                            </ng-container>
+                        </div>
+                        <button mat-flat-button color="primary" (click)="updateSelectedMailingList()">
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </ng-template>
+  
+        <ng-template #noMailingLists>
+            <div class="p-8 sm:p-16 border-t text-4xl font-semibold tracking-tight text-center">There are no mailing lists!</div>
+        </ng-template>
+    </div>
+    </div>
+  
+</div>

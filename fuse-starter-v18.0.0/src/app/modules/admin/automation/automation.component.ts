@@ -190,6 +190,11 @@ export class AutomationComponent implements OnInit {
     });
   }
 
+  editWorkflow(automation: any): void {
+    // Pass the selected automation's data to the workflow component
+    this.dataTransferService.setWorkflowData(automation);
+    this.router.navigate(['automation/workflow'], { state: { workflowData: JSON.stringify(automation) } });
+}
 
 
 }

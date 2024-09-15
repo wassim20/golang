@@ -5,7 +5,6 @@ import (
 	"labs/domains"
 	"labs/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -113,52 +112,10 @@ func (db Database) ReadActions(ctx *gin.Context) {
 		return
 	}
 
-	// Parse and validate the page from the request parameter
-	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
-
-	// Parse and validate the limit from the request parameter
-	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", strconv.Itoa(constants.DEFAULT_LIMIT_PAGINATION)))
-	if err != nil {
-		logrus.Error("Error mapping request from frontend. Invalid INT format. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-		return
-	}
-
-	// Check if the user's value is among the allowed choices
-	validChoices := utils.ResponseLimitPagination()
-	isValidChoice := false
-	for _, choice := range validChoices {
-		if uint(limit) == choice {
-			isValidChoice = true
-			break
-		}
-	}
-
-	// If the value is invalid, set it to default DEFAULT_LIMIT_PAGINATION
-	if !isValidChoice {
-		limit = constants.DEFAULT_LIMIT_PAGINATION
-	}
-
-	// Generate offset
-	offset := (page - 1) * limit
-
 	// Retrieve all action data from the database
-	actions, err := ReadAllPagination(db.DB, []domains.Action{}, workflowID, limit, offset)
+	actions, err := ReadAllList(db.DB, []domains.Action{}, workflowID)
 	if err != nil {
 		logrus.Error("Error occurred while finding all action data. Error: ", err)
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-		return
-	}
-
-	// Retrieve total count
-	count, err := domains.ReadTotalCount(db.DB, &domains.Action{}, "id", workflowID)
-	if err != nil {
-		logrus.Error("Error occurred while finding total count. Error: ", err)
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
 		return
 	}
@@ -170,6 +127,7 @@ func (db Database) ReadActions(ctx *gin.Context) {
 		listAction = append(listAction, ActionTable{
 			ID:         action.ID,
 			Name:       action.Name,
+			ParentID:   action.ParentID,
 			Type:       action.Type,
 			Status:     action.Status,
 			WorkflowID: action.WorkflowID,
@@ -178,9 +136,6 @@ func (db Database) ReadActions(ctx *gin.Context) {
 		})
 	}
 	response.Items = listAction
-	response.Page = uint(page)
-	response.Limit = uint(limit)
-	response.TotalCount = count
 
 	// Respond with success
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)

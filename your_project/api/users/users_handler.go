@@ -1,9 +1,12 @@
 package users
 
 import (
+	"encoding/base64"
+	"io"
 	"labs/constants"
 	"labs/domains"
 	"net/http"
+	"os"
 	"strconv"
 
 	"labs/utils"
@@ -402,7 +405,7 @@ func (db Database) UpdateUser(ctx *gin.Context) {
 	}
 
 	// Parse the incoming JSON request into a UserIn struct
-	user := new(UsersIn)
+	user := new(UsersInlogged)
 	if err := ctx.ShouldBindJSON(user); err != nil {
 		logrus.Error("Error mapping request from frontend. Error: ", err.Error())
 		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
@@ -490,4 +493,158 @@ func (db Database) DeleteUser(ctx *gin.Context) {
 
 	// Respond with success
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// AssignRole 		Handles the assignment of a role to a user.
+// @Summary        	Assign role
+// @Description    	Assign a role to a user.
+// @Tags			Users
+// @Produce			json
+// @Security 		ApiKeyAuth
+// @Param			companyID			path			string			true	"Company ID"
+// @Param			ID					path			string			true	"User ID"
+// @Param			roleID				path			string			true	"Role ID"
+// @Success			200					{object}		utils.ApiResponses
+// @Failure			400					{object}		utils.ApiResponses		"Invalid request"
+// @Failure			401					{object}		utils.ApiResponses		"Unauthorized"
+// @Failure			403					{object}		utils.ApiResponses		"Forbidden"
+// @Failure			500					{object}		utils.ApiResponses		"Internal Server Error"
+// @Router			/users/{companyID}/{ID}/roles/{roleID}	[post]
+func (db Database) AssignRole(ctx *gin.Context) {
+
+	// Extract JWT values from the context
+	session := utils.ExtractJWTValues(ctx)
+
+	// Parse and validate the company ID from the request parameter
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Parse and validate the user ID from the request parameter
+	objectID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+	roleID, err := uuid.Parse(ctx.Param("roleID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the user with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Users{}, objectID); err != nil {
+		logrus.Error("Error checking if the user with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+	//check if the role with the specified ID exists
+	if err := domains.CheckByID(db.DB, &domains.Roles{}, roleID); err != nil {
+		logrus.Error("Error checking if the role with the specified ID exists. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusNotFound, constants.DATA_NOT_FOUND, utils.Null())
+		return
+	}
+
+	// Assign the role to the user
+	dbUserRoles := &domains.UsersRoles{
+		UserID:    objectID,
+		RoleID:    roleID,
+		CompanyID: companyID,
+	}
+	if err := domains.Create(db.DB, dbUserRoles); err != nil {
+		logrus.Error("Error saving data to the database. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	//respond with success
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, utils.Null())
+}
+
+// UpdateProfilePicture 	Handles the update of a user's profile picture.
+// @Summary        	Update profile picture
+// @Description    	Update user's profile picture.
+// @Tags			Users
+// @Accept			json
+// @Produce			json
+// @Security 		ApiKeyAuth
+// @Param			companyID			path			string			true	"Company ID"
+// @Param			ID					path			string			true	"User ID"
+// @Param			request				body			users.UsersIn		true	"User query params"
+// @Success			200					{object}		utils.ApiResponses
+// @Failure			400					{object}		utils.ApiResponses		"Invalid request"
+// @Failure			401					{object}		utils.ApiResponses		"Unauthorized"
+// @Failure			403					{object}		utils.ApiResponses		"Forbidden"
+// @Failure			500					{object}		utils.ApiResponses		"Internal Server Error"
+// @Router			/users/{companyID}/{ID}/picture	[put]
+func (db Database) UpdateProfilePicture(ctx *gin.Context) {
+	// Parse and validate the user ID from the request parameter
+	userID, err := uuid.Parse(ctx.Param("ID"))
+	if err != nil {
+		logrus.Error("Invalid UUID format for userID: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Handle the profile picture file upload
+	file, header, err := ctx.Request.FormFile("profilePicture")
+	if err != nil {
+		logrus.Error("Error retrieving file from form: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	if header == nil {
+		logrus.Error("No file uploaded")
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, "No file uploaded", utils.Null())
+		return
+	}
+
+	// Save file and store the path/URL
+	filePath := "./static/" + header.Filename
+	out, err := os.Create(filePath)
+	if err != nil {
+		logrus.Error("Error creating file: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusInternalServerError, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, file)
+	if err != nil {
+		logrus.Error("Error copying file: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusInternalServerError, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Update the user's profile picture path in the database
+	if err = db.DB.Model(&domains.Users{}).Where("id = ?", userID).Update("profile_picture", filePath).Error; err != nil {
+		logrus.Error("Error updating user profile picture in the database: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusInternalServerError, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Read the image file and encode it to base64
+	imgData, err := os.ReadFile(filePath)
+	if err != nil {
+		logrus.Error("Error reading file for base64 encoding: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusInternalServerError, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+	profilePictureBase64 := base64.StdEncoding.EncodeToString(imgData)
+
+	// Respond with the base64 encoded image data
+	utils.BuildResponse(ctx, http.StatusOK, "Profile picture updated successfully", profilePictureBase64)
 }

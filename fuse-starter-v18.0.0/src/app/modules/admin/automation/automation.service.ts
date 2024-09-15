@@ -73,6 +73,12 @@ getAutomations(page: number = 1, limit: number = 10) {
     }
   });
 }
+getActions(workflowId: string) {
+  const companyID = this.getCompanyID() || '';
+  return this.http.get<any>(`${this.baseUrl}/${companyID}/workflow/${workflowId}/action`, {
+    headers: this.getHeaders()
+  });
+}
 
 updateAutomation(automationId: string, automationData: any) {
   const companyID = this.getCompanyID() || '';

@@ -25,9 +25,9 @@ type LoggedInResponse struct {
 
 // @Description	LoggedIn represents the user details after successful login.
 type LoggedIn struct {
-	ID             uuid.UUID `json:"ID"`             // ID is the unique identifier for the user.
-	Name           string    `json:"name"`           // Name is the name of the user.
-	Email          string    `json:"email"`          // Email is the email address of the user.
-	ProfilePicture string    `json:"profilePicture"` // ProfilePicture is the URL or path to the user's profile picture.
-	CompanyID      uuid.UUID `json:"workCompanyId"`  // CompanyID is the unique identifier for the user's company.
+	ID             uuid.UUID `json:"ID"`            // ID is the unique identifier for the user.
+	Name           string    `json:"name"`          // Name is the name of the user.
+	Email          string    `json:"email"`         // Email is the email address of the user.
+	ProfilePicture string    `json:"avatar"`        // ProfilePicture is the URL or path to the user's profile picture.
+	CompanyID      uuid.UUID `json:"workCompanyId"` // CompanyID is the unique identifier for the user's company.
 } //@name LoggedIn

@@ -198,7 +198,7 @@ func (db Database) ReadContacts(ctx *gin.Context) {
 }
 func (db Database) ReadAllContacts(ctx *gin.Context) {
 	// Extract JWT values from the context
-	//session := utils.ExtractJWTValues(ctx)
+	session := utils.ExtractJWTValues(ctx)
 	companyID, err := uuid.Parse(ctx.Param("companyID"))
 	if err != nil {
 		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
@@ -207,11 +207,11 @@ func (db Database) ReadAllContacts(ctx *gin.Context) {
 	}
 
 	// Check if the employee belongs to the specified mailinglist
-	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-	// 	return
-	// }
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	//log.Println(session)
 

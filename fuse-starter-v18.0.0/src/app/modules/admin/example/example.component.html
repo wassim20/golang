@@ -27,7 +27,7 @@
 
 
       <mat-stepper #stepper *ngIf="!campaigncreated" [orientation]="(stepperOrientation | async)!" class="example-stepper">
-  <mat-step [stepControl]="firstFormGroup" label="Fill out your mailing list" errorMessage="Mailing list is required.">
+        <mat-step [stepControl]="firstFormGroup" label="Fill out your mailing list" errorMessage="Mailing list is required.">
     <form [formGroup]="firstFormGroup" class="">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Choose mailing list</mat-label>
@@ -42,8 +42,8 @@
     <div class="stepper-buttons">
       <button mat-button matStepperNext>Next</button>
     </div>
-  </mat-step>
-  <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="Fill the campaign, please.">
+        </mat-step>
+        <mat-step [stepControl]="campaignForm" label="Fill out your campaign" errorMessage="Fill the campaign, please.">
     <form [formGroup]="campaignForm" class="stepper-form">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Campaign Name</mat-label>
@@ -95,8 +95,8 @@
       <button mat-button matStepperPrevious>Back</button>
       <button mat-button matStepperNext>Next</button>
     </div>
-  </mat-step>
-  <mat-step [stepControl]="additionalCampaignForm" label="Additional Campaign Details" errorMessage="Just a bit more">
+        </mat-step>
+        <mat-step [stepControl]="additionalCampaignForm" label="Additional Campaign Details" errorMessage="Just a bit more">
     <form [formGroup]="additionalCampaignForm" class="stepper-form">
       <mat-checkbox formControlName="trackOpen">Track Open</mat-checkbox>
       <mat-checkbox formControlName="trackClick">Track Click</mat-checkbox>
@@ -124,8 +124,8 @@
       <button mat-button matStepperPrevious>Back</button>
       <button mat-button matStepperNext>Next</button>
     </div>
-  </mat-step>
-  <mat-step>
+        </mat-step>
+      <mat-step>
     <ng-template matStepLabel>Done</ng-template>
     <p>You are now done.</p>
     <div class="stepper-buttons">

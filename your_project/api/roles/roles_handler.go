@@ -70,7 +70,7 @@ func (db Database) CreateRole(ctx *gin.Context) {
 	}
 
 	// Respond with success
-	utils.BuildResponse(ctx, http.StatusCreated, constants.CREATED, utils.Null())
+	utils.BuildResponse(ctx, http.StatusCreated, constants.CREATED, dbRole)
 }
 
 // ReadRoles 		Handles the retrieval of all roles.

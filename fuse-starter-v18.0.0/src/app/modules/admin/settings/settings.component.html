@@ -1,0 +1,184 @@
+<div class="settings-container">
+    <mat-tab-group>
+      <!-- Me Tab -->
+      <mat-tab label="Me">
+        <div class="settings-section">
+          <h2>Personal Settings</h2>
+          <!-- Theme Selection -->
+          <div class="shadow-lg overflow-hidden">
+            <form class="mailinglist-form" *ngIf="profileForm" [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+                <div class="form-container">
+                    <div class="form-group w-full lg:w-2/4">
+                        <mat-form-field class="input-group  half-width" >
+                            <mat-label>First Name</mat-label>
+                            <input matInput formControlName="firstname">
+                        </mat-form-field>
+                        <mat-form-field class="input-group  half-width">
+                            <mat-label>Last Name</mat-label>
+                            <input matInput formControlName="lastname">
+                        </mat-form-field>
+                        <mat-form-field class="input-group  full-width" >
+                            <mat-label>Email</mat-label>
+                            <input matInput formControlName="email" readonly>
+                        </mat-form-field>
+                        <mat-form-field class="input-group  full-width">
+                            <mat-label>Country</mat-label>
+                            <input matInput formControlName="country">
+                        </mat-form-field>
+                        <div class="input-group full-width">
+                          <button mat-button color="primary" type="button" (click)="fileInput.click()">Choose Profile Picture</button>
+                          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden>
+                          <mat-icon *ngIf="isFileSelected" color="primary">check_circle</mat-icon>
+                          <mat-icon *ngIf="!isFileSelected" color="warn">error</mat-icon>
+                        </div>
+                        
+                        
+                        
+                    
+                        
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <div class="flash-message" *ngIf="flashMessage">
+                        <ng-container *ngIf="flashMessage === 'success'">
+                            <mat-icon class="text-green-500" svgIcon="heroicons_outline:check"></mat-icon>
+                            <span class="ml-2">Profile updated</span>
+                        </ng-container>
+                        <ng-container *ngIf="flashMessage === 'error'">
+                            <mat-icon class="text-red-500" svgIcon="heroicons_outline:x-mark"></mat-icon>
+                            <span class="ml-2">An error occurred, try again!</span>
+                        </ng-container>
+                    </div>
+                    <div mat-dialog-actions class="stepper-buttons">
+                    <button mat-flat-button class="stepper-buttons" color="primary" type="submit">
+                        Save Changes
+                    </button>
+                  </div>
+                </div>
+            </form>
+        </div>
+        
+        </div>
+      </mat-tab>
+  
+      <!-- Team Tab -->
+      <mat-tab label="Team">
+        <div class="settings-section">
+          <h2>Team Settings</h2>
+
+          <mat-tab-group>
+
+            <mat-tab label="Add User">
+                <div class="settings-section">
+                  <h2>Add a New Team Member</h2>
+                  <div class="shadow-lg overflow-hidden">
+                    <form class="mailinglist-form" [formGroup]="addUserForm" (ngSubmit)="onAddUser()">
+                      <div class="form-container">
+                        <div class="form-group w-full lg:w-2/4">
+                          <mat-form-field class="input-group half-width">
+                            <mat-label>First Name</mat-label>
+                            <input matInput formControlName="userfirstName" required>
+                            <mat-error *ngIf="addUserForm.controls['userfirstName'].touched && addUserForm.controls['userfirstName'].invalid">
+                              Please enter a valid First_name.
+                            </mat-error>
+                          </mat-form-field>
+              
+                          <mat-form-field class="input-group half-width">
+                            <mat-label>Last Name</mat-label>
+                            <input matInput formControlName="userlastName" required>
+                            <mat-error *ngIf="addUserForm.controls['userlastName'].touched && addUserForm.controls['userlastName'].invalid">
+                              Please enter a valid Last_name.
+                            </mat-error>
+                          </mat-form-field>
+              
+                          <mat-form-field class="input-group full-width">
+                            <mat-label>Email</mat-label>
+                            <input matInput formControlName="useremail" type="email" required>
+                            <mat-error *ngIf="addUserForm.controls['useremail'].touched && addUserForm.controls['useremail'].invalid">
+                              Please enter a valid email.
+                            </mat-error>
+                          </mat-form-field>
+              
+                          <mat-form-field class="input-group full-width">
+                            <mat-label>Password</mat-label>
+                            <input matInput formControlName="userpassword" type="password" required>
+                            <mat-error *ngIf="addUserForm.controls['userpassword'].touched && addUserForm.controls['userpassword'].invalid">
+                              Please enter a valid password.
+                            </mat-error>
+                          </mat-form-field>
+                          
+              
+                          
+                        </div>
+                      </div>
+              
+                      <div class="form-footer">
+                        <div class="flash-message" *ngIf="flashMessage">
+                            <ng-container *ngIf="flashMessage === 'success'">
+                                <mat-icon class="text-green-500" svgIcon="heroicons_outline:check"></mat-icon>
+                                <span class="ml-2">Profile updated</span>
+                            </ng-container>
+                            <ng-container *ngIf="flashMessage === 'error'">
+                                <mat-icon class="text-red-500" svgIcon="heroicons_outline:x-mark"></mat-icon>
+                                <span class="ml-2">An error occurred, try again!</span>
+                            </ng-container>
+                        </div>
+                        <div mat-dialog-actions class="stepper-buttons">
+                        <button mat-flat-button class="stepper-buttons" color="primary" type="submit">
+                            Add User
+                        </button>
+                      </div>
+                    </div>
+                    </form>
+                  </div>
+                </div>
+              </mat-tab>
+
+              <mat-tab label="Assign a role">
+                <div class="settings-section">
+                  <h2>Assign a Role to a User</h2>
+                  <div class="shadow-lg overflow-hidden">
+                    <form [formGroup]="assignForm" (ngSubmit)="onAssignRole()">
+                      <mat-form-field class="input-group full-width">
+                        <mat-label>Choose a User</mat-label>
+                        <mat-select formControlName="user" required>
+                          <mat-option *ngFor="let user of users" [value]="user.id">{{user.name}}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+              
+                      <mat-form-field class="input-group full-width" *ngIf="!isAddingRole">
+                        <mat-label>Choose or Add a Role</mat-label>
+                        <mat-select formControlName="role" required>
+                          <mat-option *ngFor="let role of roles" [value]="role.id">{{role.name}}</mat-option>
+                          <mat-option (click)="toggleAddRole()">+ Add New Role</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+              
+                      <mat-form-field *ngIf="isAddingRole" class="input-group full-width">
+                        <mat-label>New Role Name</mat-label>
+                        <input matInput formControlName="newRoleName" required>
+                        <mat-error *ngIf="assignForm.controls['newRoleName'].touched && assignForm.controls['newRoleName'].invalid">
+                          Please enter a valid role name.
+                        </mat-error>
+                      </mat-form-field>
+              
+                      <div mat-dialog-actions class="stepper-buttons">
+                        <button mat-flat-button color="primary" type="submit" [disabled]="assignForm.invalid">Assign Role</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </mat-tab>
+              
+              
+              
+              
+
+          </mat-tab-group>
+
+         
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+  

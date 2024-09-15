@@ -29,7 +29,7 @@
                 <img
                     class="w-full h-full rounded-full"
                     *ngIf="user.avatar"
-                    [src]="user.avatar"
+                    [src]="'data:image/png;base64,' + user.avatar"
                     alt="User avatar">
                 <mat-icon
                     class="icon-size-24"

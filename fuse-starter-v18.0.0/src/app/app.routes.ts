@@ -12,6 +12,8 @@ export const appRoutes: Route[] = [
 
     // Redirect empty path to '/example'
     {path: '', pathMatch : 'full', redirectTo: 'campaignlist'},
+    
+
 
     // Redirect signed-in user to the '/example'
     //
@@ -80,7 +82,8 @@ export const appRoutes: Route[] = [
             {path:'campaignlist', loadChildren: () => import('app/modules/admin/example/campaign-list/campaign-list.routes')},
             {path:'dashboard', loadChildren: () => import('app/modules/admin/dashboard/dashboard.routes')},
             {path:'dashboard/:campaignID', loadChildren: () => import('app/modules/admin/dashboard/campaign-dashboard/campaign-dashboard.routes')},
-            
+            {path:'mailinglist', loadChildren: () => import('app/modules/admin/mailinglist/mailinglist.routes')},
+           { path: 'settings', loadChildren: () => import('app/modules/admin/settings/settings.routes') },
         ]
         
         

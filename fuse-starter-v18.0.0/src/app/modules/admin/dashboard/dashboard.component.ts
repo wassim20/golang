@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { DashboardService } from './dashboard.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -8,6 +8,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import jsPDF from 'jspdf';
+
 import ApexCharts from 'apexcharts';
 
 
@@ -140,6 +141,27 @@ export class DashboardComponent implements OnInit {
   public scatterChartOptions: Partial<ScatterChartOptions>;
   public bubbleChartOptionsOpen: Partial<BubbleChartOptions>;
   public bubbleChartOptioncClick: Partial<BubbleChartOptions>;
+  // Accessing chart components using @ViewChild
+  @ViewChild('barChartOpen') barChartOpen: ChartComponent;
+  @ViewChild('barChartClick') barChartClick: ChartComponent;
+  @ViewChild('pieChart') pieChart: ChartComponent;
+  @ViewChild('radialChart') radialChart: ChartComponent;
+  @ViewChild('lineChart') lineChart: ChartComponent;
+  @ViewChild('scatterChart') scatterChart: ChartComponent;
+  @ViewChild('bubbleChartOpen') bubbleChartOpen: ChartComponent;
+  @ViewChild('bubbleChartClick') bubbleChartClick: ChartComponent;
+
+  chartsLoaded: boolean = false;
+  barChartInstance: ApexCharts;
+  pieChartInstance: ApexCharts;
+  lineChartInstance: ApexCharts;
+  radialChartInstance: ApexCharts;
+  scatterChartInstance: ApexCharts;
+  bubbleChartInstance: ApexCharts;
+  barChartClickInstance: ApexCharts;
+  barChartOpenInstance: ApexCharts;
+  bubbleChartOpenInstance: ApexCharts;
+  bubbleChartClickInstance: ApexCharts;
 
   campaigns: any;
   stat_type: any = "all";
@@ -192,6 +214,8 @@ export class DashboardComponent implements OnInit {
         categories: ["Opened", "Clicked", "Errors"]
       }
     };
+    this.barChartInstance = new ApexCharts(document.querySelector("#barChart"), this.barChartOptions);
+
 
     // Initialize pie chart options
     this.pieChartOptions = {
@@ -200,7 +224,7 @@ export class DashboardComponent implements OnInit {
         width: 500,
         type: "pie"
       },
-      labels: ["Total Contacts ;", "Opened Emails", "Clicked Emails"],
+      labels: ["Opened Emails", "Clicked Emails", "Total Contacts"],
       responsive: [{
         breakpoint: 480,
         options: {
@@ -213,6 +237,8 @@ export class DashboardComponent implements OnInit {
         }
       }]
     };
+   
+    this.pieChartInstance = new ApexCharts(document.querySelector("#pieChart"), this.pieChartOptions);
 
     this.lineChartOptions = {
       series: [
@@ -282,6 +308,7 @@ export class DashboardComponent implements OnInit {
         offsetX: -5
       }
     };
+    this.lineChartInstance = new ApexCharts(document.querySelector("#lineChart"), this.lineChartOptions);
 
     this.radialChartOptions = {
       series: [0],
@@ -334,6 +361,7 @@ export class DashboardComponent implements OnInit {
       
      
     };
+    this.radialChartInstance = new ApexCharts(document.querySelector("#radialChart"), this.radialChartOptions);
 
     this.scatterChartOptions = {
       series: [
@@ -396,6 +424,7 @@ export class DashboardComponent implements OnInit {
         }
       },
     };
+    this.scatterChartInstance = new ApexCharts(document.querySelector("#scatterChart"), this.scatterChartOptions);
     //initialize bar chaart options for open per day of the week
     this.barChartOptionsOpen = {
       series: [
@@ -486,6 +515,7 @@ export class DashboardComponent implements OnInit {
         }
       }      
     };
+    this.barChartOpenInstance = new ApexCharts(document.querySelector("#barChartOpen"), this.barChartOptionsOpen);
     //initialize bar chaart options for click per day of the week
     this.barChartOptionsClick = {
       series: [
@@ -574,6 +604,7 @@ export class DashboardComponent implements OnInit {
         }
       }       
     };
+    this.barChartClickInstance = new ApexCharts(document.querySelector("#barChartClick"), this.barChartOptionsClick);
 
     this.bubbleChartOptionsOpen = {
       series: [{
@@ -666,6 +697,7 @@ export class DashboardComponent implements OnInit {
         }
       }
     };
+    this.bubbleChartOpenInstance = new ApexCharts(document.querySelector("#bubbleChartOpen"), this.bubbleChartOptionsOpen);
     
     this.bubbleChartOptioncClick = {
       series: [{
@@ -759,10 +791,12 @@ export class DashboardComponent implements OnInit {
     
     
   };
+  this.bubbleChartClickInstance = new ApexCharts(document.querySelector("#bubbleChartClick"), this.bubbleChartOptioncClick);
 }
   
   
-  
+
+
   
  
 ngOnInit(): void {
@@ -770,7 +804,7 @@ ngOnInit(): void {
 
   // Fetch campaigns list
   this.service.getCampaigns(1, 10).subscribe({
-    next: (data) => {
+    next: async (data) => {
       if (data && data.data && data.data.items) {
         this.campaigns = data.data.items;
 
@@ -781,9 +815,14 @@ ngOnInit(): void {
           this.selectedCampaign = this.campaigns.find(campaign => campaign.id === this.route.snapshot.paramMap.get('campaignID'));
         }
 
-        this.fetchAllTrackingData();
-        this.fetchAllContacts();
-        this.isLoading = false;
+        try {
+          await this.fetchAllContacts();
+          await this.fetchAllTrackingData();
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          this.isLoading = false;
+        }
       } else {
         console.error('Invalid response structure:', data);
         this.isLoading = false;
@@ -795,6 +834,7 @@ ngOnInit(): void {
     }
   });
 }
+
 
  
   onCampaignChange(campaign) {
@@ -815,8 +855,9 @@ ngOnInit(): void {
     this.service.getAllContacts().subscribe(
         (data) => {
             this.contacts = data?.data?.items?.length > 0 ? data.data.items : null;
+            
             if(this.contacts && this.contacts.length > 0) {
-            this.updatePieChartData();
+            //this.updatePieChartData();
             }else{
               console.log('No contacts to display.');
             }
@@ -836,6 +877,7 @@ ngOnInit(): void {
             if (this.logs && this.logs.length > 0) {
                 const promises = [
                     this.updateChartData(),
+                    this.updatePieChartData(),
                     this.updateLineChartData(),
                     this.updateRadialChartData(),
                     this.updateBarChartOpen(),
@@ -847,7 +889,6 @@ ngOnInit(): void {
 
                 Promise.all(promises).then(() => {
                     console.log('All chart updates are done.');
-                    console.log(this.logs);
                 }).catch((error) => {
                     console.error('Error updating charts:', error);
                 });
@@ -867,12 +908,10 @@ ngOnInit(): void {
         let totalErrors = 0;
         
         this.service.updateChartData().subscribe((data) => {
-          console.log(data.data);
           
           totalOpened = data.data.opened;
           totalClicked = data.data.clicked;
           totalErrors = data.data.error;
-          console.log(totalOpened);
           
           // Adjusting the structure to match a single dataset for all categories
           this.barChartOptions.series = [
@@ -881,8 +920,8 @@ ngOnInit(): void {
               data: [totalOpened, totalClicked, totalErrors]
             },
           ];
-          this.cdr.detectChanges();
         });
+        this.cdr.detectChanges();
         
         
       }
@@ -902,9 +941,9 @@ ngOnInit(): void {
       
           // Log the series data for debugging purposes
           console.log(this.bubbleChartOptioncClick.series[0].data);
+          this.cdr.detectChanges();
       
           // Trigger change detection to update the chart
-          this.cdr.detectChanges();
         },
         (error) => {
           console.error('Error fetching bubble chart click data:', error);
@@ -932,13 +971,15 @@ ngOnInit(): void {
           console.error('Error fetching bubble chart data:', error);
           // Handle the error appropriately, e.g., display an error message
         });
+        this.cdr.detectChanges();
       }
       
   updateBarChartClick() {
    this.service.barChartDataClicks().subscribe((data) => {
       this.barChartOptionsClick.series[0].data = data.data;
       this.cdr.detectChanges();      
-   });
+    });
+    this.cdr.detectChanges();      
 
     
   }
@@ -951,11 +992,10 @@ ngOnInit(): void {
     this.barChartOptionsOpen.series[0].data = data.data;
     this.cdr.detectChanges();
   });
+  this.cdr.detectChanges();
 }
 updateScatterChartData(): void {
   this.service.updateScatterChartData().subscribe((data) => {
-    console.log("Received scatter chart data from backend:", data);
-    console.log(new Date(data.data.openedData[3].x)); 
 
     // Update the scatter chart series data using the data from the backend
     this.scatterChartOptions.series = [
@@ -979,7 +1019,7 @@ updateScatterChartData(): void {
       }
     ];
     this.cdr.detectChanges();
-
+    
     // Update tooltip to use the custom data
     this.scatterChartOptions.tooltip = {
       enabled: true,
@@ -987,11 +1027,11 @@ updateScatterChartData(): void {
         const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex].recipientEmail;
         const clickCount = w.config.series[seriesIndex].data[dataPointIndex].y;
         return `<div class="apexcharts-tooltip-title">Recipient Email: ${recipientEmail}</div>
-                <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
+        <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
       }
     };
-
-    // Trigger change detection to update the chart
+    
+    // Trigger change detection to update the chart this.cdr.detectChanges();
     this.cdr.detectChanges();
   },
   (error) => {
@@ -1022,73 +1062,62 @@ updateScatterChartData(): void {
       this.radialChartOptions.series = [data.data.openedPercentage];
       this.cdr.detectChanges();
     });
+    this.cdr.detectChanges();
     }
-  updateLineChartData(): void {
+    updateLineChartData(): void {
       this.service.updateLineChartData().subscribe((data) => {
-        console.log("Received data from backend:", data);
+        if (this.lineChartOptions?.chart) {
+          const allDates = data.data.allDates.map(date => `${date}`);
+          const totals = data.data.totals;
     
-       // Ensure allDates are treated as strings
-    const allDates = data.data.allDates.map(date => `${date}`);
-    const totals = data.data.totals;
-
-    this.lineChartOptions= {
-      ...this.lineChartOptions,
-      title: {
-        text: `Email Campaign Tracking (Total Sent: ${totals})`,
-        align: "left"
-      }}
-    
-    // Update the chart options
-    this.lineChartOptions.xaxis = {
-      categories: allDates,
-      labels: {
-        format: 'yyyy-MM-dd', // Optional: Ensure proper date format
-      }
-    };
-    
-        // Update the chart options
-        this.lineChartOptions.xaxis.categories = allDates;
-        this.lineChartOptions.series = [
-          {
-            name: "Opened Emails",
-            data: data.data.openedSeriesData
-          },
-          {
-            name: "Clicked Emails",
-            data: data.data.clickedSeriesData
-          }
-        ];
-    
-        // Trigger change detection to update the chart
-        this.cdr.detectChanges();
+          this.lineChartOptions = {
+            ...this.lineChartOptions,
+            xaxis: {
+              categories: allDates,
+            },
+            series: [
+              { name: "Opened Emails", data: data.data.openedSeriesData },
+              { name: "Clicked Emails", data: data.data.clickedSeriesData }
+            ],
+            title: {
+              text: `Email Campaign Tracking (Total Sent: ${totals})`,
+              align: "left"
+            }
+          };
+          
+          this.cdr.detectChanges();  // Only detect changes once at the end
+        } else {
+          console.error("Line chart is not initialized");
+        }
       });
     }
     
-updatePieChartData(): void {
-  if (!this.contacts) {
-    console.error("Contacts data is null or undefined");
-    return;
-  }
-
-  const totalContacts = this.contacts.length;
-
-  // Call the backend service to get the necessary data
-  this.service.updatePieChartData().subscribe(
-    (data) => {
-      // Assume the backend returns an object with openedEmails and clickedEmails properties
-      const openedEmails = data.data.cpenedEmails || 0;
-      const clickedEmails = data.data.clickedEmails || 0;
-
-      // Update pie chart options with the data from the backend
-      this.updateChartOptions(totalContacts, openedEmails, clickedEmails);
-    },
-    (error) => {
-      console.error('Error fetching data from backend:', error);
-      // Handle error gracefully - perhaps show a message to the user or use default values
-      this.updateChartOptions(totalContacts, 0, 0);  // Default to zero if there's an error
+    
+    updatePieChartData(): void {
+      
+    
+      const totalContacts = this.contacts.length;
+    
+      this.service.updatePieChartData().subscribe(
+        (data) => {
+          
+          const openedEmails = data.data.opened_count || 0;
+          const clickedEmails = data.data.clicked_count || 0;
+    
+          this.pieChartOptions = {
+            ...this.pieChartOptions,
+            labels: ["Opened Emails", "Clicked Emails", "Total Contacts: " + totalContacts],
+            series: [openedEmails, clickedEmails],
+          };
+          
+          this.cdr.detectChanges();  // Only detect changes once at the end
+        },
+        (error) => {
+          console.error('Error fetching data from backend:', error);
+        }
+      );
     }
-  );
-}
+    
 
 // Separate method to update chart options
 private updateChartOptions(totalContacts: number, openedEmails: number, clickedEmails: number): void {
@@ -1127,31 +1156,68 @@ statchange(type: string) {
 
 
 
-
 downloadPDF() {
-  const doc = new jsPDF('p', 'mm', 'a4');
-  const chartIds = ['barchart', 'piechart', 'radialchart', 'lineChart', 'scatterchart', 'barchartopen', 'barchartclick', 'scatteropen', 'scatterclick'];
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  let position = 10; // Starting position for the first chart
+  const imgWidth = 190; // Width of the image in the PDF
+  const imgHeight = 108; // Height of the image in the PDF
 
-  const promises = chartIds.map((id, index) => {
-    const chartExec = ApexCharts.exec(id, 'dataURI');
-    if (chartExec && typeof chartExec.then === 'function') {
-      return chartExec.then((dataURI) => {
-        if (index > 0) doc.addPage();
-        doc.addImage(dataURI.imgURI, 'PNG', 10, 10, 190, 100); 
-      });
-    } else {
-      console.warn(`Chart ${id} not found or not initialized`);
-      return Promise.resolve();  // Return a resolved promise to continue the Promise.all
+  const chartIds = [
+    'barChart',
+    'pieChart',
+    'radialChart',
+    'lineChart',
+    'scatterChart',
+    'barChartOpen',
+    'barChartClick',
+    'bubbleChartOpen',
+    'bubbleChartClick'
+  ];
+
+  const addChartToPDF = async (chartId: string) => {
+    const element = document.getElementById(chartId);
+
+    if (!element) {
+      console.error(`Element with ID ${chartId} not found.`);
+      return;
     }
-  });
 
-  Promise.all(promises).then(() => {
-    doc.save('all-charts.pdf');
-  }).catch(error => {
-    console.error('Error generating PDF', error);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 1, // Reduce scale to improve speed and reduce file size
+        useCORS: true // Enable if you have external images
+      });
+      const imgData = canvas.toDataURL('image/png');
+
+      if (position + imgHeight > 297) { // 297mm is the height of an A4 page
+        pdf.addPage();
+        position = 10; // Reset position for the new page
+      }
+
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      position += imgHeight + 10; // Update position for the next chart
+    } catch (error) {
+      console.error(`Error capturing chart ${chartId}:`, error);
+    }
+  };
+
+  const processCharts = async () => {
+    for (const chartId of chartIds) {
+      await addChartToPDF(chartId);
+    }
+    pdf.save('charts.pdf');
+    console.log('PDF generated successfully.');
+  };
+
+  processCharts().catch(error => {
+    console.error('Error generating PDF:', error);
   });
 }
 
 
 
 }
+
+
+
+

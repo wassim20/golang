@@ -189,3 +189,51 @@ html, body {
     transform: translateX(-50%);
   }
 }
+
+.edit-container {
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+
+.form-container {
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+form {
+  max-width: 100%; /* Adjust based on your preference */
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+.stepper-form{
+ 
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+
+
+}
+.full-width {
+  grid-column: span 1;
+  margin-bottom: 1rem;
+}
+
+.double-full-width {
+  grid-column: span 2; /* Spans across two columns */
+  margin-bottom: 1rem;
+}
+
+.triple-full-width {
+  grid-column: span 3; /* Spans across three columns if needed */
+  margin-bottom: 1rem;
+}
+
+h2 {
+  //center the text
+  text-align: center; 
+  margin-bottom: 1rem;
+}

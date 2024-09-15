@@ -38,6 +38,7 @@
                 >
                 <span class="ml-2 mr-1">Choose</span>
             </button>
+            <button mat-flat-button color="primary" (click)="downloadPDF()">Download PDF</button>
               </div>
           <div *ngIf="selectedCampaign && logs!= null ;else nologs" >
             
@@ -107,7 +108,7 @@
                 <h3 class="mr-2">Bar Chart</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the comparison of opened, clicked, and error logs." matTooltipPosition="above"></mat-icon>
               </div>
-              <div id="barchart">
+              <div id="barChart">
                 <apx-chart [series]="barChartOptions.series"
                            [chart]="barChartOptions.chart"
                            [dataLabels]="barChartOptions.dataLabels"
@@ -124,7 +125,7 @@
                   <h3 class="mr-2">Pie Chart</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the ratio of opened and clicked emails." matTooltipPosition="above"></mat-icon>
                 </div>
-                <div id="piechart">
+                <div id="pieChart">
                   <apx-chart [series]="pieChartOptions.series"
                              [chart]="pieChartOptions.chart"
                              [labels]="pieChartOptions.labels"
@@ -137,8 +138,8 @@
                   <h3 class="mr-2">Radial Chart</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the percentage of opened emails out of the total logs." matTooltipPosition="above"></mat-icon>
                 </div>
-                <div id="radialchart">
-                  <h3 style="display: flex; justify-content: center; align-items: center;"> Total Emails sent with tracking {{logs.length}}</h3>
+                <div id="radialChart">
+                <h3 style="display: flex; justify-content: center; align-items: center;"> Total Emails sent with tracking {{logs.length}}</h3>
                   <apx-chart
                     [series]="radialChartOptions.series"
                     [chart]="radialChartOptions.chart"
@@ -174,11 +175,11 @@
             </div>
             
             <!-- scatter chart -->
-            <div id="scatterchart">
-              <div class="flex items-center">
-                <h3 class="mr-2">Scatter Chart</h3>
-                <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Plots the distribution of opened or clicked emails by day and time." matTooltipPosition="above"></mat-icon>
-              </div>
+            <div class="flex items-center">
+              <h3 class="mr-2">Scatter Chart</h3>
+              <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Plots the distribution of opened or clicked emails by day and time." matTooltipPosition="above"></mat-icon>
+            </div>
+            <div id="scatterChart">
               <apx-chart
                 [series]="scatterChartOptions.series"
                 [chart]="scatterChartOptions.chart"
@@ -197,6 +198,7 @@
                   <h3 class="mr-2">Opens per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of opened emails for each day of the week." matTooltipPosition="above"></mat-icon>
                 </div>
+                <div id="barChartOpen">
                 <apx-chart
                   [series]="barChartOptionsOpen.series"
                   [chart]="barChartOptionsOpen.chart"
@@ -208,11 +210,13 @@
                   [title]="barChartOptionsOpen.title">
                 </apx-chart>
               </div>
+              </div>
               <div class="barchartclick">
                 <div class="flex items-center">
                   <h3 class="mr-2">Clicks per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of clicked emails for each day of the week." matTooltipPosition="above"></mat-icon>
                 </div>
+                <div id="barChartClick">
                 <apx-chart
                   [series]="barChartOptionsClick.series"
                   [chart]="barChartOptionsClick.chart"
@@ -224,6 +228,7 @@
                   [title]="barChartOptionsClick.title">
                 </apx-chart>
               </div>
+              </div>
             </div>
             
             <div class="scatteropen">
@@ -231,6 +236,7 @@
                 <h3 class="mr-2">Opens by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of opened emails throughout the day and week." matTooltipPosition="above"></mat-icon>
               </div>
+              <div id="bubbleChartOpen">
               <apx-chart
                 [series]="scatterChartOptionsOpen.series"
                 [chart]="scatterChartOptionsOpen.chart"
@@ -242,12 +248,14 @@
                 [tooltip]="scatterChartOptionsOpen.tooltip">
               </apx-chart>
             </div>
+          </div>
             
             <div class="scatterclick">
               <div class="flex items-center">
                 <h3 class="mr-2">Clicks by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of clicked emails throughout the day and week." matTooltipPosition="above"></mat-icon>
               </div>
+              <div id="bubbleChartClick">
               <apx-chart
                 [series]="scatterChartOptionsClick.series"
                 [chart]="scatterChartOptionsClick.chart"
@@ -258,6 +266,7 @@
                 [yaxis]="scatterChartOptionsClick.yaxis"
                 [tooltip]="scatterChartOptionsClick.tooltip">
               </apx-chart>
+            </div>
             </div>
             
           </div>

@@ -32,6 +32,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 //import { ChartOptions } from 'chart.js';
 
 export type BarChartOptions = {
@@ -1108,5 +1110,63 @@ statchange(type: string) {
     this.reorder = true; // Show the chart again
     this.cdr.detectChanges(); // Trigger change detection
   }, 0); // Delay to ensure the DOM updates
+}
+
+downloadPDF() {
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  let position = 10; // Starting position for the first chart
+  const imgWidth = 190; // Width of the image in the PDF
+  const imgHeight = 108; // Height of the image in the PDF
+
+  const chartIds = [
+    'barChart',
+    'pieChart',
+    'radialChart',
+    'lineChart',
+    'scatterChart',
+    'barChartOpen',
+    'barChartClick',
+    'bubbleChartOpen',
+    'bubbleChartClick'
+  ];
+
+  const addChartToPDF = async (chartId: string) => {
+    const element = document.getElementById(chartId);
+
+    if (!element) {
+      console.error(`Element with ID ${chartId} not found.`);
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 1, // Reduce scale to improve speed and reduce file size
+        useCORS: true // Enable if you have external images
+      });
+      const imgData = canvas.toDataURL('image/png');
+
+      if (position + imgHeight > 297) { // 297mm is the height of an A4 page
+        pdf.addPage();
+        position = 10; // Reset position for the new page
+      }
+
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      position += imgHeight + 10; // Update position for the next chart
+    } catch (error) {
+      console.error(`Error capturing chart ${chartId}:`, error);
+    }
+  };
+
+  const processCharts = async () => {
+    for (const chartId of chartIds) {
+      await addChartToPDF(chartId);
+    }
+    pdf.save('charts.pdf');
+    console.log('PDF generated successfully.');
+  };
+
+  processCharts().catch(error => {
+    console.error('Error generating PDF:', error);
+  });
 }
 }

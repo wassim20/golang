@@ -40,10 +40,10 @@
 
       <ng-template #renderAction let-action="action" let-branch="branch">
         <div [ngClass]="{'action-card': true, 'condition': action.type === 'condition'}"
-             (dblclick)="editAction($event,action, branch)">
+             (dblclick)="editAction($event, action, branch)">
           <p style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
             <mat-icon>{{ action.type }}</mat-icon>
-            {{ action.title }}
+            {{ action.type }}
             <mat-icon *ngIf="!isActionComplete(action)" class="incomplete-indicator">priority_high</mat-icon>
           </p>
       
@@ -52,30 +52,33 @@
       
           <div *ngIf="action.type === 'condition'">
             <div class="branch-container">
+              <!-- Yes Branch -->
               <div class="branch">
                 <strong>Yes</strong>
-                <ng-container *ngFor="let yesAction of action.yesBranch; let j = index">
+                <ng-container *ngFor="let yesAction of (action.yesBranch || []); let j = index">
                   <ng-container
                     [ngTemplateOutlet]="renderAction"
                     [ngTemplateOutletContext]="{ action: yesAction, branch: 'yes' }">
                   </ng-container>
                 </ng-container>
-                <button *ngIf="action.yesBranch.length === 0 || (action.yesBranch.length > 0 && action.yesBranch[action.yesBranch.length - 1].type !== 'condition')"
+                <button *ngIf="!(action.yesBranch?.length > 0 && action.yesBranch[action.yesBranch.length - 1].type === 'condition')"
                         mat-icon-button
                         (click)="addAction(action, 'yes')"
                         class="add-icon">
                   <mat-icon svgIcon="heroicons_outline:plus-circle"></mat-icon>
                 </button>
               </div>
+      
+              <!-- No Branch -->
               <div class="branch">
                 <strong>No</strong>
-                <ng-container *ngFor="let noAction of action.noBranch; let k = index">
+                <ng-container *ngFor="let noAction of (action.noBranch || []); let k = index">
                   <ng-container
                     [ngTemplateOutlet]="renderAction"
                     [ngTemplateOutletContext]="{ action: noAction, branch: 'no' }">
                   </ng-container>
                 </ng-container>
-                <button *ngIf="action.noBranch.length === 0 || (action.noBranch.length > 0 && action.noBranch[action.noBranch.length - 1].type !== 'condition')"
+                <button *ngIf="!(action.noBranch?.length > 0 && action.noBranch[action.noBranch.length - 1].type === 'condition')"
                         mat-icon-button
                         (click)="addAction(action, 'no')"
                         class="add-icon">
@@ -86,6 +89,7 @@
           </div>
         </div>
       </ng-template>
+      
       
       
       

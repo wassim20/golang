@@ -120,8 +120,9 @@
                 <h3 class="mr-2">Bar Chart</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the comparison of opened, clicked, and error logs." matTooltipPosition="above"></mat-icon>
               </div>
-            <div id="barchart"  >
-              <apx-chart [series]="barChartOptions.series"
+            <div id="barChart"  >
+              <apx-chart #barChart
+              [series]="barChartOptions.series"
               [chart]="barChartOptions.chart"
               [dataLabels]="barChartOptions.dataLabels"
               [plotOptions]="barChartOptions.plotOptions"
@@ -139,8 +140,9 @@
                 <h3 class="mr-2">Pie Chart</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the ratio of opened and clicked emails." matTooltipPosition="above"></mat-icon>
               </div>
-            <div id="piechart" >
-              <apx-chart [series]="pieChartOptions.series"
+            <div id="pieChart" >
+              <apx-chart #pieChart 
+                        [series]="pieChartOptions.series"
                          [chart]="pieChartOptions.chart"
                          [labels]="pieChartOptions.labels"
                          [responsive]="pieChartOptions.responsive">
@@ -152,9 +154,9 @@
                 <h3 class="mr-2">Radial Chart</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the percentage of opened emails out of the total logs." matTooltipPosition="above"></mat-icon>
               </div>
-            <div id="radialchart" >
+              <div id="radialChart" >
               <h3 style="display: flex; justify-content: center; align-items: center;"> Total Emails sent with tracking {{logs.length}}</h3>
-              <apx-chart
+              <apx-chart #radialChart
                 [series]="radialChartOptions.series"
                 [chart]="radialChartOptions.chart"
                 [plotOptions]="radialChartOptions.plotOptions"
@@ -170,12 +172,13 @@
             
             <!-- line chart -->
              <div *ngIf="stat_type == 'open' || stat_type == 'all' || stat_type=='click'">
-            <div id="lineChart" >
-              <div class="flex items-center">
-                <h3 class="mr-2">Line Chart</h3>
-                <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays trends over time for opened and clicked emails." matTooltipPosition="above"></mat-icon>
-              </div>              
-              <apx-chart [series]="lineChartOptions.series"
+               <div class="flex items-center">
+                 <h3 class="mr-2">Line Chart</h3>
+                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays trends over time for opened and clicked emails." matTooltipPosition="above"></mat-icon>
+                </div>              
+                <div id="lineChart" >
+              <apx-chart #lineChart
+                          [series]="lineChartOptions.series"
                          [chart]="lineChartOptions.chart"
                          [dataLabels]="lineChartOptions.dataLabels"
                          [stroke]="lineChartOptions.stroke"
@@ -196,8 +199,9 @@
                 <h3 class="mr-2">Scatter Chart</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Plots the distribution of opened or clicked emails by day and time." matTooltipPosition="above"></mat-icon>
               </div>              
-            <div id="scatterchart" >
+            <div id="scatterChart" >
               <apx-chart
+              #scatterChart
                 [series]="scatterChartOptions.series"
                 [chart]="scatterChartOptions.chart"
                 [xaxis]="scatterChartOptions.xaxis"
@@ -214,13 +218,14 @@
 
             <div class="chart-container" *ngIf="reorder">
               
-              <div class="barchartopen "*ngIf="stat_type == 'open' || stat_type == 'all'" [key]="chartKey" id="barchartopen">
+              <div class="barchartopen "*ngIf="stat_type == 'open' || stat_type == 'all'" [key]="chartKey" >
                 <div class="flex items-center">
                   <h3 class="mr-2">Opens per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of opened emails for each day of the week." matTooltipPosition="above"></mat-icon>
                 </div>
-                
+                <div id="barChartOpen">
                 <apx-chart
+                #barChartOpen
                   [series]="barChartOptionsOpen.series"
                   [chart]="barChartOptionsOpen.chart"
                   [dataLabels]="barChartOptionsOpen.dataLabels"
@@ -231,12 +236,15 @@
                   [title]="barChartOptionsOpen.title"
                 ></apx-chart>
               </div>
-              <div class="barchartclick" *ngIf="stat_type == 'click' || stat_type == 'all'" [key]="chartKey" id="barchartclick">
+              </div>
+              <div class="barchartclick" *ngIf="stat_type == 'click' || stat_type == 'all'" [key]="chartKey" >
                 <div class="flex items-center">
                   <h3 class="mr-2">Clicks per Day</h3>
                   <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Shows the number of clicked emails for each day of the week." matTooltipPosition="above"></mat-icon>
                 </div>
+                <div id="barChartClick">
                 <apx-chart
+                #barChartClick
                   [series]="barChartOptionsClick.series"
                   [chart]="barChartOptionsClick.chart"
                   [dataLabels]="barChartOptionsClick.dataLabels"
@@ -247,17 +255,20 @@
                   [title]="barChartOptionsClick.title"
                 ></apx-chart>
               </div>
+              </div>
             </div>
             <hr *ngIf="stat_type == 'open' || stat_type == 'click' || stat_type == 'all'"/>
 
             <!-- scatter open  -->
 
-            <div class="scatteropen" *ngIf="stat_type == 'open' || stat_type == 'all'" id="scatteropen">
+            <div class="scatteropen" *ngIf="stat_type == 'open' || stat_type == 'all'" >
               <div class="flex items-center">
                 <h3 class="mr-2">Opens by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of opened emails throughout the day and week." matTooltipPosition="above"></mat-icon>
               </div>
+              <div id="bubbleChartOpen">
               <apx-chart
+              #bubbleChartOpen
                 [series]="bubbleChartOptionsOpen.series"
                 [chart]="bubbleChartOptionsOpen.chart"
                 [dataLabels]="bubbleChartOptionsOpen.dataLabels"
@@ -271,16 +282,19 @@
                 [markers]="bubbleChartOptionsOpen.markers"
                 [tooltip]="bubbleChartOptionsOpen.tooltip"
               ></apx-chart>
+            </div>
               <hr *ngIf="stat_type == 'open' || stat_type == 'click' || stat_type == 'all'"/>
             </div>
             <!-- scatter click -->
 
-            <div class="scatterclick" *ngIf="stat_type == 'click' || stat_type == 'all'" id="scatterclick">
+            <div class="scatterclick" *ngIf="stat_type == 'click' || stat_type == 'all'">
               <div class="flex items-center">
                 <h3 class="mr-2">Clicks by Time</h3>
                 <mat-icon class="big-icon" svgIcon="heroicons_solid:exclamation-circle" matTooltip="Displays the time distribution of clicked emails throughout the day and week." matTooltipPosition="above"></mat-icon>
               </div>
+              <div  id="bubbleChartClick">
               <apx-chart
+              #bubbleChartClick
               [series]="bubbleChartOptioncClick.series"
               [chart]="bubbleChartOptioncClick.chart"
               [dataLabels]="bubbleChartOptioncClick.dataLabels"
@@ -295,8 +309,8 @@
               [tooltip]="bubbleChartOptioncClick.tooltip"
               ></apx-chart>
             </div>
+            </div>
             <hr *ngIf="stat_type == 'open' || stat_type == 'click' || stat_type == 'all'"/>
-
           </div>
         
 

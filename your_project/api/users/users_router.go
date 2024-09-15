@@ -38,5 +38,11 @@ func UserRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 
 		// DELETE endpoint to delete a specific user
 		users.DELETE("/:ID", baseInstance.DeleteUser)
+
+		// POST endpoint to assign a role to a user
+		users.POST("/:ID/roles/:roleID", baseInstance.AssignRole)
+
+		// update profilepicure
+		users.PUT("/:ID/picture", baseInstance.UpdateProfilePicture)
 	}
 }

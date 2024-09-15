@@ -14,6 +14,19 @@ type UsersIn struct {
 	Password  string    `json:"password" binding:"required,min=10,max=255"` // Password is the user's password. It is required, and its length should be between 10 and 255 characters.
 	CompanyID uuid.UUID `json:"companyID" binding:"required"`               // CompanyID is the unique identifier for the company associated with the user. It is required.
 } //@name UsersIn
+// @Description	UsersIn represents the input structure for creating a new user.
+type UsersInlogged struct {
+	Firstname      string    `json:"firstName" binding:"required,min=3,max=30"` // Firstname is the first name of the user. It is required and should be between 3 and 30 characters.
+	Lastname       string    `json:"lastName" binding:"required,min=3,max=35"`  // Lastname is the last name of the user. It is required and should be between 3 and 35 characters.
+	Email          string    `json:"email" binding:"required,email,max=255"`    // Email is the email address of the user. It is required, should be a valid email, and maximum length is 255 characters.
+	CompanyID      uuid.UUID `json:"companyID" binding:"required"`              // CompanyID is the unique identifier for the company associated with the user. It is required.
+	ProfilePicture string    `json:"profilePicture,omitempty" `                 // ProfilePicture is the URL or path to the user's profile picture. It is required.
+} //@name UsersIn
+
+// @Description	UsersIn represents the input structure for creating a new user.
+type UserPicture struct {
+	ProfilePicture string `json:"profilePicture,omitempty" ` // ProfilePicture is the URL or path to the user's profile picture. It is required.
+} //@name UsersIn
 
 // @Description	UsersPagination represents the paginated list of users.
 type UsersPagination struct {
