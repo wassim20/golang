@@ -39,13 +39,21 @@
       </button>
 
       <ng-template #renderAction let-action="action" let-branch="branch">
+        
+        <!-- Other content here -->
         <div [ngClass]="{'action-card': true, 'condition': action.type === 'condition'}"
-             (dblclick)="editAction($event, action, branch)">
-          <p style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
-            <mat-icon>{{ action.type }}</mat-icon>
-            {{ action.type }}
-            <mat-icon *ngIf="!isActionComplete(action)" class="incomplete-indicator">priority_high</mat-icon>
-          </p>
+        (dblclick)="editAction($event, action, branch)">
+        <mat-icon *ngIf="!isActionComplete(action)" class="incomplete-indicator" style="position: absolute; top: 0; right: 0;">priority_high</mat-icon>
+             <p style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+              <mat-icon [ngSwitch]="action.type">
+                <ng-container *ngSwitchCase="'email'">email</ng-container>
+                <ng-container *ngSwitchCase="'wait'">hourglass_top</ng-container>
+                <ng-container *ngSwitchCase="'condition'">account_tree</ng-container>
+                <ng-container *ngSwitchDefault>{{ action.type }}</ng-container>
+              </mat-icon>
+              {{ action.type }}
+              
+            </p>
       
           <div *ngIf="!isActionComplete(action)" class="error-message" [innerHTML]="getIncompleteMessage(action)">
           </div>

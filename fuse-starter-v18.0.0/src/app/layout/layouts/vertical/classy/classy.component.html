@@ -15,7 +15,7 @@
             <div class="flex items-center justify-center">
                 <img
                     class="w-8"
-                    src="assets/images/logo/logo.svg">
+                    src="assets/images/logo/logo.png">
             </div>
             <!-- Components -->
             <div class="flex items-center ml-auto">
@@ -73,13 +73,8 @@
             <fuse-fullscreen class="hidden md:block"></fuse-fullscreen>
             <search [appearance]="'bar'"></search>
             <shortcuts></shortcuts>
-            <messages></messages>
-            <button
-                class="lg:hidden"
-                mat-icon-button
-                (click)="quickChat.toggle()">
-                <mat-icon [svgIcon]="'heroicons_outline:chat-bubble-left-right'"></mat-icon>
-            </button>
+            
+            
         </div>
     </div>
 
@@ -96,6 +91,3 @@
     </div>-->
 
 </div>
-
-<!-- Quick chat -->
-<quick-chat #quickChat="quickChat"></quick-chat>

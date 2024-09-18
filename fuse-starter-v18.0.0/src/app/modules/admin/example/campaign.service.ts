@@ -94,5 +94,12 @@ export class CampaignService {
     });
   }
 
+  deleteCampaign(campaignID: string): Observable<any> {
+    const companyID = this.getCompanyID() || '';
+    return this.http.delete<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, {
+      headers: this.getHeaders()
+    });
+  }
+
  
 }

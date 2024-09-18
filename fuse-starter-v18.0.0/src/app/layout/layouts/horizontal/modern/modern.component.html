@@ -40,7 +40,7 @@
                 </div>
                 <img
                     class="flex lg:hidden w-8"
-                    src="assets/images/logo/logo.svg">
+                    src="assets/images/logo/logo.png">
             </div>
             <!-- Horizontal navigation -->
             <fuse-horizontal-navigation
@@ -62,14 +62,9 @@
             <fuse-fullscreen class="hidden md:block"></fuse-fullscreen>
             <search [appearance]="'bar'"></search>
             <shortcuts></shortcuts>
-            <messages></messages>
+            
             <notifications></notifications>
-            <button
-                class="lg:hidden"
-                mat-icon-button
-                (click)="quickChat.toggle()">
-                <mat-icon [svgIcon]="'heroicons_outline:chat-bubble-left-right'"></mat-icon>
-            </button>
+            
             <user></user>
         </div>
     </div>
@@ -88,5 +83,3 @@
 
 </div>
 
-<!-- Quick chat -->
-<quick-chat #quickChat="quickChat"></quick-chat>

@@ -105,6 +105,32 @@ navigateToDashboard(campaignId: string) {
   this.router.navigate(['/dashboard'], navigationExtras);
 }
 
+deleteSelectedCampaign() {
+  this.service.deleteCampaign(this.selectedCampaign.id)
+  .subscribe(() =>
+    {
+      // Show a success message
+        this.showFlashMessage('success');
+        this.selectedCampaign = null;
+        this.service.getCampaigns(1, 10).subscribe({
+          next: (data) => {
+            if (data && data.data && data.data.items) {
+              this.campaigns = data.data.items; // Assign mailing list items
+              console.log(this.campaigns); // Correctly log the campaigns after they are fetched
+            } else {
+              console.error('Invalid response structure:', data);
+              // Handle unexpected response structure if needed
+            }
+          },
+          error: (error) => {
+            console.error('Error fetching mailing lists:', error);
+            // Handle error scenario if needed
+          }
+        });
+    }
+  );
+}
+
 createCampaign() {
   this.router.navigate(['/example']);
 }
