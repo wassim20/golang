@@ -13,7 +13,7 @@
         <!-- Search -->
         <mat-form-field class="fuse-mat-dense fuse-mat-rounded min-w-64" [subscriptSizing]="'dynamic'">
             <mat-icon class="icon-size-5" matPrefix [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
-            <input matInput  [autocomplete]="'off'" placeholder="Search mailing lists" (input)="onSearch($event)">
+            <input matInput [formControl]="mailingListSearchControl" autocomplete="off" placeholder="Search mailing lists">
         </mat-form-field>
         <!-- Add mailing list button -->
         <button class="ml-4" mat-flat-button [color]="'primary'" (click)="createMailingList()">
@@ -38,7 +38,7 @@
                 </div>
   
                 <!-- Rows -->
-                <ng-container *ngFor="let mailingList of mailinglists; trackBy: trackByFn">
+                <ng-container *ngFor="let mailingList of filteredMailingLists; trackBy: trackByFn">
                     <div class="inventory-grid grid items-center gap-4 py-3 px-6 md:px-8 border-b">
                         <div class="w-12 h-12 mr-6">
                         </div>

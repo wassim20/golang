@@ -11,8 +11,10 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { MatIconModule } from '@angular/material/icon';
 import { DataTransferService } from '../datatransferservice';
 import { AutomationService } from '../automation.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatOptionModule } from '@angular/material/core';
 import { duration } from 'html2canvas/dist/types/css/property-descriptors/duration';
+import { FuseAlertService } from '@fuse/components/alert';
 @Component({
   selector: 'workflow',
   templateUrl: './workflow.component.html',
@@ -20,6 +22,7 @@ import { duration } from 'html2canvas/dist/types/css/property-descriptors/durati
   styleUrls: ['./workflow.component.scss'],
   imports: [
     MatCardModule,
+    MatSnackBarModule,
     CommonModule,
     MatDialogModule,
     MatInputModule,
@@ -42,11 +45,13 @@ export class WorkflowComponent implements OnInit {
   zoomLevel: number = 1;
   zoomTransform: string = 'scale(1)';
   previousAction: { id: any; title: any; type: any; parent_id: any; };
-  constructor(private service: AutomationService,private datatransfer:DataTransferService,public dialog: MatDialog) {}
+  constructor(  private snackBar: MatSnackBar,private service: AutomationService,private datatransfer:DataTransferService,public dialog: MatDialog) {}
 
   ngOnInit(): void {
     // Get workflow data from the dataTransferService
     this.workflowdata = this.datatransfer.getWorkflowData();
+    console.log("workflowdata",this.workflowdata);
+    
 
     // Load the actions if there is existing workflow data
     if (this.workflowdata) {
@@ -279,9 +284,26 @@ editAction(event: MouseEvent, action: any, branch?: 'yes' | 'no'): void {
       this.service.updateAction(workflowData.id, editedAction).subscribe(
         (updatedAction) => {
           console.log('Action updated successfully:', updatedAction);
+           
+           // Show success alert programmatically
+           
+           this.snackBar.open('Action updated successfully!', 'Close', {
+            duration: 3000,              // Auto-close after 3 seconds
+            verticalPosition: 'top',      // Position at the top
+            horizontalPosition: 'center',  // Align to the right
+            politeness: 'polite',         // Politely announce the message
+            panelClass: ['custom-snackbar'] // Custom CSS class for styling
+          });
         },
         (error) => {
           console.error('Error updating action:', error);
+          this.snackBar.open('Error updating action. Please try again.', 'Close', {
+            duration: 3000,              // Auto-close after 3 seconds
+            verticalPosition: 'top',      // Position at the top
+            horizontalPosition: 'center',  // Align to the right
+            politeness: 'polite',         // Politely announce the message
+            panelClass: ['error-snackbar'] // Custom CSS class for styling
+          });
         }
       );
     }
@@ -371,136 +393,156 @@ startWorkflow() {
     FormsModule
   ],
   template: `
-    <div mat-dialog-content class="edit-container" *ngIf="data.type === 'email'">
-      <h2  mat-dialog-title>Edit Action</h2>
-      <form  class="stepper-form">
-      <ng-container *ngIf="data.type === 'email'" [formGroup]="form" class="form-container">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Subject</mat-label>
-          <input matInput formControlName="subject" required>
-          <mat-error *ngIf="form.controls['subject'].touched && form.controls['subject'].invalid">
-            Please enter a valid subject.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Track Open</mat-label>
-          <mat-select formControlName="track_open" required>
-            <mat-option [value]="true">Yes</mat-option>
-            <mat-option [value]="false">No</mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.controls['track_open'].touched && form.controls['track_open'].invalid">
-            Please select a valid option.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Track Click</mat-label>
-          <mat-select formControlName="track_click" required>
-            <mat-option [value]="true">Yes</mat-option>
-            <mat-option [value]="false">No</mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.controls['track_click'].touched && form.controls['track_click'].invalid">
-            Please select a valid option.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>HTML</mat-label>
-          <textarea matInput formControlName="HTML" required></textarea>
-          <mat-error *ngIf="form.controls['HTML'].touched && form.controls['HTML'].invalid">
-            Please enter HTML content.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>From</mat-label>
-          <input matInput formControlName="from" required>
-          <mat-error *ngIf="form.controls['from'].touched && form.controls['from'].invalid">
-            Please enter a valid sender email.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Reply-To</mat-label>
-          <input matInput formControlName="reply_to" required>
-          <mat-error *ngIf="form.controls['reply_to'].touched && form.controls['reply_to'].invalid">
-            Please enter a valid reply-to email.
-          </mat-error>
-        </mat-form-field>
-      </ng-container>
-      </form>
-    </div>
+  <div mat-dialog-content class="edit-container" *ngIf="data.type === 'email'">
+  <h2 mat-dialog-title class="title">Edit Action</h2>
+  <form class="stepper-form">
+    <ng-container *ngIf="data.type === 'email'" [formGroup]="form" class="form-container">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subject</mat-label>
+        <input matInput formControlName="subject" required>
+        <mat-error *ngIf="form.controls['subject'].touched && form.controls['subject'].invalid">
+          Please enter a valid subject.
+        </mat-error>
+      </mat-form-field>
 
-    <div mat-dialog-content class="edit-container" *ngIf="data.type === 'wait'">
-    <h2  mat-dialog-title>Edit Action</h2>
-      <!-- Wait Action Fields -->
-      <form  class="stepper-form">
-      <ng-container *ngIf="data.type === 'wait'" [formGroup]="form" class="form-container">
-        <mat-form-field appearance="outline" class="triyple-full-width">
-          <mat-label>Duration</mat-label>
-          <div matPrefix>
-            <input matInput formControlName="durationValue" placeholder="Enter duration" type="number" min="0" required>
-          </div>
-          <mat-select formControlName="durationUnit" required>
-            <mat-option value="s">Seconds</mat-option>
-            <mat-option value="m">Minutes</mat-option>
-            <mat-option value="h">Hours</mat-option>
-            <mat-option value="d">Days</mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.controls['durationValue'].touched && form.controls['durationValue'].invalid">
-            Please enter a valid duration.
-          </mat-error>
-        </mat-form-field>
-      </ng-container>
-      </form>
-    </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Track Open</mat-label>
+        <mat-select formControlName="track_open" required>
+          <mat-option [value]="true">Yes</mat-option>
+          <mat-option [value]="false">No</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.controls['track_open'].touched && form.controls['track_open'].invalid">
+          Please select a valid option.
+        </mat-error>
+      </mat-form-field>
 
-      <!-- Condition Action Fields -->
-    <div mat-dialog-content class="edit-container" *ngIf="data.type === 'condition'">
-    <h2  mat-dialog-title>Edit Action</h2>
-      <form  class="stepper-form">
-      <ng-container *ngIf="data.type === 'condition'" [formGroup]="form" class="form-container">
-        <mat-form-field appearance="outline" class="double-full-width">
-          <mat-label>Criteria</mat-label>
-          <mat-select formControlName="criteria" required>
-            <mat-option [value]="'read'">Read</mat-option>
-            <mat-option [value]="'click'">Click</mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.controls['criteria'].touched && form.controls['criteria'].invalid">
-            Please select a valid criteria.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Duration</mat-label>
-          <div matPrefix>
-            <input matInput formControlName="durationValue" placeholder="Enter duration" type="number" min="0" required>
-          </div>
-          <mat-select formControlName="durationUnit" required>
-            <mat-option value="s">Seconds</mat-option>
-            <mat-option value="m">Minutes</mat-option>
-            <mat-option value="h">Hours</mat-option>
-            <mat-option value="d">Days</mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.controls['durationValue'].touched && form.controls['durationValue'].invalid">
-            Please enter a valid duration.
-          </mat-error>
-        </mat-form-field>
-      </ng-container>
-      </form>
-    </div>
-    <div mat-dialog-actions class="stepper-buttons">
-      <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-flat-button color="primary" (click)="onSave()">Save</button>
-    </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Track Click</mat-label>
+        <mat-select formControlName="track_click" required>
+          <mat-option [value]="true">Yes</mat-option>
+          <mat-option [value]="false">No</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.controls['track_click'].touched && form.controls['track_click'].invalid">
+          Please select a valid option.
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Template</mat-label>
+        <mat-select formControlName="HTML" required>
+        <mat-option *ngFor="let campaign of campaigns" [value]="campaign.html">
+          {{ campaign.name }} <!-- Assuming each campaign has an id and name -->
+        </mat-option>
+      </mat-select>
+        <mat-error *ngIf="form.controls['HTML'].touched && form.controls['HTML'].invalid">
+          Please enter HTML content.
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>From</mat-label>
+        <input matInput formControlName="from" required>
+        <mat-error *ngIf="form.controls['from'].touched && form.controls['from'].invalid">
+          Please enter a valid sender email.
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reply-To</mat-label>
+        <input matInput formControlName="reply_to" required>
+        <mat-error *ngIf="form.controls['reply_to'].touched && form.controls['reply_to'].invalid">
+          Please enter a valid reply-to email.
+        </mat-error>
+      </mat-form-field>
+    </ng-container>
+  </form>
+</div>
+
+<!-- Wait Action Fields -->
+<div mat-dialog-content class="edit-container" *ngIf="data.type === 'wait'">
+  <h2 mat-dialog-title class="title">Edit Action</h2>
+  <form class="stepper-form">
+    <ng-container *ngIf="data.type === 'wait'" [formGroup]="form" class="form-container">
+      <mat-form-field appearance="outline" class="triple-full-width">
+        <mat-label>Duration</mat-label>
+        <div matPrefix class="centered-input">
+          <input matInput formControlName="durationValue" placeholder="Enter duration" type="number" min="0" required>
+        </div>
+        <mat-select formControlName="durationUnit" required>
+          <mat-option value="s">Seconds</mat-option>
+          <mat-option value="m">Minutes</mat-option>
+          <mat-option value="h">Hours</mat-option>
+          <mat-option value="d">Days</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.controls['durationValue'].touched && form.controls['durationValue'].invalid">
+          Please enter a valid duration.
+        </mat-error>
+      </mat-form-field>
+    </ng-container>
+  </form>
+</div>
+
+<!-- Condition Action Fields -->
+<div mat-dialog-content class="edit-container" *ngIf="data.type === 'condition'">
+  <h2 mat-dialog-title class="title">Edit Action</h2>
+  <form class="stepper-form">
+    <ng-container *ngIf="data.type === 'condition'" [formGroup]="form" class="form-container">
+      <mat-form-field appearance="outline" class="double-full-width">
+        <mat-label>Criteria</mat-label>
+        <mat-select formControlName="criteria" required>
+          <mat-option [value]="'read'">Read</mat-option>
+          <mat-option [value]="'click'">Click</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.controls['criteria'].touched && form.controls['criteria'].invalid">
+          Please select a valid criteria.
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Duration</mat-label>
+        <div matPrefix class="centered-input">
+          <input matInput formControlName="durationValue" placeholder="Enter duration" type="number" min="0" required>
+        </div>
+
+        <mat-select formControlName="durationUnit" required>
+          <mat-option value="s">Seconds</mat-option>
+          <mat-option value="m">Minutes</mat-option>
+          <mat-option value="h">Hours</mat-option>
+          <mat-option value="d">Days</mat-option>
+        </mat-select>
+        <mat-error *ngIf="form.controls['durationValue'].touched && form.controls['durationValue'].invalid">
+          Please enter a valid duration.
+        </mat-error>
+      </mat-form-field>
+    </ng-container>
+  </form>
+</div>
+
+<div mat-dialog-actions class="stepper-buttons">
+  
+  <button mat-flat-button color="primary" class="save-button" (click)="onSave()" [disabled]="form.invalid">Save</button>
+  <mat-error *ngIf="form.invalid && form.touched" class="form-error">
+    Please check for form errors and fill out all required fields.
+  </mat-error>
+  <button mat-button class="cancel-button" (click)="onCancel()">Cancel</button>
+</div>
+
   `,
 })
 export class EditActionDialogComponent implements OnInit {
   form: FormGroup;
-
+  campaigns: any[] = [];
   constructor(
     public dialogRef: MatDialogRef<EditActionDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private service : AutomationService
   ) {}
 
   ngOnInit(): void {
     console.log("Data passed to dialog:", this.data);
+
+    this.getcampaigns()
 
     if (this.data.type === 'email') {
       this.form = this.fb.group({
@@ -524,6 +566,18 @@ export class EditActionDialogComponent implements OnInit {
         durationUnit: [this.parseDuration(this.data.duration || '0s').unit, Validators.required],
       });
     }
+  }
+  getcampaigns() {
+    this.service.getCampaigns().subscribe(
+        (response) => {
+          console.log("response",response);
+          
+            this.campaigns = response.data;
+        },
+        (error) => {
+            console.error('Error fetching campaigns:', error);
+        }
+    );
   }
 
   // Helper function to parse the duration from the format '6s', '2m', etc.

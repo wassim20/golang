@@ -55,9 +55,8 @@ export class TriggersComponent implements OnInit {
   AddedSubDateForm: FormGroup;
   companyID : any;
   ngOnInit() {
-    this.companyID = 'afa35ff6-4de5-4806-9a21-e0c2453d2834'; // Use dynamic companyID as needed
 
-    this.service.getMailingLists(this.companyID).subscribe({
+    this.service.getMailingLists().subscribe({
       next: (data) => {
 
         if (data && data.data && data.data.items) {

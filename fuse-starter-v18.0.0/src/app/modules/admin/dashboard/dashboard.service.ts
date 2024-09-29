@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from 'app/core/auth/auth.service';
 import { Observable } from 'rxjs';
@@ -94,60 +94,65 @@ export class DashboardService {
         limit: limit.toString()
       }
     });
-  }
-  updateChartData(){
+  } 
+  private fetchChartData(endpoint: string, startDate?: string, endDate?: string, campaignID?: string) {
     const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/barchartdata`, {
-      headers: this.getHeaders()
-    });
-  }
-  updatePieChartData(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/piechartdata`, {
-      headers: this.getHeaders()
-    });
-  }
-  updateRadialChartData(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/radialchartdata`, {
-      headers: this.getHeaders()
-    });
-  }
-  updateLineChartData(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/linechartdata`, {
-      headers: this.getHeaders()
-    });
-  }
-  updateScatterChartData(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/scatterchartdata`, {
-      headers: this.getHeaders()
-    });
-  }
-  barChartDataOpens(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/barchartopens`, {
-      headers: this.getHeaders()
-    });
-  }
-  barChartDataClicks(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/barchartclicks`, {
-      headers: this.getHeaders()
-    });
-  }
-  bubbleChartDataOpens(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/scatterchartopens`, {
-      headers: this.getHeaders()
-    });
-  }
-  bubbleChartDataClicks(){
-    const companyID = this.getCompanyID() || '';
-    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/scatterchartclicks`, {
-      headers: this.getHeaders()
+    let params = new HttpParams();
+
+    // Add start and end dates if provided
+    if (startDate) {
+      params = params.set('startDate', startDate);
+    }
+    if (endDate) {
+      params = params.set('endDate', endDate);
+    }
+    
+    // Add campaignID if provided
+    if (campaignID) {
+      params = params.set('campaignID', campaignID);
+    }
+
+    return this.http.get<any>(`${this.baseUrl}/${companyID}/logs/${endpoint}`, {
+      headers: this.getHeaders(),
+      params: params
     });
   }
 
+  updateChartData(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('barchartdata', startDate, endDate, campaignID);
+  }
+
+  updatePieChartData(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('piechartdata', startDate, endDate, campaignID);
+  }
+
+  updateRadialChartData(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('radialchartdata', startDate, endDate, campaignID);
+  }
+
+  updateLineChartData(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('linechartdata', startDate, endDate, campaignID);
+  }
+
+  updateScatterChartData(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('scatterchartdata', startDate, endDate, campaignID);
+  }
+
+  barChartDataOpens(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('barchartopens', startDate, endDate, campaignID);
+  }
+
+  barChartDataClicks(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('barchartclicks', startDate, endDate, campaignID);
+  }
+
+  bubbleChartDataOpens(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('scatterchartopens', startDate, endDate, campaignID);
+  }
+
+  bubbleChartDataClicks(startDate?: string, endDate?: string, campaignID?: string) {
+    return this.fetchChartData('scatterchartclicks', startDate, endDate, campaignID);
+  }
 }
+
+

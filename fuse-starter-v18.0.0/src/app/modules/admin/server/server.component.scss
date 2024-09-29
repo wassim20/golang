@@ -1,0 +1,274 @@
+/* Grid layout for campaign list */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: 48px auto 40px; /* Default layout for small screens */
+}
+
+@media (min-width: 640px) {
+  .inventory-grid {
+      grid-template-columns: 48px auto 112px 72px 40px; /* Adjusted for small screens */
+  }
+}
+
+@media (min-width: 768px) {
+  .inventory-grid {
+      grid-template-columns: 48px 112px auto 112px 72px 40px; /* Adjusted for medium screens */
+  }
+}
+
+@media (min-width: 1024px) {
+  .inventory-grid {
+      grid-template-columns: 48px 112px auto 112px 96px 96px 72px 40px; /* Adjusted for large screens */
+  }
+}
+
+/* General styling for form container */
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.border-b {
+  border-bottom: 1px solid #e5e7eb;
+}
+.flex {
+  display: flex;
+}
+.p-8 {
+  padding: 2rem;
+}
+.w-full {
+  width: 100%;
+}
+.mat-form-field {
+  margin-bottom: 1rem;
+}
+
+
+
+.preview-icon-container mat-icon {
+  font-size: 48px;
+  color: #3f51b5;
+}
+
+.form-content {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.form-group {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group-inline {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.half-width {
+  width: 48%;
+}
+
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.flash-message {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+
+
+
+.mat-form-field {
+  margin-bottom: 1rem;
+}
+
+
+
+.mat-icon {
+  vertical-align: middle;
+}
+
+
+
+
+
+
+
+.input:focus {
+  border: 1px solid var(--primary);
+}
+
+
+
+form {
+  max-width: 100%; /* Adjust based on your preference */
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+
+.save-button {
+  margin-right: auto; /* Align Save button to the left */
+}
+
+.cancel-button {
+  margin-left: auto; /* Align Cancel button to the right */
+}
+.form-error {
+  flex: 1;
+  color: red;
+  text-align: center; /* Center the error message between the buttons */
+  margin-bottom: 1rem;
+}
+.stepper-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Two columns for inputs */
+  gap: 1rem; /* Space between input fields */
+}
+
+.input-wrapper {
+  /* Optional: You can keep margin here or remove it, as gap handles spacing */
+  margin-bottom: 0; /* No extra margin needed */
+}
+
+.mat-form-field {
+  width: 100%; /* Make fields full width in grid */
+}
+
+
+
+
+.full-width {
+  grid-column: span 1;
+  margin-bottom: 1rem;
+}
+
+.double-full-width {
+  grid-column: span 2; /* Spans across two columns */
+  margin-bottom: 1rem;
+}
+
+.triple-full-width {
+  grid-column: span 3; /* Spans across three columns if needed */
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-weight: bold;
+  text-align: center; /* Align title to the right */
+}
+
+.server-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #f5f5f5;
+}
+
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between each input group */
+  padding: 20px;
+}
+
+.input-group {
+font-size: 0.75rem;
+width: 200px;
+position: relative;
+margin-bottom: 20px;
+--primary: #2196f3;
+}
+
+.label {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  color: #d4d4d4;
+  pointer-events: none;
+  transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input:focus {
+  border: 1px solid var(--primary);
+}
+
+
+.input:is(:focus, :valid) ~ label {
+  transform: translateY(-120%) scale(0.7);
+  background-color: #d4d4d4;
+  padding-inline: 0.3rem;
+  color: var(--primary);
+  border-radius: 20px;
+}
+
+form {
+  max-width: 100%; /* Adjust based on your preference */
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.stepper-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Space between Save and Cancel buttons */
+  padding: 1rem;
+  flex-wrap: wrap;
+}
+.save-button {
+  margin-right: auto; /* Align Save button to the left */
+}
+
+.cancel-button {
+  margin-left: auto; /* Align Cancel button to the right */
+}
+.form-error {
+  flex: 1;
+  color: red;
+  text-align: center; /* Center the error message between the buttons */
+  margin-bottom: 1rem;
+}
+
+.full-width {
+  grid-column: span 1;
+  margin-bottom: 1rem;
+}
+
+.double-full-width {
+  grid-column: span 2; /* Spans across two columns */
+  margin-bottom: 1rem;
+}
+
+.triple-full-width {
+  grid-column: span 3; /* Spans across three columns if needed */
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-weight: bold;
+  text-align: center; /* Align title to the right */
+}

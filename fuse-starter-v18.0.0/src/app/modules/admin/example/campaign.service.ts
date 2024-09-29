@@ -34,8 +34,8 @@ export class CampaignService {
         .set('Content-Type', 'application/json');
       return headers;
     }
-  getMailingLists(companyID: string, page: number = 1, limit: number = 10): Observable<any> {
-    companyID = this.getCompanyID() || '';
+  getMailingLists( page: number = 1, limit: number = 10): Observable<any> {
+    const companyID = this.getCompanyID() || '';
     return this.http.get<any>(`${this.baseUrl}/${companyID}/mailinglist`, {
       headers: this.getHeaders(),
       params: {
@@ -54,8 +54,8 @@ export class CampaignService {
       }
     });
   }
-  createCampaign(companyID: string, campaign: any): Observable<any> {
-    companyID = this.getCompanyID() || '';
+  createCampaign( campaign: any): Observable<any> {
+    const companyID = this.getCompanyID() || '';
     campaign.html = "<h1>Test</h1>";
     const headers = this.getHeaders();
     return this.http.post<any>(`${this.baseUrl}/${companyID}/campaigns/${campaign.mailingListId}`, campaign, {
@@ -80,15 +80,15 @@ export class CampaignService {
     return this.http.get<any[]>('/api/fromEmails');
   }
 
-  getCampaignByID(companyID: string, campaignID: string): Observable<any> {
-    companyID = this.getCompanyID() || '';
+  getCampaignByID( campaignID: string): Observable<any> {
+    const companyID = this.getCompanyID() || '';
     return this.http.get<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, {
       headers: this.getHeaders()
     });
   }
 
-  updateCampaign(companyID: string, campaignID: string, campaign: any): Observable<any> {
-    companyID = this.getCompanyID() || '';
+  updateCampaign( campaignID: string, campaign: any): Observable<any> {
+    const companyID = this.getCompanyID() || '';
     return this.http.put<any>(`${this.baseUrl}/${companyID}/campaigns/${campaignID}`, campaign, {
       headers: this.getHeaders()
     });

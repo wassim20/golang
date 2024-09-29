@@ -10,7 +10,7 @@ import { AutomationService } from './automation.service';
 import { MatProgressBar, MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
-import { FormBuilder, FormControlDirective, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormControlDirective, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { NgxMatDatetimePickerModule, NgxMatNativeDateModule, NgxMatTimepickerModule } from '@angular-material-components/datetime-picker';
 import { DateTimePickerModule } from '@syncfusion/ej2-angular-calendars';
@@ -46,9 +46,11 @@ export class AutomationComponent implements OnInit {
   showWorkflow: boolean = false;
   searchControl: any;
   automations : any[] = [];
+  filteredAutomations :any[] = [];
   selectedAutomation: any;
   selectedAutomationForm: FormGroup;
   flashMessage: string = '';
+  automationSearchControl = new FormControl('');
 
 
   constructor(
@@ -59,8 +61,22 @@ export class AutomationComponent implements OnInit {
     private dataTransferService: DataTransferService,
     private fb: FormBuilder,
     private _changeDetectorRef: ChangeDetectorRef
-  ) {}
-
+  ) {
+    this.automationSearchControl.valueChanges.subscribe(searchText => {
+      this.filterAutomations(searchText);
+    });
+  }
+  filterAutomations(searchText: string): void {
+    if (!searchText) {
+      // If no search text, reset the filtered automations to the full list
+      this.filteredAutomations = this.automations;
+    } else {
+      // Otherwise, filter the automations based on the search text
+      this.filteredAutomations = this.automations.filter(automation =>
+        automation.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+  }
  
 
   createWorkflow() {
@@ -113,6 +129,7 @@ export class AutomationComponent implements OnInit {
   fetchAutomations(): void {
     this.service.getAutomations().subscribe((data) => {
       this.automations = data.data.items;
+      this.filteredAutomations = this.automations;
     });
   }
 

@@ -757,6 +757,8 @@ func (db Database) updateChartData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -765,45 +767,61 @@ func (db Database) updateChartData(ctx *gin.Context) {
 			return
 		}
 	}
+
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var result struct {
 		OpenedCount  int64 `json:"opened"`
 		ClickedCount int64 `json:"clicked"`
 		ErrorCount   int64 `json:"error"`
 	}
 
-	// Make a query to get the count of opened, clicked, and error tracking logs of a specific campaign
-	if campaignID == "" {
+	// Create the query
+	query := db.DB.Model(&domains.TrackingLog{}).
+		Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
+			"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+			"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
+		Where("company_id = ?", companyID)
 
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
-				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
-				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
-			Where("company_id = ?", companyID).
-			Scan(&result).Error
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
 
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		// Parse the dates to ensure they are in the correct format
+		start, err := time.Parse(time.RFC3339, startDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-	} else {
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
-				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
-				"COUNT(CASE WHEN error IS NOT NULL AND error !='' THEN 1 ELSE NULL END) AS error_count").
-			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
-			Scan(&result).Error
-
-		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
 			return
 		}
 
+		end, err := time.Parse(time.RFC3339, endDate)
+		if err != nil {
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+			return
+		}
+
+		// Adjust the query to filter by date range
+		query = query.Where("created_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Execute the query
+	err := query.Scan(&result).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding all company data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
 	}
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
 }
+
 func (db Database) updatePieChartData(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
@@ -812,6 +830,8 @@ func (db Database) updatePieChartData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -821,43 +841,60 @@ func (db Database) updatePieChartData(ctx *gin.Context) {
 		}
 	}
 
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var result struct {
 		OpenedCount  int64 `json:"opened_count"`
 		ClickedCount int64 `json:"clicked_count"`
 		ErrorCount   int64 `json:"error_count"`
 	}
 
-	// Fetch logs and counts
-	if campaignID == "" {
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
-				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
-				"COUNT(CASE WHEN error IS NOT NULL AND error != '' THEN 1 ELSE NULL END) AS error_count").
-			Where("company_id = ?", companyID).
-			Scan(&result).Error
+	// Create the base query
+	query := db.DB.Model(&domains.TrackingLog{}).
+		Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
+			"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
+			"COUNT(CASE WHEN error IS NOT NULL AND error != '' THEN 1 ELSE NULL END) AS error_count").
+		Where("company_id = ?", companyID)
 
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
+
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		// Parse the dates to ensure they are in the correct format
+		start, err := time.Parse(time.RFC3339, startDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
 			return
 		}
-	} else {
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_count, "+
-				"COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE NULL END) AS clicked_count, "+
-				"COUNT(CASE WHEN error IS NOT NULL AND error != '' THEN 1 ELSE NULL END) AS error_count").
-			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
-			Scan(&result).Error
 
+		end, err := time.Parse(time.RFC3339, endDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
 			return
 		}
+
+		// Adjust the query to filter by date range
+		query = query.Where("created_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Execute the query
+	err := query.Scan(&result).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding all company data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
 	}
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, result)
 }
+
 func (db Database) updateRadialChartData(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
@@ -866,6 +903,8 @@ func (db Database) updateRadialChartData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -875,36 +914,53 @@ func (db Database) updateRadialChartData(ctx *gin.Context) {
 		}
 	}
 
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var result struct {
 		TotalLogs  int64 `json:"total_logs"`
 		OpenedLogs int64 `json:"opened_logs"`
 	}
 
-	// Fetch counts
-	if campaignID == "" {
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(*) AS total_logs, "+
-				"COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_logs").
-			Where("company_id = ?", companyID).
-			Scan(&result).Error
+	// Create the base query
+	query := db.DB.Model(&domains.TrackingLog{}).
+		Select("COUNT(*) AS total_logs, "+
+			"COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_logs").
+		Where("company_id = ?", companyID)
 
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
+
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		// Parse the dates to ensure they are in the correct format
+		start, err := time.Parse(time.RFC3339, startDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
 			return
 		}
-	} else {
-		err := db.DB.Model(&domains.TrackingLog{}).
-			Select("COUNT(*) AS total_logs, "+
-				"COUNT(CASE WHEN opened_at IS NOT NULL AND opened_at != '0001-01-01T00:00:00Z' THEN 1 ELSE NULL END) AS opened_logs").
-			Where("company_id = ? AND campaign_id = ?", companyID, campaignID).
-			Scan(&result).Error
 
+		end, err := time.Parse(time.RFC3339, endDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding all company data. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
 			return
 		}
+
+		// Adjust the query to filter by date range
+		query = query.Where("created_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Execute the query
+	err := query.Scan(&result).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding all company data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
 	}
 
 	// Calculate opened percentage
@@ -913,6 +969,7 @@ func (db Database) updateRadialChartData(ctx *gin.Context) {
 		openedPercentage = float64(result.OpenedLogs) / float64(result.TotalLogs) * 100
 	}
 
+	// Build and send the response
 	type Response struct {
 		OpenedPercentage float64 `json:"openedPercentage"`
 		OpenedLogs       int64   `json:"openedLogs"`
@@ -920,6 +977,7 @@ func (db Database) updateRadialChartData(ctx *gin.Context) {
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, Response{OpenedPercentage: openedPercentage, OpenedLogs: result.OpenedLogs})
 }
+
 func aggregateDataByDate(logs []domains.TrackingLog, key string) map[string]int {
 	if logs == nil {
 		logrus.Error("Logs data is null or undefined")
@@ -934,15 +992,15 @@ func aggregateDataByDate(logs []domains.TrackingLog, key string) map[string]int 
 		case "clickedAt":
 			timestamp = log.ClickedAt
 		}
-		if !timestamp.IsZero() && timestamp.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
+		if timestamp != nil && !timestamp.IsZero() && timestamp.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
 			date := timestamp.Format("2006-01-02")
 			aggregatedData[date]++
 		}
 	}
 	return aggregatedData
 }
-func (db Database) updateLineChartData(ctx *gin.Context) {
 
+func (db Database) updateLineChartData(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -950,6 +1008,8 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -958,36 +1018,60 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 			return
 		}
 	}
-	var openedData []domains.TrackingLog
-	var clickedData []domains.TrackingLog
+
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var logs []domains.TrackingLog
 
-	if campaignID == "" {
-		// Fetch logs and pass opened and clicked logs to the function aggregate simultaniously
+	// Create the base query
+	query := db.DB.Model(&domains.TrackingLog{}).
+		Where("company_id = ?", companyID)
 
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-
-	} else {
-		// Fetch logs and pass opened and clicked logs to the function aggregate simultaniously
-
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
 	}
+
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		// Parse the dates to ensure they are in the correct format
+		start, err := time.Parse(time.RFC3339, startDate)
+		if err != nil {
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
+			return
+		}
+
+		end, err := time.Parse(time.RFC3339, endDate)
+		if err != nil {
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+			return
+		}
+
+		// Adjust the query to filter by date range
+		query = query.Where("created_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Fetch logs based on the constructed query
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
 	// Separate logs into openedData and clickedData
+	var openedData []domains.TrackingLog
+	var clickedData []domains.TrackingLog
+
 	for _, log := range logs {
 		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
 			openedData = append(openedData, log)
 		}
-		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" { // Check if ClickedAt is not nil before using it
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T00:00:00Z" {
 			clickedData = append(clickedData, log)
 		}
 	}
@@ -998,6 +1082,7 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 	openedDataresult := aggregateDataByDate(openedData, "openedAt")
 	clickedDataresult := aggregateDataByDate(clickedData, "clickedAt")
 	totalData := len(logs)
+
 	// Combine all unique dates from both opened and clicked data
 	dateSet := make(map[string]struct{})
 	for date := range openedDataresult {
@@ -1036,10 +1121,9 @@ func (db Database) updateLineChartData(ctx *gin.Context) {
 
 	// Return the response
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
-
 }
-func (db Database) updateScatterChartData(ctx *gin.Context) {
 
+func (db Database) updateScatterChartData(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -1047,6 +1131,8 @@ func (db Database) updateScatterChartData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -1055,26 +1141,52 @@ func (db Database) updateScatterChartData(ctx *gin.Context) {
 			return
 		}
 	}
+
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var logs []domains.TrackingLog
 
-	// Fetch logs
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	// Create the base query
+	query := db.DB.Model(&domains.TrackingLog{}).
+		Where("company_id = ?", companyID)
+
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
 	}
 
-	//filter data
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		// Parse the dates to ensure they are in the correct format
+		start, err := time.Parse(time.RFC3339, startDate)
+		if err != nil {
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
+			return
+		}
+
+		end, err := time.Parse(time.RFC3339, endDate)
+		if err != nil {
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+			return
+		}
+
+		// Adjust the query to filter by date range
+		query = query.Where("created_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Fetch logs based on the constructed query
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	// Filter data
 	var openedData []map[string]interface{}
 	var clickedData []map[string]interface{}
 
@@ -1104,10 +1216,9 @@ func (db Database) updateScatterChartData(ctx *gin.Context) {
 	}
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
-
 }
-func (db Database) barChartDataOpens(ctx *gin.Context) {
 
+func (db Database) barChartDataOpens(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -1115,6 +1226,8 @@ func (db Database) barChartDataOpens(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -1123,38 +1236,64 @@ func (db Database) barChartDataOpens(ctx *gin.Context) {
 			return
 		}
 	}
+
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var logs []domains.TrackingLog
-	//fetch logs
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
+	query := db.DB.Where("company_id = ?", companyID)
+
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
+
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		start, err := time.Parse(time.RFC3339, startDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
 			return
 		}
 
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
+		end, err := time.Parse(time.RFC3339, endDate)
 		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
 			return
 		}
+
+		// Use the "opened_at" column to filter logs
+		query = query.Where("opened_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Fetch logs
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	if len(logs) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"data": []int{}}) // Return empty data if no logs found
+		return
 	}
 
 	opensPerDay := make([]int, 7)
 	for _, log := range logs {
-		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00Z" {
 			dayOfWeek := log.OpenedAt.Weekday() // Weekday() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
 			opensPerDay[dayOfWeek]++
 		}
 	}
 
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, opensPerDay)
-
 }
-func (db Database) barChartDataClicks(ctx *gin.Context) {
 
+func (db Database) barChartDataClicks(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -1162,6 +1301,8 @@ func (db Database) barChartDataClicks(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid companyID format"})
 		return
 	}
+
+	// Extract and validate campaignID
 	campaignID := ctx.Query("campaignID")
 	if campaignID != "" {
 		if _, err := uuid.Parse(campaignID); err != nil {
@@ -1170,35 +1311,63 @@ func (db Database) barChartDataClicks(ctx *gin.Context) {
 			return
 		}
 	}
+
+	// Extract start and end dates
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
 	var logs []domains.TrackingLog
-	//fetch logs
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	query := db.DB.Where("company_id = ?", companyID)
 
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	// Add filters based on campaignID
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
 	}
 
-	opensPerDay := make([]int, 7)
+	// Add date filters if start and end dates are provided
+	if startDate != "" && endDate != "" {
+		start, err := time.Parse(time.RFC3339, startDate)
+		if err != nil {
+			logrus.Errorf("Invalid start date format: %s, error: %v", startDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
+			return
+		}
+
+		end, err := time.Parse(time.RFC3339, endDate)
+		if err != nil {
+			logrus.Errorf("Invalid end date format: %s, error: %v", endDate, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+			return
+		}
+
+		// Use the "clicked_at" column to filter logs
+		query = query.Where("clicked_at BETWEEN ? AND ?", start, end)
+	}
+
+	// Fetch logs
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+
+	if len(logs) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"data": []int{}}) // Return empty data if no logs found
+		return
+	}
+
+	clicksPerDay := make([]int, 7)
 	for _, log := range logs {
-		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00Z" {
 			dayOfWeek := log.ClickedAt.Weekday() // Weekday() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
-			opensPerDay[dayOfWeek]++
+			clicksPerDay[dayOfWeek]++
 		}
 	}
 
-	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, opensPerDay)
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, clicksPerDay)
 }
+
 func (db Database) scatterChartDataOpens(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
@@ -1218,29 +1387,54 @@ func (db Database) scatterChartDataOpens(ctx *gin.Context) {
 		}
 	}
 
-	// Fetch logs
+	// Extract and validate date range
+	startDateStr := ctx.Query("startDate")
+	endDateStr := ctx.Query("endDate")
+	var startDate, endDate time.Time
+	var dateRangeErr error
+
+	if startDateStr != "" {
+		startDate, dateRangeErr = time.Parse(time.RFC3339, startDateStr)
+		if dateRangeErr != nil {
+			logrus.Errorf("Invalid startDate format: %s, error: %v", startDateStr, dateRangeErr)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid startDate format"})
+			return
+		}
+	}
+	if endDateStr != "" {
+		endDate, dateRangeErr = time.Parse(time.RFC3339, endDateStr)
+		if dateRangeErr != nil {
+			logrus.Errorf("Invalid endDate format: %s, error: %v", endDateStr, dateRangeErr)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid endDate format"})
+			return
+		}
+	}
+
+	// Fetch logs with optional date filtering
 	var logs []domains.TrackingLog
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	query := db.DB.Where("company_id = ?", companyID)
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
+	if !startDate.IsZero() {
+		query = query.Where("opened_at >= ?", startDate)
+	}
+	if !endDate.IsZero() {
+		query = query.Where("opened_at <= ?", endDate)
+	}
+
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
 	}
 
 	opensPerHourDay := make(map[string]int)
 
 	// Iterate through the logs and populate the map
 	for _, log := range logs {
-		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+		if log.OpenedAt != nil && log.OpenedAt.Format(time.RFC3339) != "0001-01-01T01:00:00Z" {
 			date := log.OpenedAt
 			hours := date.Hour()
 			if date.Minute() >= 30 {
@@ -1252,20 +1446,28 @@ func (db Database) scatterChartDataOpens(ctx *gin.Context) {
 			opensPerHourDay[key]++
 		}
 	}
-	var values []int
-	for _, value := range opensPerHourDay {
-		values = append(values, value)
-	}
-	max := findMax(values)
-	min := findMin(values)
-	midThreshold := min + (max-min)/3
-	largeThreshold := min + 2*(max-min)/3
-
 	type ScatterChartData struct {
 		X int `json:"x"`
 		Y int `json:"y"`
 		Z int `json:"z"`
 	}
+
+	var values []int
+	for _, value := range opensPerHourDay {
+		values = append(values, value)
+	}
+
+	// Check if values slice is empty before finding max/min
+	if len(values) == 0 {
+		logrus.Warn("No tracking logs found for the given date range")
+		ctx.JSON(http.StatusOK, gin.H{"data": []ScatterChartData{}}) // or any appropriate response
+		return
+	}
+
+	max := findMax(values)
+	min := findMin(values)
+	midThreshold := min + (max-min)/3
+	largeThreshold := min + 2*(max-min)/3
 
 	// Convert the map into a slice of structs for the scatter chart data with normalized Z values
 	var seriesData []ScatterChartData
@@ -1291,8 +1493,8 @@ func (db Database) scatterChartDataOpens(ctx *gin.Context) {
 
 	// Return the response
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, seriesData)
-
 }
+
 func (db Database) scatterChartDataClicks(ctx *gin.Context) {
 	// Extract and validate companyID
 	companyID := ctx.Param("companyID")
@@ -1312,29 +1514,54 @@ func (db Database) scatterChartDataClicks(ctx *gin.Context) {
 		}
 	}
 
-	// Fetch logs
+	// Extract and validate date range
+	startDateStr := ctx.Query("startDate")
+	endDateStr := ctx.Query("endDate")
+	var startDate, endDate time.Time
+	var dateRangeErr error
+
+	if startDateStr != "" {
+		startDate, dateRangeErr = time.Parse(time.RFC3339, startDateStr)
+		if dateRangeErr != nil {
+			logrus.Errorf("Invalid startDate format: %s, error: %v", startDateStr, dateRangeErr)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid startDate format"})
+			return
+		}
+	}
+	if endDateStr != "" {
+		endDate, dateRangeErr = time.Parse(time.RFC3339, endDateStr)
+		if dateRangeErr != nil {
+			logrus.Errorf("Invalid endDate format: %s, error: %v", endDateStr, dateRangeErr)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid endDate format"})
+			return
+		}
+	}
+
+	// Fetch logs with optional date filtering
 	var logs []domains.TrackingLog
-	if campaignID == "" {
-		err := db.DB.Where("company_id = ?", companyID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
-	} else {
-		err := db.DB.Where("company_id = ? AND campaign_id = ?", companyID, campaignID).Find(&logs).Error
-		if err != nil {
-			logrus.Error("Error occurred while finding logs. Error: ", err)
-			utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
-			return
-		}
+	query := db.DB.Where("company_id = ?", companyID)
+	if campaignID != "" {
+		query = query.Where("campaign_id = ?", campaignID)
+	}
+	if !startDate.IsZero() {
+		query = query.Where("clicked_at >= ?", startDate)
+	}
+	if !endDate.IsZero() {
+		query = query.Where("clicked_at <= ?", endDate)
+	}
+
+	err := query.Find(&logs).Error
+	if err != nil {
+		logrus.Error("Error occurred while finding logs. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
 	}
 
 	opensPerHourDay := make(map[string]int)
 
 	// Iterate through the logs and populate the map
 	for _, log := range logs {
-		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00+01:00" {
+		if log.ClickedAt != nil && log.ClickedAt.Format(time.RFC3339) != "0001-01-01T01:00:00Z" {
 			date := log.ClickedAt
 			hours := date.Hour()
 			if date.Minute() >= 30 {
@@ -1346,20 +1573,28 @@ func (db Database) scatterChartDataClicks(ctx *gin.Context) {
 			opensPerHourDay[key]++
 		}
 	}
-	var values []int
-	for _, value := range opensPerHourDay {
-		values = append(values, value)
-	}
-	max := findMax(values)
-	min := findMin(values)
-	midThreshold := min + (max-min)/3
-	largeThreshold := min + 2*(max-min)/3
-
 	type ScatterChartData struct {
 		X int `json:"x"`
 		Y int `json:"y"`
 		Z int `json:"z"`
 	}
+
+	var values []int
+	for _, value := range opensPerHourDay {
+		values = append(values, value)
+	}
+
+	// Check if values slice is empty before finding max/min
+	if len(values) == 0 {
+		logrus.Warn("No tracking logs found for the given date range")
+		ctx.JSON(http.StatusOK, gin.H{"data": []ScatterChartData{}}) // or any appropriate response
+		return
+	}
+
+	max := findMax(values)
+	min := findMin(values)
+	midThreshold := min + (max-min)/3
+	largeThreshold := min + 2*(max-min)/3
 
 	// Convert the map into a slice of structs for the scatter chart data with normalized Z values
 	var seriesData []ScatterChartData
@@ -1385,7 +1620,6 @@ func (db Database) scatterChartDataClicks(ctx *gin.Context) {
 
 	// Return the response
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, seriesData)
-
 }
 
 func findMax(values []int) int {

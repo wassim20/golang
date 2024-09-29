@@ -20,34 +20,35 @@
               <mat-spinner></mat-spinner>
             </div>
           </div>
-            <ng-template #content>
-           
 
-              
-              
-          <div *ngIf="logs!= null ;else nologs" >
+          <ng-template #content>
+            <div *ngIf="logs!= null ;else nologs" >
 
 
-            <div class="header">
-              <mat-form-field class="date-picker">
-                <mat-label>Période par défaut : dernier 28 jours</mat-label>
-                <mat-date-range-input [rangePicker]="picker">
-                  <input matStartDate placeholder="Start date">
-                  <input matEndDate placeholder="End date">
-                </mat-date-range-input>
-                <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
-                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                <mat-date-range-picker #picker></mat-date-range-picker>
+            <div class="header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <mat-form-field class="date-picker" appearance="fill" style="flex-grow: 1; margin-right: 16px;">
+                  <mat-label>Période par défaut : dernier 28 jours</mat-label>
+                  <mat-date-range-input [rangePicker]="picker" [formGroup]="dateRangeForm">
+                      <input matStartDate placeholder="Start date" formControlName="start" matInput>
+                      <input matEndDate placeholder="End date" formControlName="end" matInput>
+                  </mat-date-range-input>
+                  <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+                  <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                  <mat-date-range-picker #picker></mat-date-range-picker>
               </mat-form-field>
-              <button
-              mat-flat-button
-              [color]="'primary'"
-              >
-              <span class="ml-2 mr-1">Choose</span>
-          </button>
-          <button mat-flat-button color="primary" (click)="downloadPDF()">Download PDF</button>
-
+          
+               <!-- Choose Button -->
+               <button mat-raised-button color="primary" (click)="filterData()" style="margin-right: 8px;">Choose</button>
+          
+              <!-- Reset Button -->
+              <button mat-raised-button color="warn" (click)="resetDateRange()" style="margin-right: 8px;">Reset filter</button>
+          
+             
+              <!-- Download PDF Button -->
+              <button mat-raised-button color="accent" (click)="downloadPDF()">Download PDF</button>
             </div>
+          
+            
 <!-- cards  -->
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-4 md:grid-cols-3 lg:grid-cols-3 mb-12">
   <div 

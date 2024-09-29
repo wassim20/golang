@@ -24,6 +24,9 @@ func CampaignRouterInit(router *gin.RouterGroup, db *gorm.DB) {
 		// GET endpoint to retrieve all campaigns
 		campaigns.GET("", baseInstance.ReadAllCampaigns)
 
+		// GET endpoint to retrieve all campaigns no pagination
+		campaigns.GET("/all", baseInstance.ReadAllCampaignsNoPagination)
+
 		// GET endpoint to retrieve details of a specific campaign
 		campaigns.GET("/:ID", baseInstance.ReadCampaign)
 

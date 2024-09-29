@@ -75,7 +75,7 @@ func (db Database) CreateContact(ctx *gin.Context) {
 
 	if err := domains.Create(db.DB, dbContact); err != nil {
 		logrus.Error("Error saving data to the database. Error: ", err.Error())
-		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.EMAIL_REGEX, err)
 		return
 	}
 

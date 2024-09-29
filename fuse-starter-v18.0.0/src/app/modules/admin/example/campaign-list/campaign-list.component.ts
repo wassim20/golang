@@ -1,6 +1,6 @@
 import { AsyncPipe,CommonModule, CurrencyPipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,NgModule, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ElementRef, TemplateRef } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
 import { MatOptionModule, MatRippleModule } from '@angular/material/core';
@@ -32,7 +32,9 @@ import { MatDialog } from '@angular/material/dialog';
   standalone: true,
   templateUrl: './campaign-list.component.html',
   styleUrls: ['./campaign-list.component.css'],
-  imports        : [CommonModule,NgIf, MatProgressBarModule, MatFormFieldModule, MatIconModule, MatInputModule, FormsModule, ReactiveFormsModule, MatButtonModule, MatSortModule, NgFor, NgTemplateOutlet, MatPaginatorModule, NgClass, MatSlideToggleModule, MatSelectModule, MatOptionModule, MatCheckboxModule, MatRippleModule, AsyncPipe, CurrencyPipe,
+  imports        : [CommonModule,NgIf, MatProgressBarModule, MatFormFieldModule, MatIconModule, MatInputModule, 
+    FormsModule, ReactiveFormsModule, MatButtonModule, MatSortModule, NgFor, NgTemplateOutlet, MatPaginatorModule,
+     NgClass, MatSlideToggleModule, MatSelectModule, MatOptionModule, MatCheckboxModule, MatRippleModule, AsyncPipe, CurrencyPipe,
     NgxMatDatetimePickerModule,
     RouterModule,
       NgxMatTimepickerModule,
@@ -51,12 +53,31 @@ export class CampaignListComponent implements OnInit {
 
   imageSrc: string = null;
   campaigns: any;
+  filteredCampaigns
   selectedCampaign: any;
   flashMessage: 'success' | 'error' | null = null;
   selectedCampaignForm: UntypedFormGroup;
   isLoading: boolean = false; 
+  searchControl = new FormControl('');
 
-  constructor( private dialog: MatDialog,private router: Router,private sanitizer: DomSanitizer,private service: CampaignService, private _changeDetectorRef: ChangeDetectorRef,private fb : UntypedFormBuilder) { }
+  constructor( private dialog: MatDialog,private router: Router,private sanitizer: DomSanitizer,private service: CampaignService, private _changeDetectorRef: ChangeDetectorRef,private fb : UntypedFormBuilder) {
+    this.searchControl.valueChanges.subscribe(searchText => {
+      this.filterCampaigns(searchText);
+      console.log(searchText);
+      
+    });
+   }
+   filterCampaigns(searchText: string): void {
+    if (!searchText) {
+      // If no search text, reset the filtered campaigns to the full list
+      this.filteredCampaigns = this.campaigns;
+    } else {
+      // Otherwise, filter the campaigns based on the search text
+      this.filteredCampaigns = this.campaigns.filter(campaign =>
+        campaign.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+  }
 
   
 
@@ -85,7 +106,8 @@ ngOnInit(): void {
   this.service.getCampaigns(1, 10).subscribe({
     next: (data) => {
       if (data && data.data && data.data.items) {
-        this.campaigns = data.data.items; // Assign mailing list items
+        this.campaigns = data.data.items;
+        this.filteredCampaigns = this.campaigns;
         console.log(this.campaigns); // Correctly log the campaigns after they are fetched
       } else {
         console.error('Invalid response structure:', data);
@@ -157,42 +179,66 @@ deleteCampaign() {
 throw new Error('Method not implemented.');
 }
 updateSelectedCampaign() {
+  // Prepare the updated campaign object
+  const campaignIn = {
+    type: '',
+    name: '',
+    subject: '',
+    html: '',
+    fromEmail: '',
+    fromName: '',
+    deliveryAt: null, // This will be updated with the formatted date
+    trackOpen: false,
+    trackClick: false,
+    replyTo: ''
+  };
 
-  //update the selected campaign
- const campaignIn = {
-  type: '',
-  name: '',
-  subject: '',
-  html: '',
-  fromEmail: '',
-  fromName: '',
-  deliveryAt: null, // Assuming you will handle date as a string or null in TypeScript
-  trackOpen: false,
-  trackClick: false,
-  replyTo: ''
-};
-campaignIn.type = this.selectedCampaignForm.value.type;
-campaignIn.name = this.selectedCampaignForm.value.name;
-campaignIn.subject = this.selectedCampaignForm.value.subject;
+  // Assign values from form to the campaign object
+  campaignIn.type = this.selectedCampaignForm.value.type;
+  campaignIn.name = this.selectedCampaignForm.value.name;
+  campaignIn.subject = this.selectedCampaignForm.value.subject;
+  campaignIn.fromEmail = this.selectedCampaignForm.value.fromEmail;
+  campaignIn.fromName = this.selectedCampaignForm.value.fromName;
 
-campaignIn.fromEmail = this.selectedCampaignForm.value.fromEmail;
-campaignIn.fromName = this.selectedCampaignForm.value.fromName;
-campaignIn.deliveryAt = this.selectedCampaignForm.value.deliveryAt;
-campaignIn.trackOpen = this.selectedCampaignForm.value.trackOpen;
-campaignIn.trackClick = this.selectedCampaignForm.value.trackClick;
-campaignIn.replyTo = this.selectedCampaignForm.value.replyTo;
+  // Format the date to 'YYYY-MM-DD HH:mm:ss' or use Unix timestamp
+  campaignIn.deliveryAt = this.selectedCampaignForm.value.deliveryAt 
+    ? this.formatDate(this.selectedCampaignForm.value.deliveryAt) 
+    : null; // Ensure null is passed if the delivery date is not set
 
-console.log(campaignIn);
+  campaignIn.trackOpen = this.selectedCampaignForm.value.trackOpen;
+  campaignIn.trackClick = this.selectedCampaignForm.value.trackClick;
+  campaignIn.replyTo = this.selectedCampaignForm.value.replyTo;
 
+  console.log(campaignIn);
 
-
-  this.service.updateCampaign("afa35ff6-4de5-4806-9a21-e0c2453d2834", this.selectedCampaign.id, campaignIn)
-  .subscribe(() =>
-    {
+  // Update the campaign using the service
+  this.service.updateCampaign(this.selectedCampaign.id, campaignIn)
+    .subscribe(
+      () => {
         // Show a success message
         this.showFlashMessage('success');
-    });
+      },
+      error => {
+        console.error('Error updating campaign:', error);
+        // Handle errors here (e.g., display error message to the user)
+      }
+    );
 }
+// Utility function to format date to 'YYYY-MM-DDTHH:mm:ssZ' (RFC 3339 format)
+formatDate(date: any): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = ('0' + (d.getMonth() + 1)).slice(-2);
+  const day = ('0' + d.getDate()).slice(-2);
+  const hours = ('0' + d.getHours()).slice(-2);
+  const minutes = ('0' + d.getMinutes()).slice(-2);
+  const seconds = ('0' + d.getSeconds()).slice(-2);
+
+  // Return in 'YYYY-MM-DDTHH:mm:ssZ' format (UTC time)
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+}
+
+
 showFlashMessage(type: 'success' | 'error'): void
 {
     // Show the message
@@ -229,7 +275,7 @@ closeDetails(): void
     }
 
     // Get the Campaign by id
-    this.service.getCampaignByID("afa35ff6-4de5-4806-9a21-e0c2453d2834", CampaignId)
+    this.service.getCampaignByID( CampaignId)
         .subscribe((Campaign) => {
             // Set the selected Campaign
             this.selectedCampaign = Campaign.data;

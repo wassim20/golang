@@ -31,6 +31,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
             icon: 'mat_solid:email',
             link: '/mailinglist'
         },
+        //server
+        {
+            id: 'server',
+            title: 'Server',
+            type: 'basic',
+            icon: 'heroicons_solid:server-stack',
+            link: '/server'
+        },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
     {

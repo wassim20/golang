@@ -33,6 +33,11 @@ func ReadAllPaginationFromCompany(db *gorm.DB, model []domains.Campaign, company
 		Find(&model).Error
 	return model, err
 }
+func ReadAllFromCompany(db *gorm.DB, model []domains.Campaign, companyID uuid.UUID) ([]domains.Campaign, error) {
+	err := db.Joins("JOIN mailinglists ON mailinglists.id = campaigns.mailinglist_id").
+		Where("mailinglists.company_id = ?", companyID).Find(&model).Error
+	return model, err
+}
 
 // ReadByID retrieves a campaign by its unique identifier.
 func ReadByID(db *gorm.DB, model domains.Campaign, id uuid.UUID) (domains.Campaign, error) {

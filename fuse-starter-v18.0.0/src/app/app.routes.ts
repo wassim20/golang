@@ -84,6 +84,7 @@ export const appRoutes: Route[] = [
             {path:'dashboard/:campaignID', loadChildren: () => import('app/modules/admin/dashboard/campaign-dashboard/campaign-dashboard.routes')},
             {path:'mailinglist', loadChildren: () => import('app/modules/admin/mailinglist/mailinglist.routes')},
            { path: 'settings', loadChildren: () => import('app/modules/admin/settings/settings.routes') },
+           {path:'server', loadChildren: () => import('app/modules/admin/server/server.routes')},
         ]
         
         

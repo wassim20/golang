@@ -1,0 +1,48 @@
+<h1 mat-dialog-title class="title">Create Server</h1>
+<form [formGroup]="serverForm" (ngSubmit)="onSubmit()" class="stepper-form">
+  <div mat-dialog-content class="grid-container">
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Server Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="serverForm.get('name')?.invalid">Server Name is required</mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Host</mat-label>
+      <input matInput formControlName="host" required>
+      <mat-error *ngIf="serverForm.get('host')?.invalid">Host is required</mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Port</mat-label>
+      <input matInput formControlName="port" type="number" required>
+      <mat-error *ngIf="serverForm.get('port')?.invalid">Port is required</mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Type</mat-label>
+      <input matInput formControlName="type" required>
+      <mat-error *ngIf="serverForm.get('type')?.invalid">Type is required</mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Username</mat-label>
+      <input matInput formControlName="username" required>
+      <mat-error *ngIf="serverForm.get('username')?.invalid">Username is required</mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Password</mat-label>
+      <input matInput formControlName="password" type="password" required>
+      <mat-error *ngIf="serverForm.get('password')?.invalid">Password is required</mat-error>
+    </mat-form-field>
+  </div>
+  <div mat-dialog-actions class="form-footer">
+    <button mat-button class="cancel-button" (click)="onCancel()">Cancel</button>
+    <mat-error *ngIf="serverForm.invalid && serverForm.touched" class="form-error">
+      Please check for form errors and fill out all required fields.
+    </mat-error>
+    <button mat-flat-button color="primary" type="submit" class="save-button" [disabled]="serverForm.invalid">Create</button>
+  </div>
+</form>

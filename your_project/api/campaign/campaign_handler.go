@@ -111,12 +111,12 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 		return
 	}
 
-	// // Check if the employee belongs to the specified company
-	// if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
-	// 	logrus.Error("Error verifying employee belonging. Error: ", err.Error())
-	// 	utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
-	// 	return
-	// }
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
 
 	// Parse and validate the page from the request parameter
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", strconv.Itoa(constants.DEFAULT_PAGE_PAGINATION)))
@@ -192,6 +192,57 @@ func (db Database) ReadAllCampaigns(ctx *gin.Context) {
 
 	// Respond with success
 	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, response)
+}
+
+func (db Database) ReadAllCampaignsNoPagination(ctx *gin.Context) {
+
+	session := utils.ExtractJWTValues(ctx)
+
+	companyID, err := uuid.Parse(ctx.Param("companyID"))
+	if err != nil {
+		logrus.Error("Error mapping request from frontend. Invalid UUID format. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	// Check if the employee belongs to the specified company
+	if err := domains.CheckEmployeeBelonging(db.DB, companyID, session.UserID, session.CompanyID); err != nil {
+		logrus.Error("Error verifying employee belonging. Error: ", err.Error())
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.INVALID_REQUEST, utils.Null())
+		return
+	}
+
+	campaigns, err := ReadAllFromCompany(db.DB, []domains.Campaign{}, companyID)
+	if err != nil {
+		logrus.Error("Error occurred while finding all campaign data. Error: ", err)
+		utils.BuildErrorResponse(ctx, http.StatusBadRequest, constants.UNKNOWN_ERROR, utils.Null())
+		return
+	}
+	listCampaigns := []CampaignsDetails{}
+	for _, campaign := range campaigns {
+		listCampaigns = append(listCampaigns, CampaignsDetails{
+			ID:            campaign.ID,
+			MailingListID: campaign.MailingListID,
+			Name:          campaign.Name,
+			Type:          campaign.Type,
+			Subject:       campaign.Subject,
+			HTML:          campaign.HTML,
+			FromEmail:     campaign.FromEmail,
+			FromName:      campaign.FromName,
+			ReplyTo:       campaign.ReplyTo,
+			Status:        campaign.Status,
+			SignDKIM:      campaign.SignDKIM,
+			TrackOpen:     campaign.TrackOpen,
+			TrackClick:    campaign.TrackClick,
+			Resend:        campaign.Resend,
+			CustomOrder:   campaign.CustomOrder,
+			RunAt:         campaign.RunAt,
+			DeliveryAt:    campaign.DeliveryAt,
+		})
+	}
+
+	utils.BuildResponse(ctx, http.StatusOK, constants.SUCCESS, listCampaigns)
+
 }
 
 // @Summary      Get Campaign

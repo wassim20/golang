@@ -91,14 +91,13 @@ export class ExampleComponent implements OnInit
       replyTo: ['', [Validators.required, Validators.email]],
       });
     this.additionalCampaignForm = this.fb.group({
-      trackOpen: [false],
-      trackClick: [false],
+      trackOpen: [false, Validators.required], // Default value false
+  trackClick: [false, Validators.required], // Default value false
       resend: [false],
-      runAt: [null, Validators.required],
       deliveryAt: [null, Validators.required],
     });
   
-    this.service.getMailingLists(this.companyID).subscribe({
+    this.service.getMailingLists().subscribe({
       next: (data) => {
 
         if (data && data.data && data.data.items) {
@@ -136,7 +135,7 @@ export class ExampleComponent implements OnInit
       console.log('exportHtml', html);
   
       // Fetch campaign data and update in a single request sequence
-      this.service.getCampaignByID(this.companyID, this.campaingcreatedID)
+      this.service.getCampaignByID( this.campaingcreatedID)
         .pipe(
           // Use switchMap to chain an update request based on successful fetch
           switchMap((response) => {
@@ -157,7 +156,7 @@ export class ExampleComponent implements OnInit
             console.log('Campaign data:', this.campaign);
   
             // Update the campaign with the fetched data and extracted HTML
-            return this.service.updateCampaign(this.companyID, this.campaingcreatedID, this.campaignIn);
+            return this.service.updateCampaign( this.campaingcreatedID, this.campaignIn);
           })
         )
         .subscribe(
@@ -192,51 +191,72 @@ export class ExampleComponent implements OnInit
   }
   
   onSubmit() {
-  if (this.campaignForm.valid && this.firstFormGroup.valid) {
-    this.newcampain = {
-      mailingListId: this.firstFormGroup.value.mailingList,
-      type: this.campaignForm.value.type,
-      name: this.campaignForm.value.name,
-      subject: this.campaignForm.value.subject,
-      fromEmail: this.campaignForm.value.fromEmail,
-      fromName: this.campaignForm.value.fromName,
-      deliveryAt: this.campaignForm.value.deliveryAt,
-      trackOpen: this.campaignForm.value.trackOpen,
-      trackClick: this.campaignForm.value.trackClick,
-      replyTo: this.campaignForm.value.replyTo,
-      resend: this.campaignForm.value.resend,
-      runAt: this.campaignForm.value.runAt,
-    };
-    
-    this.service.createCampaign('b27ee77c-9043-4000-b7e0-f1a920da2c2f', this.newcampain).subscribe(
-      response => {
-        console.log('Campaign created successfully!', response.data.ID);
-        this.campaigncreated = true;
-        this.campaingcreatedID = response.data.ID;
-        // Handle successful response (e.g., display success message)
-      },
-      error => {
-        console.error('Error creating campaign:', error);
-        // Handle errors here (e.g., display error message to the user)
-      }
-    );
-    // Handle form submission, e.g., send data to the backend
-  } else {
-    console.log('Form is not valid');
-    // Log invalid fields for campaignForm
-    Object.keys(this.campaignForm.controls).forEach(key => {
-      if (this.campaignForm.controls[key].invalid) {
-        console.log(`Invalid Field in campaignForm: ${key}`);
-      }
-    });
-    // Log invalid fields for firstFormGroup
-    Object.keys(this.firstFormGroup.controls).forEach(key => {
-      if (this.firstFormGroup.controls[key].invalid) {
-        console.log(`Invalid Field in firstFormGroup: ${key}`);
-      }
-    });
+    if (this.campaignForm.valid && this.firstFormGroup.valid) {
+      // Convert to 'YYYY-MM-DD HH:mm:ss' format
+      const deliveryAt = this.formatDate(this.campaignForm.value.deliveryAt);
+      //const runAt = this.formatDate(this.campaignForm.value.runAt);
+  
+      // OR, if you want to use Unix timestamps
+      // const deliveryAt = Math.floor(new Date(this.campaignForm.value.deliveryAt).getTime() / 1000);
+      // const runAt = Math.floor(new Date(this.campaignForm.value.runAt).getTime() / 1000);
+  
+      this.newcampain = {
+        mailingListId: this.firstFormGroup.value.mailingList,
+        type: this.campaignForm.value.type,
+        name: this.campaignForm.value.name,
+        subject: this.campaignForm.value.subject,
+        fromEmail: this.campaignForm.value.fromEmail,
+        fromName: this.campaignForm.value.fromName,
+        deliveryAt: deliveryAt, // Formatted date
+        trackOpen: !!this.campaignForm.value.trackOpen, // Ensure boolean
+        trackClick: !!this.campaignForm.value.trackClick, // Ensure boolean
+        replyTo: this.campaignForm.value.replyTo,
+        resend: this.campaignForm.value.resend
+      };
+      
+      this.service.createCampaign(this.newcampain).subscribe(
+        response => {
+          console.log('Campaign created successfully!', response.data.ID);
+          this.campaigncreated = true;
+          this.campaingcreatedID = response.data.ID;
+          // Handle successful response (e.g., display success message)
+        },
+        error => {
+          console.error('Error creating campaign:', error);
+          // Handle errors here (e.g., display error message to the user)
+        }
+      );
+      // Handle form submission, e.g., send data to the backend
+    } else {
+      console.log('Form is not valid');
+      // Log invalid fields for campaignForm
+      Object.keys(this.campaignForm.controls).forEach(key => {
+        if (this.campaignForm.controls[key].invalid) {
+          console.log(`Invalid Field in campaignForm: ${key}`);
+        }
+      });
+      // Log invalid fields for firstFormGroup
+      Object.keys(this.firstFormGroup.controls).forEach(key => {
+        if (this.firstFormGroup.controls[key].invalid) {
+          console.log(`Invalid Field in firstFormGroup: ${key}`);
+        }
+      });
+    }
   }
-}
+  
+  // Utility function to format date to 'YYYY-MM-DD HH:mm:ss'
+  formatDate(date: any): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    const hours = ('0' + d.getHours()).slice(-2);
+    const minutes = ('0' + d.getMinutes()).slice(-2);
+    const seconds = ('0' + d.getSeconds()).slice(-2);
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+  
 
 
    

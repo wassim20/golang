@@ -237,3 +237,75 @@ h2 {
   text-align: center; 
   margin-bottom: 1rem;
 }
+.error-snackbar {
+  background-color: #f44336; /* Red for error */
+  color: white;
+}
+.custom-snackbar {
+  background-color: #4caf50; /* Green background for success */
+  color: #fff;               /* White text */
+  font-weight: bold;
+  padding: 16px;
+}
+
+
+///////////////////////////////////edit component //////////////////////////////////////////////////////
+.edit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mat-form-field {
+  width: 100%;
+}
+
+.title {
+  font-weight: bold;
+  text-align: center; /* Align title to the right */
+}
+
+.stepper-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Space between Save and Cancel buttons */
+  padding: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-error {
+  flex: 1;
+  color: red;
+  text-align: center; /* Center the error message between the buttons */
+  margin-bottom: 1rem;
+}
+
+.save-button {
+  margin-right: auto; /* Align Save button to the left */
+}
+
+.cancel-button {
+  margin-left: auto; /* Align Cancel button to the right */
+}
+
+.centered-input input {
+  text-align: center; /* Center the number inside the input field */
+}
+
+@media (max-width: 600px) {
+  .edit-container {
+    padding: 0 1rem;
+  }
+  
+  .stepper-buttons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .save-button,
+  .cancel-button {
+    width: 100%;
+    text-align: center;
+  }
+}

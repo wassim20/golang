@@ -30,7 +30,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -89,6 +89,20 @@ export type ScatterChartOptions = {
   tooltip: ApexTooltip;
   title: ApexTitleSubtitle;
 };
+export type BubbleChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  plotOptions : ApexPlotOptions;
+  fill :ApexFill;
+  theme: ApexTheme;
+  markers: ApexMarkers;
+  dataLabels: ApexDataLabels;
+  grid: ApexGrid;
+  tooltip: ApexTooltip;
+  title: ApexTitleSubtitle;
+};
 
 export type PieChartOptions = {
   series: ApexNonAxisChartSeries;
@@ -97,6 +111,7 @@ export type PieChartOptions = {
   responsive: ApexResponsive[];
   title: ApexTitleSubtitle;
 };
+
 
 @Component({
   selector: 'campaign-dashboard',
@@ -116,8 +131,29 @@ export class CampaignDashboardComponent {
   public lineChartOptions: Partial<LineChartOptions>;
   public radialChartOptions: Partial<RadialChartOptions>;
   public scatterChartOptions: Partial<ScatterChartOptions>;
-  public scatterChartOptionsOpen: Partial<ScatterChartOptions>;
-  public scatterChartOptionsClick: Partial<ScatterChartOptions>;
+  public bubbleChartOptionsOpen: Partial<BubbleChartOptions>;
+  public bubbleChartOptioncClick: Partial<BubbleChartOptions>;
+ 
+  @ViewChild('barChartOpen') barChartOpen: ChartComponent;
+  @ViewChild('barChartClick') barChartClick: ChartComponent;
+  @ViewChild('pieChart') pieChart: ChartComponent;
+  @ViewChild('radialChart') radialChart: ChartComponent;
+  @ViewChild('lineChart') lineChart: ChartComponent;
+  @ViewChild('scatterChart') scatterChart: ChartComponent;
+  @ViewChild('bubbleChartOpen') bubbleChartOpen: ChartComponent;
+  @ViewChild('bubbleChartClick') bubbleChartClick: ChartComponent;
+
+  chartsLoaded: boolean = false;
+  barChartInstance: ApexCharts;
+  pieChartInstance: ApexCharts;
+  lineChartInstance: ApexCharts;
+  radialChartInstance: ApexCharts;
+  scatterChartInstance: ApexCharts;
+  bubbleChartInstance: ApexCharts;
+  barChartClickInstance: ApexCharts;
+  barChartOpenInstance: ApexCharts;
+  bubbleChartOpenInstance: ApexCharts;
+  bubbleChartClickInstance: ApexCharts;
 
   campaigns: any;
   campaignId: any = null;
@@ -126,572 +162,631 @@ export class CampaignDashboardComponent {
   logs: any;
   reorder : boolean = true;
   stat_type: any = "all";
+  dateRangeForm: FormGroup;
+  filteredData: any[] = []; // Array to store filtered data
   isLoading: boolean = false;
   selectedStat: string = 'all';
  
 
-   constructor(private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router,private route:ActivatedRoute) {  
+   constructor(private fb: FormBuilder,private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router,private route:ActivatedRoute) {  
+    this.dateRangeForm = this.fb.group({
+      start: [null],
+      end: [null]
+    });
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras.state as { campaignId: string };
     this.campaignId = state?.campaignId;
+ // Initialize bar chart options
+ this.barChartOptions = {
+  series: [
+    {
+      name: "Opened",
+      data: [0]
+    },
+    {
+      name: "Clicked",
+      data: [0]
+    },
+    {
+      name: "Errors",
+      data: [0]
+    }
+  ],
+  chart: {
+    type: "bar",
+    height: 350
+  },
+  plotOptions: {
+    bar: {
+      horizontal: true
+    }
+  },
+  dataLabels: {
+    enabled: false
+  },
+  xaxis: {
+    categories: ["Opened", "Clicked", "Errors"]
+  }
+};
+this.barChartInstance = new ApexCharts(document.querySelector("#barChart"), this.barChartOptions);
 
-    // Initialize bar chart options
-    this.barChartOptions = {
-      series: [
-        {
-          name: "Opened",
-          data: [0]
-        },
-        {
-          name: "Clicked",
-          data: [0]
-        },
-        {
-          name: "Errors",
-          data: [0]
-        }
-      ],
-      chart: {
-        type: "bar",
-        height: 350
-      },
-      plotOptions: {
-        bar: {
-          horizontal: true
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      xaxis: {
-        categories: ["Opened", "Clicked", "Errors"]
-      }
-    };
 
-    // Initialize pie chart options
-    this.pieChartOptions = {
-      series: [0, 0],
+// Initialize pie chart options
+this.pieChartOptions = {
+  series: [0, 0],
+  chart: {
+    width: 500,
+    type: "pie"
+  },
+  labels: ["Opened Emails", "Clicked Emails", "Total Contacts"],
+  responsive: [{
+    breakpoint: 480,
+    options: {
       chart: {
-        width: 500,
-        type: "pie"
-      },
-      labels: ["Total Contacts ;", "Opened Emails", "Clicked Emails"],
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: {
-            width: 300
-          },
-          legend: {
-            position: "bottom"
-          }
-        }
-      }]
-    };
-
-    this.lineChartOptions = {
-      series: [
-        {
-          name: "Opened Emails",
-          data: []
-        },
-        {
-          name: "Clicked Emails",
-          data: []
-        }
-      ],
-      chart: {
-        height: 350,
-        type: "line",
-        dropShadow: {
-          enabled: true,
-          color: "#000",
-          top: 18,
-          left: 7,
-          blur: 10,
-          opacity: 0.2
-        },
-        toolbar: {
-          show: false
-        }
-      },
-      colors: ["#77B6EA", "#545454"],
-      dataLabels: {
-        enabled: true
-      },
-      stroke: {
-        curve: "smooth"
-      },
-      title: {
-        text: "Email Campaign Tracking",
-        align: "left"
-      },
-      grid: {
-        borderColor: "#e7e7e7",
-        row: {
-          colors: ["#f3f3f3", "transparent"], // takes an array which will be repeated on columns
-          opacity: 0.5
-        }
-      },
-      markers: {
-        size: 1
-      },
-      xaxis: {
-        categories: [],
-        title: {
-          text: "Date"
-        }
-      },
-      yaxis: {
-        title: {
-          text: "Count"
-        },
-        min: 0,
-        max: 10
+        width: 300
       },
       legend: {
-        position: "top",
-        horizontalAlign: "right",
-        floating: true,
-        offsetY: -25,
-        offsetX: -5
+        position: "bottom"
       }
-    };
+    }
+  }]
+};
 
-    this.radialChartOptions = {
-      series: [0],
-      chart: {
-        type: "radialBar",
-        offsetY: -20
-      },
-      plotOptions: {
-        radialBar: {
-          startAngle: -90,
-          endAngle: 90,
-          track: {
-            background: "#e7e7e7",
-            strokeWidth: "97%",
-            margin: 5, // margin is in pixels
-            dropShadow: {
-              enabled: true,
-              top: 2,
-              left: 0,
-              opacity: 0.31,
-              blur: 2
-            }
-          },
-          dataLabels: {
-            name: {
-              show: false
-            },
-            value: {
-              offsetY: -2,
-              fontSize: "22px",
-              formatter: function(val) {
-                return val.toFixed(2) + "%";
-              }
-            }
-          }
+this.pieChartInstance = new ApexCharts(document.querySelector("#pieChart"), this.pieChartOptions);
+
+this.lineChartOptions = {
+  series: [
+    {
+      name: "Opened Emails",
+      data: []
+    },
+    {
+      name: "Clicked Emails",
+      data: []
+    }
+  ],
+  chart: {
+    height: 350,
+    type: "line",
+    dropShadow: {
+      enabled: true,
+      color: "#000",
+      top: 18,
+      left: 7,
+      blur: 10,
+      opacity: 0.2
+    },
+    toolbar: {
+      show: false
+    }
+  },
+  colors: ["#77B6EA", "#545454"],
+  dataLabels: {
+    enabled: true
+  },
+  stroke: {
+    curve: "smooth"
+  },
+  title: {
+    text: "Email Campaign Tracking",
+    align: "left"
+  },
+  grid: {
+    borderColor: "#e7e7e7",
+    row: {
+      colors: ["#f3f3f3", "transparent"], // takes an array which will be repeated on columns
+      opacity: 0.5
+    }
+  },
+  markers: {
+    size: 1
+  },
+  xaxis: {
+    categories: [],
+    title: {
+      text: "Date"
+    }
+  },
+  yaxis: {
+    title: {
+      text: "Count"
+    },
+    min: 0,
+    max: 10
+  },
+  legend: {
+    position: "top",
+    horizontalAlign: "right",
+    floating: true,
+    offsetY: -25,
+    offsetX: -5
+  }
+};
+this.lineChartInstance = new ApexCharts(document.querySelector("#lineChart"), this.lineChartOptions);
+
+this.radialChartOptions = {
+  series: [0],
+  chart: {
+    type: "radialBar",
+    offsetY: -20
+  },
+  plotOptions: {
+    radialBar: {
+      startAngle: -90,
+      endAngle: 90,
+      track: {
+        background: "#e7e7e7",
+        strokeWidth: "97%",
+        margin: 5, // margin is in pixels
+        dropShadow: {
+          enabled: true,
+          top: 2,
+          left: 0,
+          opacity: 0.31,
+          blur: 2
         }
       },
+      dataLabels: {
+        name: {
+          show: false
+        },
+        value: {
+          offsetY: -2,
+          fontSize: "22px",
+          formatter: function(val) {
+            return val.toFixed(2) + "%";
+          }
+        }
+      }
+    }
+  },
+  fill: {
+    type: "gradient",
+    gradient: {
+      shade: "light",
+      shadeIntensity: 0.4,
+      inverseColors: false,
+      opacityFrom: 1,
+      opacityTo: 1,
+      stops: [0, 50, 53, 91]
+    }
+  },
+  labels: ["Filled"],
+  
+ 
+};
+this.radialChartInstance = new ApexCharts(document.querySelector("#radialChart"), this.radialChartOptions);
+
+this.scatterChartOptions = {
+  series: [
+    {
+      name: "Opened Emails",
+      data: []
+    },
+    // {
+    //   name: "Clicked Emails",
+    //   data: []
+    // }
+  ],
+  chart: {
+    height: 350,
+    type: "scatter",
+    zoom: {
+      type: "xy"
+    }
+  },
+  dataLabels: {
+    enabled: false
+  },
+  grid: {
+    xaxis: {
+      lines: {
+        show: true
+      }
+    },
+    yaxis: {
+      lines: {
+        show: true
+      }
+    }
+  },
+  xaxis: {
+    type: "datetime",
+    title: {
+      text: "Date"
+    },
+    labels: {
+      formatter: function (val) {
+        const date = new Date(val);
+        return date.toLocaleDateString(); // Format the date as a readable string
+      }
+    },
+    tickAmount: 10,
+    max: undefined,
+    min: undefined
+  },
+  yaxis: {
+    title: {
+      text: "Click Count"
+    },
+    
+  },
+  tooltip: {
+    enabled: true,
+    x: {
+      format: 'dd MMM yyyy' // Format the tooltip date
+    }
+  },
+};
+this.scatterChartInstance = new ApexCharts(document.querySelector("#scatterChart"), this.scatterChartOptions);
+//initialize bar chaart options for open per day of the week
+this.barChartOptionsOpen = {
+  series: [
+    {
+      name: "Opened",
+      data: []
+    },
+  ],
+  chart: {
+    height: 350,
+    type: "bar"
+  },
+  plotOptions: {
+    bar: {
+      borderRadius :15,
+      borderRadiusApplication: "end",
+      dataLabels: {
+        position: "top" // top, center, bottom
+      }
+    }
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: function(val) {
+      return val.toString();
+    },
+    offsetY: -20,
+    style: {
+      fontSize: "12px",
+      colors: ["#304758"]
+    }
+  },
+  xaxis: {
+    categories: [//days of the week
+      "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+      ],
+    position: "top",
+    labels: {
+      offsetY: -18
+      
+    },
+    axisBorder: {
+      show: false
+    },
+    axisTicks: {
+      show: false
+    },
+    
+    crosshairs: {
       fill: {
         type: "gradient",
         gradient: {
-          shade: "light",
-          shadeIntensity: 0.4,
-          inverseColors: false,
-          opacityFrom: 1,
-          opacityTo: 1,
-          stops: [0, 50, 53, 91]
+          colorFrom: "#D8E3F0",
+          colorTo: "#BED1E6",
+          stops: [0, 100],
+          opacityFrom: 0.4,
+          opacityTo: 0.5
         }
-      },
-      labels: ["Filled"],
-      
-     
-    };
+      }
+    },
+    tooltip: {
+      enabled: true,
+      offsetY: -35
+    }
+  },
+  
+  yaxis: {
+    axisBorder: {
+      show: false
+    },
+    axisTicks: {
+      show: false
+    },
+    labels: {
+      show: false,
+      formatter: function(val) {
+        return val.toString();
+      }
+    }
+  },
+  title: {
+    text: "Opens per Day",
+    floating: false,
+    offsetY: 325,
+    align: "center",
+    style: {
+      color: "#444"
+    }
+  }      
+};
+this.barChartOpenInstance = new ApexCharts(document.querySelector("#barChartOpen"), this.barChartOptionsOpen);
+//initialize bar chaart options for click per day of the week
+this.barChartOptionsClick = {
+  series: [
+    {
+      name: "Clicked",
+      data: []
+    },
+  ],
+  chart: {
+    height: 350,
+    type: "bar"
+  },
+  plotOptions: {
+    bar: {
+      borderRadius :15,
+      borderRadiusApplication: "end",
+      dataLabels: {
+        position: "top" // top, center, bottom
+      }
+    }
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: function(val) {
+      return val.toString();
+    },
+    offsetY: -20,
+    style: {
+      fontSize: "12px",
+      colors: ["#304758"]
+    }
+  },
+  xaxis: {
+    categories: [//days of the week
+      "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+      ],
+    position: "top",
+    labels: {
+      offsetY: -18
+    },
+    axisBorder: {
+      show: false
+    },
+    axisTicks: {
+      show: false
+    },
+    crosshairs: {
+      fill: {
+        type: "gradient",
+        gradient: {
+          colorFrom: "#D8E3F0",
+          colorTo: "#BED1E6",
+          stops: [0, 100],
+          opacityFrom: 0.4,
+          opacityTo: 0.5
+        }
+      }
+    },
+    tooltip: {
+      enabled: true,
+      offsetY: -35
+    }
+  },
+  
+  yaxis: {
+    axisBorder: {
+      show: false
+    },
+    axisTicks: {
+      show: false
+    },
+    labels: {
+      show: false,
+      formatter: function(val) {
+        return val.toString();
+      }
+    }
+  },
+  title: {
+    text: "clicks per Day",
+    floating: false,
+    offsetY: 325,
+    align: "center",
+    style: {
+      color: "#444"
+    }
+  }       
+};
+this.barChartClickInstance = new ApexCharts(document.querySelector("#barChartClick"), this.barChartOptionsClick);
 
-    this.scatterChartOptions = {
-      series: [
-        {
-          name: "Opened Emails",
-          data: []
-        },
-        // {
-        //   name: "Clicked Emails",
-        //   data: []
-        // }
-      ],
-      chart: {
-        height: 350,
-        type: "scatter",
-        zoom: {
-          type: "xy"
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      grid: {
-        xaxis: {
-          lines: {
-            show: true
-          }
-        },
-        yaxis: {
-          lines: {
-            show: true
-          }
-        }
-      },
-      xaxis: {
-        type: "datetime",
-        title: {
-          text: "Date"
-        },
-        labels: {
-          formatter: function (val) {
-            const date = new Date(val);
-            return date.toLocaleDateString(); // Format the date as a readable string
-          }
-        },
-        tickAmount: 10,
-        max: undefined,
-        min: undefined
-      },
-      yaxis: {
-        title: {
-          text: "Click Count"
-        },
-        
-      },
-      tooltip: {
-        enabled: true,
-        x: {
-          format: 'dd MMM yyyy' // Format the tooltip date
-        }
-      },
-    };
-    //initialize bar chaart options for open per day of the week
-    this.barChartOptionsOpen = {
-      series: [
-        {
-          name: "Opened",
-          data: []
-        },
-      ],
-      chart: {
-        height: 350,
-        type: "bar"
-      },
-      plotOptions: {
-        bar: {
-          borderRadius :15,
-          borderRadiusApplication: "end",
-          dataLabels: {
-            position: "top" // top, center, bottom
-          }
-        }
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: function(val) {
-          return val.toString();
-        },
-        offsetY: -20,
-        style: {
-          fontSize: "12px",
-          colors: ["#304758"]
-        }
-      },
-      xaxis: {
-        categories: [//days of the week
-          "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-          ],
-        position: "top",
-        labels: {
-          offsetY: -18
-          
-        },
-        axisBorder: {
-          show: false
-        },
-        axisTicks: {
-          show: false
-        },
-        
-        crosshairs: {
-          fill: {
-            type: "gradient",
-            gradient: {
-              colorFrom: "#D8E3F0",
-              colorTo: "#BED1E6",
-              stops: [0, 100],
-              opacityFrom: 0.4,
-              opacityTo: 0.5
-            }
-          }
-        },
-        tooltip: {
-          enabled: true,
-          offsetY: -35
-        }
-      },
-      
-      yaxis: {
-        axisBorder: {
-          show: false
-        },
-        axisTicks: {
-          show: false
-        },
-        labels: {
-          show: false,
-          formatter: function(val) {
-            return val.toString();
-          }
-        }
-      },
-      title: {
-        text: "Opens per Day",
-        floating: false,
-        offsetY: 325,
-        align: "center",
-        style: {
-          color: "#444"
-        }
-      }      
-    };
-    //initialize bar chaart options for click per day of the week
-    this.barChartOptionsClick = {
-      series: [
-        {
-          name: "Clicked",
-          data: []
-        },
-      ],
-      chart: {
-        height: 350,
-        type: "bar"
-      },
-      plotOptions: {
-        bar: {
-          borderRadius :15,
-          borderRadiusApplication: "end",
-          dataLabels: {
-            position: "top" // top, center, bottom
-          }
-        }
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: function(val) {
-          return val.toString();
-        },
-        offsetY: -20,
-        style: {
-          fontSize: "12px",
-          colors: ["#304758"]
-        }
-      },
-      xaxis: {
-        categories: [//days of the week
-          "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-          ],
-        position: "top",
-        labels: {
-          offsetY: -18
-        },
-        axisBorder: {
-          show: false
-        },
-        axisTicks: {
-          show: false
-        },
-        crosshairs: {
-          fill: {
-            type: "gradient",
-            gradient: {
-              colorFrom: "#D8E3F0",
-              colorTo: "#BED1E6",
-              stops: [0, 100],
-              opacityFrom: 0.4,
-              opacityTo: 0.5
-            }
-          }
-        },
-        tooltip: {
-          enabled: true,
-          offsetY: -35
-        }
-      },
-      
-      yaxis: {
-        axisBorder: {
-          show: false
-        },
-        axisTicks: {
-          show: false
-        },
-        labels: {
-          show: false,
-          formatter: function(val) {
-            return val.toString();
-          }
-        }
-      },
-      title: {
-        text: "clicks per Day",
-        floating: false,
-        offsetY: 325,
-        align: "center",
-        style: {
-          color: "#444"
-        }
-      }       
-    };
+this.bubbleChartOptionsOpen = {
+  series: [{
+    name: "Opens",
+    data: []
+  }],
+  chart: {
+    height: 350,
+    type: "bubble",
+    zoom: {
+      type: "xy"
+    }
+  },
+  dataLabels: {
+    enabled: false
+  },
+  grid: {
+    xaxis: {
+      lines: {
+        show: true
+      }
+    },
+    yaxis: {
+      lines: {
+        show: true
+      }
+    }
+  },
+  xaxis: {
+    categories: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    title: {
+      text: 'Day of Week'
+    },
+    tickAmount: 6,
+    min: 0,
+    max: 6,
+    labels: {
+      formatter: function (val) {
+        return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][val];
+      }
+    }
+  },
+  yaxis: {
+    title: {
+      text: 'Hour of Day'
+    },
+    min: 0,
+    max: 23,
+    tickAmount: 6,
+    labels: {
+      formatter: function (val) {
+        return `${Math.floor(val + 1)}`;
+      }
+    }
+  },
+  tooltip: {
+    enabled: true,
+    x: {
+      formatter: (val) => `Day: ${this.getDayName(val)}`
+    },
+    y: {
+      formatter: (val) => `${val} H`
+    },
+    z: {
+      formatter: (val) => `${val} times`
+    },
+  },
+  title: {
+    text: 'Email Opens by Time of Day',
+    align: 'left'
+  },
+  plotOptions: {
+    bubble: {
+      minBubbleRadius: 5,
+      maxBubbleRadius: 20,
+      zScaling :true
+    }
+  },
+  fill: {
+    opacity: 0.8
+  },
+  theme: {
+    mode: 'light', // or 'dark'
+    palette: 'palette4',
+    monochrome: {
+      enabled: false,
+      color: '#255aee',
+      shadeTo: 'light',
+      shadeIntensity: 0.65
+    }
+  }
+};
+this.bubbleChartOpenInstance = new ApexCharts(document.querySelector("#bubbleChartOpen"), this.bubbleChartOptionsOpen);
 
-    this.scatterChartOptionsOpen = {
-      series: [{
-        name: "Opens",
-        data: []
-      }],
-      chart: {
-        height: 350,
-        type: "scatter",
-        zoom: {
-          type: "xy"
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      grid: {
-        xaxis: {
-          lines: {
-            show: true
-          }
-        },
-        yaxis: {
-          lines: {
-            show: true
-          }
-        }
-      },
-      xaxis: {
-        categories: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-        title: {
-          text: 'Day of Week'
-        },
-        tickAmount: 6,
-        min: 0,
-        max: 6,
-        labels: {
-          formatter: function (val) {
-            return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][val];
-          }
-        }
-      },
-      yaxis: {
-        title: {
-          text: 'Hour of Day'
-        },
-        min: 0,
-        max: 23,
-        tickAmount: 12,
-        labels: {
-          formatter: function (val) {
-            return `${Math.floor(val+1)}`;
-          }
-        }
-      },
-      tooltip: {
-        enabled: true,
-        x: {
-          formatter: (val) => `Day: ${this.getDayName(val)}`
-        },
-        z: {
-          formatter: (val) => ` ${val}`
-        },
-      },
-      title: {
-        text: 'Email Opens by Time of Day',
-        align: 'left'
-      },
-     
-    };
-    
-    this.scatterChartOptionsClick = {
-      series: [{
-        name: "Clicks",
-        data: []
-      }],
-      chart: {
-        height: 350,
-        type: "scatter",
-        zoom: {
-          type: "xy"
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      grid: {
-        xaxis: {
-          lines: {
-            show: true
-          }
-        },
-        yaxis: {
-          lines: {
-            show: true
-          }
-        }
-      },
-      xaxis: {
-        categories: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-        title: {
-          text: 'Day of Week'
-        },
-        tickAmount: 6,
-        min: 0,
-        max: 6,
-        labels: {
-          formatter: function (val) {
-            return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][val];
-          }
-        }
-      },
-      yaxis: {
-        title: {
-          text: 'Hour of Day'
-        },
-        min: 0,
-        max: 23,
-        tickAmount: 24,
-        labels: {
-          formatter: function (val) {
-            return `${Math.floor(val+1)}`;
-          }
-        }
-      },
-      tooltip: {
-        enabled: true,
-        x: {
-          formatter: (val) => `Day: ${this.getDayName(val)}`
-        },
-        y: {
-          formatter: (val) => `Hour: ${val}`
-        },
-        z: {
-          formatter: (val) => `${val} times`
-        },
-      },
-      title: {
-        text: 'Email Clicks by Time of Day',
-        align: 'left'
-      },
-      
-    };
+this.bubbleChartOptioncClick = {
+  series: [{
+    name: "Clicks",
+    data: []
+  }],chart: {
+    height: 350,
+    type: "bubble",
+    zoom: {
+      type: "xy"
+    }
+  },
+  dataLabels: {
+    enabled: false
+  },
+  grid: {
+    xaxis: {
+      lines: {
+        show: true
+      }
+    },
+    yaxis: {
+      lines: {
+        show: true
+      }
+    }
+  },
+  xaxis: {
+    categories: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    title: {
+      text: 'Day of Week'
+    },
+    tickAmount: 6,
+    min: 0,
+    max: 6,
+    labels: {
+      formatter: function (val) {
+        return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][val];
+      }
+    }
+  },
+  yaxis: {
+    title: {
+      text: 'Hour of Day'
+    },
+    min: 0,
+    max: 23,
+    tickAmount: 6,
+    labels: {
+      formatter: function (val) {
+        return `${Math.floor(val + 1)}`;
+      }
+    }
+  },
+  tooltip: {
+    enabled: true,
+    x: {
+      formatter: (val) => `Day: ${this.getDayName(val)}`
+    },
+    y: {
+      formatter: (val) => `${val} H`
+    },
+    z: {
+      formatter: (val) => `${val} times`
+    },
+  },
+  title: {
+    text: 'Email clicks by Time of Day',
+    align: 'left'
+  },
+  plotOptions: {
+    bubble: {
+      minBubbleRadius: 5,
+      maxBubbleRadius: 20,
+      zScaling :true
+    }
+  },
+  fill: {
+    opacity: 0.8
+  },
+  theme: {
+    mode: 'light', // or 'dark'
+    palette: 'palette4',
+    monochrome: {
+      enabled: false,
+      color: '#255aee',
+      shadeTo: 'light',
+      shadeIntensity: 0.65
+    }
+  }
+
+
+};
+this.bubbleChartClickInstance = new ApexCharts(document.querySelector("#bubbleChartClick"), this.bubbleChartOptioncClick);
+
     
     
   }
@@ -706,8 +801,103 @@ export class CampaignDashboardComponent {
         this.campaignId = params.get('campaignID');
         this.fetchCampaignsAndSelect();
     });
-}
-
+  }
+  setDefaultDateRange() {
+    const today = new Date();
+    const last28Days = new Date(today);
+    last28Days.setDate(today.getDate() - 28); // Subtract 28 days
+  
+    // Log the calculated dates for debugging
+    console.log('Today:', today.toISOString());
+    console.log('Last 28 Days:', last28Days.toISOString());
+  
+    // Set the start and end dates in the form as ISO strings
+    this.dateRangeForm.patchValue({
+        start: last28Days,
+        end: today,
+    });
+  
+    // Use the correct order for start and end dates
+    const startDateObj = last28Days.toISOString();
+    const endDateObj = today.toISOString();
+  
+    // Log the dates before making API calls for debugging
+    console.log('Formatted Start Date:', startDateObj);
+    console.log('Formatted End Date:', endDateObj);
+  
+    // Create an array of promises for chart updates
+    const promises = [
+        this.updateChartData(startDateObj, endDateObj),
+        this.updatePieChartData(startDateObj, endDateObj),
+        this.updateLineChartData(startDateObj, endDateObj),
+        this.updateRadialChartData(startDateObj, endDateObj),
+        this.updateBarChartOpen(startDateObj, endDateObj),
+        this.updateBarChartClick(startDateObj, endDateObj),
+        this.updateScatterChartData(startDateObj, endDateObj),
+        this.updateBubbleChartOpen(startDateObj, endDateObj),
+        this.updateBubbleChartClick(startDateObj, endDateObj)
+    ];
+  
+    // Wait for all chart updates to finish
+    Promise.all(promises).then(() => {
+        console.log('All chart updates are done.');
+    }).catch((error) => {
+        console.error('Error updating charts:', error);
+    });
+  }
+  
+  
+  // Method to reset the date range
+  resetDateRange() {
+    this.setDefaultDateRange(); // Reset to the last 28 days
+  }
+  filterData(): void {
+  
+    const startDate = this.dateRangeForm.value.start;
+      const endDate = this.dateRangeForm.value.end;
+  
+      // Format the start and end dates using the formatDate function
+      const startDateObj = this.formatDate(startDate);
+      const endDateObj = this.formatDate(endDate);
+      console.log('Start Date:', startDateObj);
+      console.log('End Date:', endDateObj);
+      
+  
+    // Filter logs based on the selected date range using createdAt
+    
+    
+    const promises = [
+      this.updateChartData(startDateObj, endDateObj),
+      this.updatePieChartData(startDateObj, endDateObj),
+      this.updateLineChartData(startDateObj, endDateObj),
+      this.updateRadialChartData(startDateObj, endDateObj),
+      this.updateBarChartOpen(startDateObj, endDateObj),
+      this.updateBarChartClick(startDateObj, endDateObj),
+      this.updateScatterChartData(startDateObj, endDateObj),
+      this.updateBubbleChartOpen(startDateObj, endDateObj),
+      this.updateBubbleChartClick(startDateObj, endDateObj)
+  ];
+  
+  Promise.all(promises).then(() => {
+      console.log('All chart updates are done.');
+  }).catch((error) => {
+      console.error('Error updating charts:', error);
+  });
+  
+    console.log('Filtered Data:', this.filteredData); // Log filtered data or handle it as needed
+  }
+  formatDate(date: any): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    const hours = ('0' + d.getHours()).slice(-2);
+    const minutes = ('0' + d.getMinutes()).slice(-2);
+    const seconds = ('0' + d.getSeconds()).slice(-2);
+    
+    // Adjusting the format to RFC3339
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`; // Add 'T' and 'Z' for timezone
+  }
 private fetchCampaignsAndSelect(): void {
     this.service.getCampaigns(1, 10).subscribe({
         next: (data) => {
@@ -733,7 +923,6 @@ private fetchCampaignsAndSelect(): void {
         }
     });
 }
-
 private loadCampaignData(campaignId: string): void {
     this.service.getCampaign(campaignId).subscribe({
         next: (data) => {
@@ -762,17 +951,15 @@ private loadCampaignData(campaignId: string): void {
         }
     });
 }
-
-
- 
- 
   onCampaignChange(campaign) {
     if (campaign === 'all') {
       this.selectedCampaign = 'all';
       this.router.navigate(['/dashboard']);
     } else {
       this.selectedCampaign = campaign;
+       setTimeout(() => {
       this.cdr.detectChanges();
+    }, 0);
       this.logs = null;
       this.contacts = null;
       this.isLoading = true;
@@ -784,7 +971,6 @@ private loadCampaignData(campaignId: string): void {
       });
     }
   }
-  
   fetchContacts(mailingListID: any) {
     this.service.getContacts(mailingListID).subscribe(
         (data) => {
@@ -814,8 +1000,8 @@ private loadCampaignData(campaignId: string): void {
                     this.updateBarChartOpen(),
                     this.updateBarChartClick(),
                     this.updateScatterChartData(),
-                    this.updateScatterChartOpen(),
-                    this.updateScatterChartClick()
+                    this.updateBubbleChartOpen(),
+                    this.updateBubbleChartClick()
                 ];
 
                 Promise.all(promises).then(() => {
@@ -835,259 +1021,271 @@ private loadCampaignData(campaignId: string): void {
         }
     );
 }
-  updateScatterChartClick() {
-  const clicksPerHourDay = {};
-
-  this.logs.forEach(log => {
-    if (log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00") {
-      const date = new Date(log.clickedAt);
-      const hours = date.getHours() + (date.getMinutes() >= 30 ? 1 : 0);
-      const dayOfWeek = date.getDay();
-
-      const key = `${dayOfWeek}-${hours}`;
-      if (!clicksPerHourDay[key]) {
-        clicksPerHourDay[key] = 0;
-      }
-      clicksPerHourDay[key]++;
-    }
-  });
-
-  const seriesData = Object.entries(clicksPerHourDay).map(([key, value]) => {
-    const [dayOfWeek, hour] = key.split('-').map(Number);
-    return {
-      x: dayOfWeek,
-      y: hour,
-      z: value
-    };
-  });
-
-  this.scatterChartOptionsClick.series = [{
-    name: 'Clicks',
-    data: seriesData
-  }];
-
-  this.cdr.detectChanges();
-}
-  updateScatterChartOpen() {
-  const opensPerHourDay = {};
-
-  this.logs.forEach(log => {
-    if (log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00") {
-      const date = new Date(log.openedAt);
-      const hours = date.getHours() + (date.getMinutes() >= 30 ? 1 : 0);
-      const dayOfWeek = date.getDay();
-
-      const key = `${dayOfWeek}-${hours}`;
-      if (!opensPerHourDay[key]) {
-        opensPerHourDay[key] = 0;
-      }
-      opensPerHourDay[key]++;
-    }
-  });
-
-  const seriesData = Object.entries(opensPerHourDay).map(([key, value]) => {
-    const [dayOfWeek, hour] = key.split('-').map(Number);
-    return {
-      x: dayOfWeek,
-      y: hour,
-      z: value
-    };
-  });
-
-  this.scatterChartOptionsOpen.series = [{
-    name: 'Opens',
-    data: seriesData
-  }];
-
-  this.cdr.detectChanges();
-}
-  updateBarChartClick() {
-    if (!this.logs) {
-      console.error('Logs data is not available.');
-      return;
-    }
-
-    const clickPerDay = Array(7).fill(0);
-
-    this.logs.forEach(log => {
-      if (log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00") {
-          const date = new Date(log.clickedAt);
-          const dayOfWeek = date.getDay(); // getDay() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
-          clickPerDay[dayOfWeek]++;
-      }
-      this.barChartOptionsClick.series[0].data = clickPerDay;
-      
-  });
-
-    
-  }
-  updateBarChartOpen() {
-    if (!this.logs) {
-      console.error('Logs data is not available.');
-      return;
-    }
-    // Initialize an array with 7 elements for each day of the week
-    const opensPerDay = Array(7).fill(0);
-
-    this.logs.forEach(log => {
-        if (log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00") {
-            const date = new Date(log.openedAt);
-            const dayOfWeek = date.getDay(); // getDay() returns the day of the week (0 for Sunday, 1 for Monday, etc.)
-            opensPerDay[dayOfWeek]++;
-        }
-    });
-
-    // Update the bar chart data
-    this.barChartOptionsOpen.series[0].data = opensPerDay;
-}
-  updateScatterChartData() {
-    const openedData = this.logs.filter(log => log.openedAt && log.openedAt !== "0001-01-01T01:00:00+01:00" && log.openedAt !== "0001-01-01T00:00:00Z");
-    const clickedData = this.logs.filter(log => log.clickedAt && log.clickedAt !== "0001-01-01T01:00:00+01:00");
-
-    // Update the scatter chart series data
-    this.scatterChartOptions.series = [
-      {
-        name: "Opened Emails",
-        data: openedData.map(log => ({
-          x: new Date(log.openedAt).getTime(),
-          y: log.clickCount,
-          recipientEmail: log.recipientEmail
-        }))
-      },
-      // {
-      //   name: "Clicked Emails",
-      //   data: clickedData.map(log => ({
-      //     x: new Date(log.clickedAt).getTime(),
-      //     y: log.clickCount
-      //   }))
-      // }
-    ];
-    this.scatterChartOptions.tooltip = {
-      enabled: true,
-      custom: ({ seriesIndex, dataPointIndex, w }) => {
-        // Access the custom data for the tooltip
-        const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex].recipientEmail;
-        const clickCount = w.config.series[seriesIndex].data[dataPointIndex].y;
-        return `<div class="apexcharts-tooltip-title">Recipient Email: ${recipientEmail}</div>
-                <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
-      }
-    };
-  }
-  updateRadialChartData() {
-    const totalLogs = this.logs.length;
-
-    // Calculate the number of opened emails
-    const openedLogs = this.logs.filter(log => log.openedAt && log.openedAt !== "0001-01-01T00:00:00Z").length;
-    // Calculate the percentage of opened emails
-    const openedPercentage = totalLogs > 0 ? (openedLogs / totalLogs) * 100 : 0;
-  
-    this.radialChartOptions.tooltip = {
-      enabled: true,
-      y: {
-              formatter: () => {
-                
-               
-                return `Opened Emails: ${openedLogs}`;
-              },
-            },
-      
-  };
-    // Update the radial chart with the calculated percentage
-    this.radialChartOptions.series = [openedPercentage];
-  }
-  updateLineChartData() {
-  // Helper function to aggregate data by date
-  const aggregateDataByDate = (logs, key) => {
-    if (!logs) {
-      console.error("Logs data is null or undefined");
-      return {};
-    }
-    return logs.reduce((acc, log) => {
-      if (log[key] && log[key] !== "0001-01-01T01:00:00+01:00") {
-        const date = new Date(log[key]).toISOString().substring(0, 10);
-        acc[date] = (acc[date] || 0) + 1;
-      }
-      return acc;
-    }, {});
-  };
-
-  const openedData = aggregateDataByDate(this.logs, 'openedAt');
-  const clickedData = aggregateDataByDate(this.logs, 'clickedAt');
-
-  // Combine all unique dates from both opened and clicked data
-  const allDates = Array.from(new Set([
-    ...Object.keys(openedData),
-    ...Object.keys(clickedData)
-  ])).sort();
-
-  // Create the series data arrays
-  const openedSeriesData = allDates.map(date => openedData[date] || 0);
-  const clickedSeriesData = allDates.map(date => clickedData[date] || 0);
-
-  // Update the chart options
-  this.lineChartOptions.xaxis.categories = allDates;
-  this.lineChartOptions.series = [
-    {
-      name: "Opened Emails",
-      data: openedSeriesData
-    },
-    {
-      name: "Clicked Emails",
-      data: clickedSeriesData
-    }
-  ];
-}
-  updateChartData(): void {
+updateChartData(startDate?: string, endDate?: string): void {
   let totalOpened = 0;
   let totalClicked = 0;
   let totalErrors = 0;
-
-  if (this.logs && this.logs.length > 0) {
-
-  this.logs.forEach(log => {
-    if (log.openedAt && new Date(log.openedAt).getFullYear() > 1) {
-      totalOpened++;
-    }
-    if (log.clickCount > 0) {
-      totalClicked++;
-    }
-    if (log.error) {
-      totalErrors++;
-    }
-  });} else{
-    console.log('No logs to display.');
-
-  }
-
-  // Adjusting the structure to match a single dataset for all categories
-  this.barChartOptions.series = [
-    {
-      name: "",
-      data: [totalOpened,totalClicked,totalErrors]
-    },
+  
+  this.service.updateChartData(startDate,endDate,this.campaignId).subscribe((data) => {
     
-  ];
+    totalOpened = data.data.opened;
+    totalClicked = data.data.clicked;
+    totalErrors = data.data.error;
+    
+    // Adjusting the structure to match a single dataset for all categories
+    this.barChartOptions.series = [
+      {
+        name: "",
+        data: [totalOpened, totalClicked, totalErrors]
+      },
+    ];
+  });
+   setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
   
   
 }
-  updatePieChartData(): void {
-  if (!this.contacts) {
-    console.error("Contacts data is null or undefined");
-    return;
+updateBubbleChartClick(startDate?: string, endDate?: string): void {
+  this.service.bubbleChartDataClicks(startDate,endDate,this.campaignId).subscribe((response) => {
+    
+
+    // Update the bubble chart series data using the data from the backend
+    this.bubbleChartOptioncClick.series = [{
+      name: 'Clicks',
+      data: response.data.map(item => ({
+        x: item.x,  // Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+        y: item.y,  // Hour of the day (0 = midnight, 1 = 1 AM, ..., 23 = 11 PM)
+        z: item.z   // Bubble size (1 = small, 2 = medium, 3 = large)
+      }))
+    }];
+
+    // Log the series data for debugging purposes
+    console.log(this.bubbleChartOptioncClick.series[0].data);
+     setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
+
+    // Trigger change detection to update the chart
+  },
+  (error) => {
+    console.error('Error fetching bubble chart click data:', error);
+    // Handle the error appropriately, e.g., display an error message
+  });
+}
+
+updateBubbleChartOpen(startDate?: string, endDate?: string): void {
+  this.service.bubbleChartDataOpens(startDate,endDate,this.campaignId).subscribe((response) => {
+    
+
+    // Update the bubble chart series data using the data from the backend
+    this.bubbleChartOptionsOpen.series = [{
+      name: 'Opens',
+      data: response.data.map(item => ({
+        x: item.x,  // Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+        y: item.y,  // Hour of the day (0 = midnight, 1 = 1 AM, ..., 23 = 11 PM)
+        z: item.z   // Bubble size (1 = small, 2 = medium, 3 = large)
+      }))
+    }];
+    // Trigger change detection to update the chart
+     setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
+  },
+  (error) => {
+    console.error('Error fetching bubble chart data:', error);
+    // Handle the error appropriately, e.g., display an error message
+  });
+   setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+}
+
+updateBarChartClick(startDate?: string, endDate?: string) {
+  this.service.barChartDataClicks(startDate, endDate, this.campaignId).subscribe((data) => {
+    console.log('Click Data:', data); // Log the click data
+
+    // Check if the chart is initialized
+    console.log('Bar Chart Click Instance:', this.barChartClick);
+
+    if (data && data.data && this.barChartClick) {
+      this.barChartClick.updateSeries([{
+        name: 'Clicks',
+        data: data.data
+      }], true);
+      this.cdr.detectChanges();
+    }
+  }, error => {
+    console.error("Error fetching click data", error);
+  });
+}
+
+updateBarChartOpen(startDate?: string, endDate?: string) {
+  this.service.barChartDataOpens(startDate, endDate, this.campaignId).subscribe((data) => {
+    console.log('Open Data:', data); // Log the open data
+
+    // Check if the chart is initialized
+    console.log('Bar Chart Open Instance:', this.barChartOpen);
+
+    if (data && data.data && this.barChartOpen) {
+      this.barChartOpen.updateSeries([{
+        name: 'Opens',
+        data: data.data
+      }], true);
+      this.cdr.detectChanges();
+    }
+  }, error => {
+    console.error("Error fetching open data", error);
+  });
+}
+
+
+
+updateScatterChartData(startDate?: string, endDate?: string): void {
+this.service.updateScatterChartData(startDate, endDate,this.campaignId).subscribe((data) => {
+// Check if openedData and clickedData are available
+const openedData = data.data.openedData || [];
+const clickedData = data.data.clickedData || [];
+
+// Update the scatter chart series data using the data from the backend
+this.scatterChartOptions.series = [
+{
+  name: "Opened Emails",
+  data: openedData.map(item => ({
+    x: item.x,  // Timestamp already provided by the backend
+    y: item.y,  // Click count provided by the backend
+    recipientEmail: item.recipientEmail || 'Unknown'
+  }))
+},
+{
+  name: "Clicked Emails",
+  data: clickedData.map(item => ({
+    x: item.x,  // Timestamp already provided by the backend
+    y: item.y,  // Click count provided by the backend
+    recipientEmail: item.recipientEmail || 'Unknown'
+  }))
+}
+];
+
+// Update tooltip to use the custom data
+this.scatterChartOptions.tooltip = {
+enabled: true,
+custom: ({ seriesIndex, dataPointIndex, w }) => {
+  const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex]?.recipientEmail || 'Unknown';
+  const clickCount = w.config.series[seriesIndex].data[dataPointIndex]?.y || 0;
+  return `<div class="apexcharts-tooltip-title">Recipient Email: ${recipientEmail}</div>
+  <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
+}
+};
+
+// Trigger change detection to update the chart
+ setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
+},
+(error) => {
+console.error('Error fetching scatter chart data:', error);
+// Optionally handle the error, such as displaying a notification to the user
+});
+}
+updateRadialChartData(startDate?: string, endDate?: string) {
+const totalLogs = this.logs.length;
+
+this.service.updateRadialChartData(startDate,endDate,this.campaignId).subscribe((data) => {
+
+
+
+this.radialChartOptions.tooltip = {
+  enabled: true,
+  y: {
+    formatter: () => {
+      
+      
+      return `Opened Emails: ${data.data.openedLogs}`;
+    },
+  },
+  
+};
+// Update the radial chart with the calculated percentage
+this.radialChartOptions.series = [data.data.openedPercentage];
+ setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
+});
+ setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);
+}
+updateLineChartData(startDate?: string, endDate?: string): void {
+this.service.updateLineChartData(startDate, endDate,this.campaignId).subscribe((data) => {
+  if (this.lineChartOptions?.chart) {
+    const allDates = data.data.allDates ? data.data.allDates.map(date => `${date}`) : [];
+    const totals = data.data.totals || 0;
+
+    this.lineChartOptions = {
+      ...this.lineChartOptions,
+      xaxis: {
+        categories: allDates,
+      },
+      series: [
+        { name: "Opened Emails", data: data.data.openedSeriesData || [] },
+        { name: "Clicked Emails", data: data.data.clickedSeriesData || [] }
+      ],
+      title: {
+        text: `Email Campaign Tracking (Total Sent: ${totals})`,
+        align: "left"
+      }
+    };
+
+     setTimeout(() => {
+       setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
+    }, 0);  // Only detect changes once at the end
+  } else {
+    console.error("Line chart is not initialized");
   }
+}, (error) => {
+  console.error('Error fetching line chart data:', error);
+});
+}
+updatePieChartData(startDate?: string, endDate?: string): void {
 
-  if (!this.logs) {
-    console.error("Logs data is null or undefined");
-    return;
+
+const totalContacts = this.contacts.length;
+
+this.service.updatePieChartData(startDate,endDate,this.campaignId).subscribe(
+  (data) => {
+    
+    const openedEmails = data.data.opened_count || 0;
+    const clickedEmails = data.data.clicked_count || 0;
+
+    this.pieChartOptions = {
+      ...this.pieChartOptions,
+      labels: ["Opened Emails", "Clicked Emails", "Total Contacts: " + totalContacts],
+      series: [openedEmails, clickedEmails],
+    };
+    
+     setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);  // Only detect changes once at the end
+  },
+  (error) => {
+    console.error('Error fetching data from backend:', error);
   }
-
-  const totalContacts = this.contacts.length;
-  const openedEmails = this.logs.filter(log => log.openedAt && new Date(log.openedAt).getFullYear() > 1).length;
-  const clickedEmails = this.logs.filter(log => log.clickCount > 0).length;
-
-  this.pieChartOptions.labels = ["Opened Emails", "Clicked Emails", "Total Contacts: " + totalContacts];
-  // Update the entire dataset to avoid potential issues
-  this.pieChartOptions.series = [openedEmails, clickedEmails];
+);
 }
 getDayName(dayIndex) {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -1096,21 +1294,38 @@ getDayName(dayIndex) {
 //stat change 
 statchange(type: string) {
   this.selectedStat = type;
-  this.reorder = false; // Temporarily hide the chart
+  this.reorder = false; // Temporarily hide the charts
   this.cdr.detectChanges(); // Trigger change detection
 
+  // Delay to ensure the DOM updates
   setTimeout(() => {
+    // Set the state type based on the selected type
     if (type === 'open') {
       this.stat_type = 'open';
+      this.updateBarChartOpen(); // Call function to update bar chart for opens
+      this.updateBubbleChartOpen(); // Call function to update bubble chart for opens
+      this.updateLineChartData();
     } else if (type === 'click') {
       this.stat_type = 'click';
+      this.updateBarChartClick(); // Call function to update bar chart for clicks
+      this.updateBubbleChartClick(); // Call function to update bubble chart for clicks
+      this.updateLineChartData();
+      this.updateScatterChartData();
     } else {
       this.stat_type = 'all';
+      this.updateBarChartOpen(); // Update both charts for 'all'
+      this.updateBarChartClick(); 
+      this.updateBubbleChartOpen(); 
+      this.updateBubbleChartClick(); 
+      this.updateLineChartData();
+      this.updateScatterChartData();
     }
-    this.reorder = true; // Show the chart again
-    this.cdr.detectChanges(); // Trigger change detection
-  }, 0); // Delay to ensure the DOM updates
+
+    this.reorder = true; // Show the charts again
+    this.cdr.detectChanges(); // Trigger change detection again
+  }, 0); // Ensure this runs after DOM updates
 }
+
 
 downloadPDF() {
   const pdf = new jsPDF('p', 'mm', 'a4');

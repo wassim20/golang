@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import jsPDF from 'jspdf';
 
+
 import ApexCharts from 'apexcharts';
 
 
@@ -34,7 +35,7 @@ import {
   ApexTheme
 } from "ng-apexcharts";
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -174,10 +175,18 @@ export class DashboardComponent implements OnInit {
   logs: any;
   isLoading: boolean = false;
   selectedStat: string = 'all'; // Default to 'all'
+  dateRangeForm: FormGroup;
+  filteredData: any[] = []; // Array to store filtered data
+
 
  
 
-   constructor(private route :ActivatedRoute,private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router) {  
+   constructor(private fb: FormBuilder,private route :ActivatedRoute,private service : DashboardService,private cdr: ChangeDetectorRef,private router: Router) {  
+    this.dateRangeForm = this.fb.group({
+      start: [null],
+      end: [null]
+    });
+    
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras.state as { campaignId: string };
     this.campaignId = state?.campaignId;
@@ -801,6 +810,7 @@ export class DashboardComponent implements OnInit {
  
 ngOnInit(): void {
   this.isLoading = true;
+  //this.setDefaultDateRange();
 
   // Fetch campaigns list
   this.service.getCampaigns(1, 10).subscribe({
@@ -834,6 +844,104 @@ ngOnInit(): void {
     }
   });
 }
+setDefaultDateRange() {
+  const today = new Date();
+  const last28Days = new Date(today);
+  last28Days.setDate(today.getDate() - 28); // Subtract 28 days
+
+  // Log the calculated dates for debugging
+  console.log('Today:', today.toISOString());
+  console.log('Last 28 Days:', last28Days.toISOString());
+
+  // Set the start and end dates in the form as ISO strings
+  this.dateRangeForm.patchValue({
+      start: last28Days,
+      end: today,
+  });
+
+  // Use the correct order for start and end dates
+  const startDateObj = last28Days.toISOString();
+  const endDateObj = today.toISOString();
+
+  // Log the dates before making API calls for debugging
+  console.log('Formatted Start Date:', startDateObj);
+  console.log('Formatted End Date:', endDateObj);
+
+  // Create an array of promises for chart updates
+  const promises = [
+      this.updateChartData(startDateObj, endDateObj),
+      this.updatePieChartData(startDateObj, endDateObj),
+      this.updateLineChartData(startDateObj, endDateObj),
+      this.updateRadialChartData(startDateObj, endDateObj),
+      this.updateBarChartOpen(startDateObj, endDateObj),
+      this.updateBarChartClick(startDateObj, endDateObj),
+      this.updateScatterChartData(startDateObj, endDateObj),
+      this.updateBubbleChartOpen(startDateObj, endDateObj),
+      this.updateBubbleChartClick(startDateObj, endDateObj)
+  ];
+
+  // Wait for all chart updates to finish
+  Promise.all(promises).then(() => {
+      console.log('All chart updates are done.');
+  }).catch((error) => {
+      console.error('Error updating charts:', error);
+  });
+}
+
+
+// Method to reset the date range
+resetDateRange() {
+  this.setDefaultDateRange(); // Reset to the last 28 days
+}
+filterData(): void {
+
+  const startDate = this.dateRangeForm.value.start;
+    const endDate = this.dateRangeForm.value.end;
+
+    // Format the start and end dates using the formatDate function
+    const startDateObj = this.formatDate(startDate);
+    const endDateObj = this.formatDate(endDate);
+    console.log('Start Date:', startDateObj);
+    console.log('End Date:', endDateObj);
+    
+
+  // Filter logs based on the selected date range using createdAt
+  
+  
+  const promises = [
+    this.updateChartData(startDateObj, endDateObj),
+    this.updatePieChartData(startDateObj, endDateObj),
+    this.updateLineChartData(startDateObj, endDateObj),
+    this.updateRadialChartData(startDateObj, endDateObj),
+    this.updateBarChartOpen(startDateObj, endDateObj),
+    this.updateBarChartClick(startDateObj, endDateObj),
+    this.updateScatterChartData(startDateObj, endDateObj),
+    this.updateBubbleChartOpen(startDateObj, endDateObj),
+    this.updateBubbleChartClick(startDateObj, endDateObj)
+];
+
+Promise.all(promises).then(() => {
+    console.log('All chart updates are done.');
+}).catch((error) => {
+    console.error('Error updating charts:', error);
+});
+
+  console.log('Filtered Data:', this.filteredData); // Log filtered data or handle it as needed
+}
+formatDate(date: any): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = ('0' + (d.getMonth() + 1)).slice(-2);
+  const day = ('0' + d.getDate()).slice(-2);
+  const hours = ('0' + d.getHours()).slice(-2);
+  const minutes = ('0' + d.getMinutes()).slice(-2);
+  const seconds = ('0' + d.getSeconds()).slice(-2);
+  
+  // Adjusting the format to RFC3339
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`; // Add 'T' and 'Z' for timezone
+}
+
+
 
 
  
@@ -872,6 +980,8 @@ ngOnInit(): void {
     this.service.getAllTrackingLogs().subscribe(
         (data) => {
             this.logs = data?.data?.items?.length > 0 ? data.data.items : null;
+            console.log('Logs:', this.logs);
+            
             
             // if logs are not empty 
             if (this.logs && this.logs.length > 0) {
@@ -902,12 +1012,12 @@ ngOnInit(): void {
           }
         );
       }
-      updateChartData(): void {
+      updateChartData(startDate?: string, endDate?: string): void {
         let totalOpened = 0;
         let totalClicked = 0;
         let totalErrors = 0;
         
-        this.service.updateChartData().subscribe((data) => {
+        this.service.updateChartData(startDate,endDate).subscribe((data) => {
           
           totalOpened = data.data.opened;
           totalClicked = data.data.clicked;
@@ -925,8 +1035,8 @@ ngOnInit(): void {
         
         
       }
-      updateBubbleChartClick(): void {
-        this.service.bubbleChartDataClicks().subscribe((response) => {
+      updateBubbleChartClick(startDate?: string, endDate?: string): void {
+        this.service.bubbleChartDataClicks(startDate,endDate).subscribe((response) => {
           
       
           // Update the bubble chart series data using the data from the backend
@@ -951,8 +1061,8 @@ ngOnInit(): void {
         });
       }
       
-      updateBubbleChartOpen(): void {
-        this.service.bubbleChartDataOpens().subscribe((response) => {
+      updateBubbleChartOpen(startDate?: string, endDate?: string): void {
+        this.service.bubbleChartDataOpens(startDate,endDate).subscribe((response) => {
           
       
           // Update the bubble chart series data using the data from the backend
@@ -974,64 +1084,83 @@ ngOnInit(): void {
         this.cdr.detectChanges();
       }
       
-  updateBarChartClick() {
-   this.service.barChartDataClicks().subscribe((data) => {
-      this.barChartOptionsClick.series[0].data = data.data;
-      this.cdr.detectChanges();      
-    });
-    this.cdr.detectChanges();      
-
-    
-  }
-  updateBarChartOpen() {
-    this.service.barChartDataOpens().subscribe((data) => {
-
-    
-
-    // Update the bar chart data
-    this.barChartOptionsOpen.series[0].data = data.data;
-    this.cdr.detectChanges();
-  });
-  this.cdr.detectChanges();
-}
-updateScatterChartData(): void {
-  this.service.updateScatterChartData().subscribe((data) => {
+      updateBarChartClick(startDate?: string, endDate?: string) {
+        this.service.barChartDataClicks(startDate, endDate, this.campaignId).subscribe((data) => {
+          console.log('Click Data:', data); // Log the click data
+      
+          // Check if the chart is initialized
+          console.log('Bar Chart Click Instance:', this.barChartClick);
+      
+          if (data && data.data && this.barChartClick) {
+            this.barChartClick.updateSeries([{
+              name: 'Clicks',
+              data: data.data
+            }], true);
+            this.cdr.detectChanges();
+          }
+        }, error => {
+          console.error("Error fetching click data", error);
+        });
+      }
+      
+      updateBarChartOpen(startDate?: string, endDate?: string) {
+        this.service.barChartDataOpens(startDate, endDate, this.campaignId).subscribe((data) => {
+          console.log('Open Data:', data); // Log the open data
+      
+          // Check if the chart is initialized
+          console.log('Bar Chart Open Instance:', this.barChartOpen);
+      
+          if (data && data.data && this.barChartOpen) {
+            this.barChartOpen.updateSeries([{
+              name: 'Opens',
+              data: data.data
+            }], true);
+            this.cdr.detectChanges();
+          }
+        }, error => {
+          console.error("Error fetching open data", error);
+        });
+      }
+      
+  
+updateScatterChartData(startDate?: string, endDate?: string): void {
+  this.service.updateScatterChartData(startDate, endDate).subscribe((data) => {
+    // Check if openedData and clickedData are available
+    const openedData = data.data.openedData || [];
+    const clickedData = data.data.clickedData || [];
 
     // Update the scatter chart series data using the data from the backend
     this.scatterChartOptions.series = [
-      
       {
         name: "Opened Emails",
-        data: data.data.openedData.map(item => ({
-          
+        data: openedData.map(item => ({
           x: item.x,  // Timestamp already provided by the backend
           y: item.y,  // Click count provided by the backend
-          recipientEmail: item.recipientEmail
+          recipientEmail: item.recipientEmail || 'Unknown'
         }))
       },
       {
         name: "Clicked Emails",
-        data: data.data.clickedData.map(item => ({
+        data: clickedData.map(item => ({
           x: item.x,  // Timestamp already provided by the backend
           y: item.y,  // Click count provided by the backend
-          recipientEmail: item.recipientEmail
+          recipientEmail: item.recipientEmail || 'Unknown'
         }))
       }
     ];
-    this.cdr.detectChanges();
-    
+
     // Update tooltip to use the custom data
     this.scatterChartOptions.tooltip = {
       enabled: true,
       custom: ({ seriesIndex, dataPointIndex, w }) => {
-        const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex].recipientEmail;
-        const clickCount = w.config.series[seriesIndex].data[dataPointIndex].y;
+        const recipientEmail = w.config.series[seriesIndex].data[dataPointIndex]?.recipientEmail || 'Unknown';
+        const clickCount = w.config.series[seriesIndex].data[dataPointIndex]?.y || 0;
         return `<div class="apexcharts-tooltip-title">Recipient Email: ${recipientEmail}</div>
         <div class="apexcharts-tooltip-title">Click Count: ${clickCount}</div>`;
       }
     };
-    
-    // Trigger change detection to update the chart this.cdr.detectChanges();
+
+    // Trigger change detection to update the chart
     this.cdr.detectChanges();
   },
   (error) => {
@@ -1040,10 +1169,11 @@ updateScatterChartData(): void {
   });
 }
 
-  updateRadialChartData() {
+
+  updateRadialChartData(startDate?: string, endDate?: string) {
     const totalLogs = this.logs.length;
 
-    this.service.updateRadialChartData().subscribe((data) => {
+    this.service.updateRadialChartData(startDate,endDate).subscribe((data) => {
 
 
       
@@ -1064,11 +1194,11 @@ updateScatterChartData(): void {
     });
     this.cdr.detectChanges();
     }
-    updateLineChartData(): void {
-      this.service.updateLineChartData().subscribe((data) => {
+    updateLineChartData(startDate?: string, endDate?: string): void {
+      this.service.updateLineChartData(startDate, endDate).subscribe((data) => {
         if (this.lineChartOptions?.chart) {
-          const allDates = data.data.allDates.map(date => `${date}`);
-          const totals = data.data.totals;
+          const allDates = data.data.allDates ? data.data.allDates.map(date => `${date}`) : [];
+          const totals = data.data.totals || 0;
     
           this.lineChartOptions = {
             ...this.lineChartOptions,
@@ -1076,29 +1206,32 @@ updateScatterChartData(): void {
               categories: allDates,
             },
             series: [
-              { name: "Opened Emails", data: data.data.openedSeriesData },
-              { name: "Clicked Emails", data: data.data.clickedSeriesData }
+              { name: "Opened Emails", data: data.data.openedSeriesData || [] },
+              { name: "Clicked Emails", data: data.data.clickedSeriesData || [] }
             ],
             title: {
               text: `Email Campaign Tracking (Total Sent: ${totals})`,
               align: "left"
             }
           };
-          
+    
           this.cdr.detectChanges();  // Only detect changes once at the end
         } else {
           console.error("Line chart is not initialized");
         }
+      }, (error) => {
+        console.error('Error fetching line chart data:', error);
       });
     }
     
     
-    updatePieChartData(): void {
+    
+    updatePieChartData(startDate?: string, endDate?: string): void {
       
     
       const totalContacts = this.contacts.length;
     
-      this.service.updatePieChartData().subscribe(
+      this.service.updatePieChartData(startDate,endDate).subscribe(
         (data) => {
           
           const openedEmails = data.data.opened_count || 0;
@@ -1138,21 +1271,33 @@ getDayName(dayIndex) {
 //stat change 
 statchange(type: string) {
   this.selectedStat = type;
-  this.reorder = false; // Temporarily hide the chart
+  this.reorder = false; // Temporarily hide the charts
   this.cdr.detectChanges(); // Trigger change detection
 
+  // Delay to ensure the DOM updates
   setTimeout(() => {
+    // Set the state type based on the selected type
     if (type === 'open') {
       this.stat_type = 'open';
+      this.updateBarChartOpen(); // Call function to update bar chart for opens
+      this.updateBubbleChartOpen(); // Call function to update bubble chart for opens
     } else if (type === 'click') {
       this.stat_type = 'click';
+      this.updateBarChartClick(); // Call function to update bar chart for clicks
+      this.updateBubbleChartClick(); // Call function to update bubble chart for clicks
     } else {
       this.stat_type = 'all';
+      this.updateBarChartOpen(); // Update both charts for 'all'
+      this.updateBarChartClick(); 
+      this.updateBubbleChartOpen(); 
+      this.updateBubbleChartClick(); 
     }
-    this.reorder = true; // Show the chart again
-    this.cdr.detectChanges(); // Trigger change detection
-  }, 0); // Delay to ensure the DOM updates
+
+    this.reorder = true; // Show the charts again
+    this.cdr.detectChanges(); // Trigger change detection again
+  }, 0); // Ensure this runs after DOM updates
 }
+
 
 
 

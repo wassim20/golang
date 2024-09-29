@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
@@ -73,13 +73,34 @@ export class MailinglistService {
   }
   
   
-  addContactToMailingList(contact :any,mailingListId: string): Observable<any> {
+  addContactToMailingList(contact: any, mailingListId: string): Observable<any> {
     const companyID = this.getCompanyID() || '';
     const userId = this.getuser();
-    return this.http.post<any>(`${this.baseUrl}/${companyID}/mailinglist/${mailingListId}/contacts`, contact, {
-      headers: this.getHeaders()
-    });
+  
+    if (Array.isArray(contact)) {
+      console.log(contact);
+      
+      // If contact is an array (bulk upload), add each contact one by one
+      const addContactRequests = contact.map(singleContact =>
+        this.http.post<any>(
+          `${this.baseUrl}/${companyID}/mailinglist/${mailingListId}/contacts`,
+          singleContact,
+          { headers: this.getHeaders() }
+        )
+      );
+  
+      // Return a combined observable to wait for all requests to complete
+      return forkJoin(addContactRequests);
+    } else {
+      // If contact is a single object, add it directly
+      return this.http.post<any>(
+        `${this.baseUrl}/${companyID}/mailinglist/${mailingListId}/contacts`,
+        contact,
+        { headers: this.getHeaders() }
+      );
+    }
   }
+  
   updateMailingList(updatedMailingList: any) {
     const mailinglistupdated = {
     name: updatedMailingList.name,

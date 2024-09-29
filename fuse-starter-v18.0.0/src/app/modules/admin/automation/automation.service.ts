@@ -106,4 +106,11 @@ startWorkflow(workflowId: string) {
     headers: this.getHeaders()
   });
 }
+
+getCampaigns() {
+  const companyID = this.getCompanyID() || '';
+  return this.http.get<any>(`${this.baseUrl}/${companyID}/campaigns/all`, {
+    headers: this.getHeaders(),
+  });
+}
 }
